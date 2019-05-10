@@ -1,0 +1,259 @@
+%\RequirePackage{atbegshi}
+\documentclass[compress,10pt]{beamer}
+%\documentclass[compress,10pt,slidetop,handout]{beamer}
+
+\usepackage{DamasStyle}
+\usepackage{tikz}
+\usepackage{dsfont}
+\usepackage{xspace}
+\usepackage{graphicx}
+\usepackage{colortbl}
+\usepackage{subfigure}
+\usepackage{ams,amsmath, amssymb, amsthm}
+\usepackage{appendixnumberbeamer}
+
+%Pour écrire les accents directement sans se faire ch*** en français
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+\input{../macros}
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{shapes.geometric}
+\usepgflibrary{shapes}
+\usepgflibrary{snakes}
+\usetikzlibrary{snakes}
+
+%Commande necessaires (ou pas) pour cette présentation
+% des petites couleurs
+\colorlet{orange}{red!30!yellow!5!white}%%
+\colorlet{mauve}{blue!30!red!5!white}%%
+\colorlet{bleu}{blue!20}%%
+\colorlet{vert}{green!20}%%
+\colorlet{brouge}{red!70!blue}
+\newcommand\red[1]{\textcolor[rgb]{1,0,0}{#1}}
+\newcommand\brouge[1]{\textcolor{brouge}{#1}}
+\newcommand\mauve[1]{\textcolor{mauve}{#1}}
+\newcommand\bleu[1]{\textcolor{bleu}{#1}}
+\newcommand\verte[1]{\textcolor{vert}{#1}}
+\newcommand\orange[1]{\textcolor{orange}{#1}}
+
+\title[]{~\\ Contraintes et observabilité \\ dans les systèmes de Markov décentralisés\\ ~}
+\author[Camille Besse]{Camille Besse}
+\institute{Département d'Informatique et de Génie Logiciel\\
+  \texttt{http://damas.ift.ulaval.ca}}
+\date{Septembre 2010}
+
+\bibliographystyle{plain}
+
+\newenvironment{mybox}[1]{
+\begin{tikzpicture}
+\node[draw=#1, fill=#1!5,very thick, rectangle, rounded corners, inner sep=10pt, inner ysep=20pt,text width=.95\textwidth,text justified] (box)\bgroup}
+{\egroup;
+\end{tikzpicture}}
+
+\begin{document}
+%Page de Titre avec remise automatique des symboles de navigation a la fin
+\SlideTitre
+%Definition de l'affichage du plan à chaque section avec la section courante et ses sous sections mises en avant
+%\AtBeginSection[]{\frame<handout:0>{\frametitle{Outline}
+%    \tableofcontents[current,currentsubsection,hidesubsections]
+%    \tableofcontents[current,currentsubsection]
+%    \tableofcontents[current]
+%}}
+%--------------------------------------------------------------------------
+%Slide Plan
+%\frame { \frametitle{Plan} \tableofcontents[section=1,hidesubsections] }
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Intro]{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Modèle avec observation bijective}
+
+\only<1-6>{
+    \begin{tikzpicture}[scale=.6]%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\tiny] %%
+        \node (b10) at (0,5)  {$\bel_1^0$}; %%
+\visible<2->{
+        \node[minimum size=.1] (b11a) at (2,7)  {}; %%
+        \node (b11aa) at (4,8.5)  {$\bel_1^{1aa}$}; %%
+        \node (b11ab) at (4,7)  {$\bel_1^{1ab}$}; %%
+}
+\visible<3->{
+        \node[minimum size=.1] (b11b) at (2,5)  {}; %%
+        \node (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+}
+\only<6->{
+        \node[minimum size=.1,red] (b11b) at (2,5)  {}; %%
+        \node[red] (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node[red] (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+}
+\visible<4->{
+        \node[minimum size=.1] (b11c) at (2,3)  {}; %%
+        \node (b11ca) at (4,3)  {$\bel_1^{1ca}$}; %%
+        \node (b11cb) at (4,1.5)  {$\bel_1^{1cb}$}; %%
+}
+\visible<5->{
+        \node (b1Taa) at (15,8.5)  {$V(\bel_1^{Taa})$}; %%
+        \node (b1Tab) at (15,7)  {$V(\bel_1^{Tab})$}; %%
+        \node (b1Tba) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node (b1Tbb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+        \node (b1Tca) at (15,3)  {$V(\bel_1^{Tca})$}; %%
+        \node (b1Tcb) at (15,1.5)  {$V(\bel_1^{Tcb})$}; %%
+}
+\only<6->{
+        \node[red] (b1Tb) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node[red] (b1Tb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+}
+        \end{scope}
+\only<2->{
+        \draw[-latex] (b10)--(b11a) node[midway,above]{$a_a$}; %%
+        \draw[-latex] (b11a)--(b11aa) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11a)--(b11ab) node[midway,above]{$o_b$}; %%
+}
+\only<3->{
+        \draw[-latex] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+}
+\only<6->{
+        \draw[-latex,red] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex,red] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex,red] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+}
+\only<4->{
+        \draw[-latex] (b10)--(b11c) node[midway,below]{$a_c$}; %%
+        \draw[-latex] (b11c)--(b11ca) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11c)--(b11cb) node[midway,above]{$o_b$}; %%
+}
+\visible<5->{
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11aa)--(b1Taa) node[midway,above]{$H(\bel_1^{1aa})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ab)--(b1Tab) node[midway,above]{$H(\bel_1^{1ab})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above]{$H(\bel_1^{1bb})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ca)--(b1Tca) node[midway,above]{$H(\bel_1^{1ca})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11cb)--(b1Tcb) node[midway,above]{$H(\bel_1^{1cb})$}; %%
+}
+\only<6->{
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above,red]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above,red]{$H(\bel_1^{1bb})$}; %%
+}
+    \end{tikzpicture}
+}
+
+\only<7>{
+    \begin{tikzpicture}[scale=.4]%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\tiny] %%
+        \node (b10) at (0,5)  {$\bel_1^0$}; %%
+        \node[minimum size=.1] (b11a) at (2,7)  {}; %%
+        \node (b11aa) at (4,8.5)  {$\bel_1^{1aa}$}; %%
+        \node (b11ab) at (4,7)  {$\bel_1^{1ab}$}; %%
+        \node[minimum size=.1] (b11b) at (2,5)  {}; %%
+        \node (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+        \node[minimum size=.1,red] (b11b) at (2,5)  {}; %%
+        \node[red] (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node[red] (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+        \node[minimum size=.1] (b11c) at (2,3)  {}; %%
+        \node (b11ca) at (4,3)  {$\bel_1^{1ca}$}; %%
+        \node (b11cb) at (4,1.5)  {$\bel_1^{1cb}$}; %%
+        \node (b1Taa) at (15,8.5)  {$V(\bel_1^{Taa})$}; %%
+        \node (b1Tab) at (15,7)  {$V(\bel_1^{Tab})$}; %%
+        \node (b1Tba) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node (b1Tbb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+        \node (b1Tca) at (15,3)  {$V(\bel_1^{Tca})$}; %%
+        \node (b1Tcb) at (15,1.5)  {$V(\bel_1^{Tcb})$}; %%
+        \node[red] (b1Tb) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node[red] (b1Tb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+        \end{scope}
+        \draw[-latex] (b10)--(b11a) node[midway,above]{$a_a$}; %%
+        \draw[-latex] (b11a)--(b11aa) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11a)--(b11ab) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+        \draw[-latex,red] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex,red] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex,red] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11c) node[midway,below]{$a_c$}; %%
+        \draw[-latex] (b11c)--(b11ca) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11c)--(b11cb) node[midway,above]{$o_b$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11aa)--(b1Taa) node[midway,above]{$H(\bel_1^{1aa})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ab)--(b1Tab) node[midway,above]{$H(\bel_1^{1ab})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above]{$H(\bel_1^{1bb})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ca)--(b1Tca) node[midway,above]{$H(\bel_1^{1ca})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11cb)--(b1Tcb) node[midway,above]{$H(\bel_1^{1cb})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above,red]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above,red]{$H(\bel_1^{1bb})$}; %%
+    \end{tikzpicture}
+    \begin{tikzpicture}[scale=.4]%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\tiny] %%
+        \node (b10) at (0,5)  {$\bel_2^0$}; %%
+        \node[minimum size=.1,red] (b11a) at (2,7)  {}; %%
+        \node[red] (b11aa) at (4,8.5)  {$\bel_2^{1aa}$}; %%
+        \node[red] (b11ab) at (4,7)  {$\bel_2^{1ab}$}; %%
+        \node[minimum size=.1] (b11b) at (2,5)  {}; %%
+        \node (b11ba) at (4,5.75)  {$\bel_2^{1ba}$}; %%
+        \node (b11bb) at (4,4.25)  {$\bel_2^{1bb}$}; %%
+        \node[minimum size=.1] (b11c) at (2,3)  {}; %%
+        \node (b11ca) at (4,3)  {$\bel_2^{1ca}$}; %%
+        \node (b11cb) at (4,1.5)  {$\bel_2^{1cb}$}; %%
+        \node[red] (b1Taa) at (15,8.5)  {$V(\bel_2^{Taa})$}; %%
+        \node[red] (b1Tab) at (15,7)  {$V(\bel_2^{Tab})$}; %%
+        \node (b1Tba) at (15,5.75)  {$V(\bel_2^{Tba})$}; %%
+        \node (b1Tbb) at (15,4.25)  {$V(\bel_2^{Tbb})$}; %%
+        \node (b1Tca) at (15,3)  {$V(\bel_2^{Tca})$}; %%
+        \node (b1Tcb) at (15,1.5)  {$V(\bel_2^{Tcb})$}; %%
+        \end{scope}
+        \draw[-latex,red] (b10)--(b11a) node[midway,above]{$a_a$}; %%
+        \draw[-latex,red] (b11a)--(b11aa) node[midway,above]{$o_a$}; %%
+        \draw[-latex,red] (b11a)--(b11ab) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11c) node[midway,below]{$a_c$}; %%
+        \draw[-latex] (b11c)--(b11ca) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11c)--(b11cb) node[midway,above]{$o_b$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11aa)--(b1Taa) node[midway,above]{$H(\bel_1^{1aa})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ab)--(b1Tab) node[midway,above]{$H(\bel_1^{1ab})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above]{$H(\bel_1^{1bb})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ca)--(b1Tca) node[midway,above]{$H(\bel_1^{1ca})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11cb)--(b1Tcb) node[midway,above]{$H(\bel_1^{1cb})$}; %%
+    \end{tikzpicture}
+
+}
+
+\end{frame}
+
+\end{document}

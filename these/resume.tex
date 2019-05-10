@@ -1,0 +1,22 @@
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+De manière générale, les problèmes séquentiels de décisions multiagents sont très difficiles à résoudre surtout lorsque les agents n'observent pas parfaitement ni complètement l'état de leur environnement. Les modèles actuels pour représenter ces problèmes restent à ce jour très généraux et difficilement applicables dans les multiples applications possibles.
+
+Nous proposons dans cette thèse plusieurs approches de réduction de la complexité computationnelle et en pire cas de ces modèles. Une première approche se base sur l'utilisation de contraintes sur l'espace des actions possibles que les différents agents du système peuvent entreprendre. Cette utilisation de connaissances \emph{a priori} dans la modélisation au travers de modèles déjà connus, mais non appliqués à la prise de décision séquentielle permet une réduction significative d'un des facteurs de la complexité algorithmique.
+
+La seconde approche consiste à restreindre les possibilités d'observations de l'agent à un ensemble similaire à l'espace d'états utilisé pour représenter son environnement. De cette manière, nous montrons que les agents peuvent converger rapidement en probabilité vers des croyances communes sans nécessairement avoir à communiquer. Dans ce contexte, nous avons également développé un algorithme permettant alors aux agents de se coordonner au moment de l'exécution lorsqu'il n'existe pas de communication explicite.
+
+Enfin, nous avons entrepris la mise en application de telles réductions à deux problèmes. Un premier problème de patrouille multiagent est considéré et modélisé, et un second problème lié à l'apprentissage de \pomdps continus dans des cas précis de transition et d'observabilité est également abordé. Les résultats obtenus montrent que dans certains cas de problèmes de coordination, la communication -- lorsqu'elle est disponible -- est non négligeable, et que dans le cas de l'apprentissage de \pomdps, considérer le quasi-déterminisme du modèle permet l'apprentissage de converger.
+
+\newpage\phantom{a}
+\chapter*{Abstract}
+%\addcontentsline{toc}{chapter}{Abstract}
+
+In general, multiagent sequential decision making problems are very hard to solve, especially when agents do not perfectly and completely observe the state of their environment. Current models that are used to represent these problems are still too general and hardly applicable to the multiple possible applications.
+
+In this thesis, we propose several approaches in order to reduce computational complexity and worst-case complexity of such models. We first propose a approach based on constraint utilization on the different action spaces that agents have. This use of \emph{a priori} knowledge in the modeling process through already known and mastered techniques of constraint optimization in the case of sequential decision making allows to significantly reduce one of the factor of the algorithmic complexity in Markov models: the branching factor through the action space.
+
+A second approach consists in restricting the observation space of the agents to a space similar to the state space they used to represent their environment. In this way, we show that agents will thus all quickly converge in probability to some common beliefs without necessarily having to communicate. In this context we also developed an online algorithm, allowing agents to coordinate at exécution time, even when no explicit communication is available.
+
+Finally, we start to apply these complexity reduction techniques to two sequential decision making problems. A first multiagent patrolling problem is considered and modeled. A second problem of continuous \pomdp learning in specific cases of transition and observation functions is also addressed. Experimental results mainly that in coordination problems, communication -- when available -- is not an option, and that in case of \pomdp learning, considering model quasi-determinism allows faster convergence of this learning. 

@@ -1,0 +1,410 @@
+\chapter{Introduction}
+\label{chap:1}
+
+%L'objectif de cette thèse est de proposer des réductions plausibles pour combler le gap entre les modèles théoriques de planification dans les environnements incertains et les applications réelles de la robotique mobile.
+
+%Cette thèse défend l'utilisation de contraintes sur les décisions et sur l'observation dans différents modèles théoriques de planification. Les contraintes ont pour but de réduire la complexité algorithmique de modèles généralement exponentiels.
+
+\emph{«A human being is a deciding being.»}
+\begin{flushright} Man's Search for Meaning -- Viktor E. Franckl\end{flushright}
+\bigskip
+
+\begin{summary}
+Ce chapitre d'introduction développe le contexte général des recherches exposées dans cette thèse. La question de la prise de décision est tout d'abord expliquée et formalisée sous plusieurs de ses aspects. La discussion est ensuite restreinte autour de la prise de décisions pour des entités autonomes lorsque plusieurs issues sont possibles aux décisions et/ou lorsque l'information nécessaire à la prise de décision n'est pas complètement disponible. Plusieurs exemples de problèmes typiques sont alors présentés, permettant ainsi de comprendre dans les grandes lignes les contributions et l'organisation de cette thèse.
+\end{summary}
+
+Chaque jour, chacun d'entre nous doit faire des choix multiples de toute nature et de toute importance: depuis le simple choix de ses repas quotidiens, jusqu'aux choix de sa future maison et du prêt hypothécaire qui va avec. Ainsi, prendre des décisions est une activité parfois complexe que nous faisons plus ou moins naturellement à chaque instant de notre existence. Dans le cadre de l'intelligence artificielle, la reproduction et l'analyse de ces situations de choix et les comportements à adopter selon les opportunités ont intéressé les chercheurs depuis plusieurs décennies. C'est ainsi qu'identifier et résoudre ces situations de choix, au travers de leurs caractéristiques, de leurs contraintes ou de leurs conséquences est devenu au fil du temps un des credos de l'intelligence artificielle moderne.
+
+\section{Prendre des décisions}
+
+De nos jours, l'intelligence artificielle s'attache à modéliser, formaliser et concevoir des entités logicielles autonomes et ``intelligentes'', appelées \emph{agents}, qui interagissent avec un \emph{environnement} au travers de \emph{percepts} et d'\emph{actions} avec pour objectif de se comporter de manière \emph{satisfaisante} ou \emph{rationnelle}.
+
+Ces agents intelligents cherchent donc à optimiser un certain \emph{critère de performance} en interagissant avec leur environnement. Ces interactions, qui se font au travers des capteurs et des actuateurs des agents, décomposent le processus de décision en trois étapes essentielles (cf. figure~\ref{fig:agent}): \emph{percevoir, décider, agir}.
+
+\begin{figure}[htb]
+\centering
+\begin{tikzpicture}[scale=1]%
+%%MODELES
+\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (0,0) rectangle (5,5);%%
+\filldraw[rounded corners,ultra thick,vert,draw=green!70!blue] (7,0) rectangle (8,5);%%
+%%TEXTE MODELES
+\node at (1,4.5)  {Agent}; %%
+\node[rotate=90] at (7.5,2.5)  {Environnement}; %%
+\node[thick,dashed,fill=gray!1,draw,font=\small] (p) at (3,4.5)  {\emph{Percevoir}}; %%
+\node[thick,dashed,fill=gray!1,draw,font=\small] (d) at (3,2.5)  {\emph{Décider}}; %%
+\node[thick,dashed,fill=gray!1,draw,font=\small] (a) at (3,.5)  {\emph{Agir}}; %%
+\draw[-latex,thick] (7.25,4.5)--(p.east) node[near start,above=1pt,font=\footnotesize]{Percepts}; %%
+\draw[-latex,thick] (a.east)--(7.25,.5) node[near end,below=1pt,font=\footnotesize]{Actions}; %%
+\draw[-latex,thick] (p.south)--(d.north); %%
+\draw[-latex,thick] (d.south)--(a.north); %%
+\end{tikzpicture}
+  \caption{Modèle d'un agent intelligent~\citep{RN.03}.\label{fig:agent}}
+\end{figure}
+
+L'accumulation de percepts permet aux agents d'\emph{identifier} la situation courante de l'environnement, de prendre la bonne décision ou de \emph{résoudre} le problème courant, avant d'appliquer la solution trouvée par l'exécution du bon plan d'action.
+
+\subsection{Identifier ...}
+
+Il n'est pas toujours clair pour l'agent de savoir quelles sont exactement toutes les informations qui pourraient lui être nécessaire à la prise d'une décision satisfaisante. L'agent peut en effet être dépourvu de certaines informations, ou pire, avoir certaines informations erronées. Prendre une décision rationnelle relativement à une mesure de performance fournie à l'agent devient alors un problème complexe où l'incertain sur la situation courante se mêle à l'estimation de la performance conséquente à la décision courante.
+
+Ainsi, identifier la situation courante, ou l'\emph{état} courant, de l'environnement est effectivement difficile. Dans un contexte humain par exemple, il est très rare d'avoir accès à l'ensemble de l'information nécessaire pour pouvoir prendre une décision éclairée et l'on fait souvent appel à l'expérience passée de situations ayant les mêmes caractéristiques. Dans un contexte logiciel, robotique par exemple, les capteurs actuels ne permettent pas d'identifier toujours avec exactitude la localisation du robot ou sa situation environnante. Extraire de l'information de caméras vidéo ou de capteurs odométriques est souvent difficile et induit une incertitude sur l'information extraite. Beaucoup de modèles actuels supposent que l'agent accède complètement et avec certitude à l'état de son environnement, même si en pratique sa vision n'est que partielle et/ou probabiliste.
+
+\subsection{... et résoudre ...}
+
+Résoudre un problème de décision revient alors, une fois l'état du système quasiment identifié, à trouver une manière de se rendre dans une situation \emph{satisfaisante} et/ou à \emph{optimiser} une certaine fonction de satisfaction qui indique les ``bons'' et les ``mauvais'' comportements à adopter dans tel ou tel état. Cette fonction peut être un critère de \emph{satisfaction} ou bien d'\emph{optimisation} selon que l'on cherche seulement à trouver une situation satisfaisante ou bien à ordonner les solutions puis à prendre la plus satisfaisante (l'optimale). Il est également possible de ne trouver qu'une solution proche de la solution optimale, mais ``suffisamment'' satisfaisante pour l'agent. Tout cela est déterminé par la \emph{mesure de performance} du problème généralement représentée sous la forme d'une \emph{utilité à maximiser} pour l'agent.
+
+Il convient alors de remarquer que certaines décisions peuvent alors mener dans le futur à des états non satisfaisants ou à des impasses qu'il faut alors éviter. L'ensemble de la \emph{séquence} des états futurs et des décisions associées devient importante pour la prise de décision dans un état donné. Prédire les issues possibles de ces décisions devient alors primordial pour la résolution du problème. Pour le résoudre, il faut donc posséder une manière de représenter l'état de l'environnement et de l'agent, les décisions possibles ainsi que la \emph{dynamique du système} -- qui décrit comment le système évolue sous l'influence des agents -- lorsqu'une décision est prise dans un état donné.
+
+\subsection{... en présence d'incertitudes}
+
+Comme il a été évoqué plus haut, il est très fréquent que les actions envisagées par l'agent ne se déroulent pas comme prévu~\citep{B.77}, et il faut alors prévoir toutes les issues possibles à ces actions selon leurs probabilités d'occurrence. Ainsi, plutôt que de raisonner sur une seule des issues de chacune des actions entreprises, l'agent raisonne \emph{en espérance} -- i.e en moyenne -- sur l'ensemble des issues possibles à chaque action.
+
+D'autre part, lorsque l'agent n'est pas certain d'avoir parfaitement identifié l'état courant de l'environnement, il doit également raisonner sur tous les états probables du système afin de s'assurer de ne pas effectuer d'action qui pourrait lui nuire selon son utilité ou sa mesure de performance. Ce genre de situations apparaît dès lors que l'agent n'a pas une vision \emph{complète} du système. On parle alors de problème \emph{partiellement observable}. Ce type de problème survient notamment dans les problèmes à plusieurs agents lorsqu'un agent n'a pas connaissance des états internes des autres agents tels que le niveau d'énergie, la position exacte, etc. Il peut également survenir lorsque l'agent ne possède que des capteurs bruités, ne lui permettant ainsi que de saisir des bribes de son environnement.
+
+\subsection{En résumé}
+
+Pour résumer, les types de problèmes qui vont être discutés dans cette thèse possèdent tous les caractéristiques suivantes:
+\begin{enumerate}
+\item Les décisions devront être prises \emph{séquentiellement};
+\item Ces décisions impliquant \emph{un ou plusieurs agents}, selon le problème considéré;
+\item Ces agents seront en interaction avec un environnement \emph{stochastique et possiblement partiellement observable};
+\item Et ils chercheront à maximiser une mesure de performance \emph{commune} par interaction avec l'environnement.
+\end{enumerate}
+Il convient ici de remarquer que l'hypothèse 4 élimine les problèmes impliquant plusieurs agents agissant les uns contre les autres puisque tous les agents maximisent la même mesure de performance et tentent donc de coopérer et se coordonner.
+
+Pour résoudre le type de problèmes décrit ci-dessus, les agents doivent avoir une \emph{représentation} commune de l'état du système et de sa dynamique. Voyons comment formaliser cette représentation.
+
+\section{Formaliser les décisions}
+
+La représentation du problème doit à la fois permettre de modéliser chacun des états du système, chacune des décisions possibles, la dynamique de l'interaction entre les agents et l'environnement, et la mesure de performance associée à chaque décision dans chacun des états. Dans le cas où l'état serait partiellement observable, il convient également de spécifier les parties observables des parties qui ne le sont pas, ou du moins de modéliser comment les agents peuvent accéder à l'information sur l'état du système.
+
+L'état du système est en pratique constitué de plusieurs composantes relatives à différentes  parties de l'environnement. Par exemple, dans le cas d'un robot aspirateur, l'état du monde est généralement composé de sa position dans la pièce, du niveau de charge de sa batterie, de la présence d'objets dans la pièce, etc. Ces composantes, appelées \emph{variables}, peuvent prendre plusieurs valeurs qui déterminent les différentes situations dans lesquelles peut se trouver l'agent ou quelles sont ses décisions possibles. De plus, il est fréquent que ces variables soient bornées ou qu'il existe des \emph{relations} entre elles. Il est ainsi possible que certaines combinaisons de valeurs pour ces variables ne représentent pas d'état réel accessible du système (sous un meuble pour le robot aspirateur par exemple) ou que les décisions de l'agent soient conditionnées par l'état courant du système.
+
+Formaliser les problèmes de décision en vue de les résoudre consiste donc essentiellement à modéliser une situation à base de \emph{variables} pouvant prendre certaines valeurs ainsi que les \emph{relations} existant entre ces variables. De plus, cette thèse utilise certains modèles qui font également appel à des relations particulières entre les variables expliquant la \emph{dynamique} des valeurs des variables, leur \emph{observabilité}, ainsi que la \emph{mesure de performance} associée aux différentes combinaisons de valeurs.
+
+\subsection{Variables}
+
+La nature du problème de décision conditionne toujours la nature des variables qui le constitue. Par exemple, décider de la quantité d'essence à mettre dans un réservoir induit une \emph{variable de décision continue} alors que l'allocation d'un certain nombre de ressources à une tâche induit une \emph{variable de décision discrète}. Il est également possible que certaines variables ne soient pas contrôlables comme la position ou la charge d'un robot par exemple, et l'on parlera alors de \emph{variables d'environnement}.
+
+De nombreux domaines de la théorie de la décision se sont spécialisés dans certains types de variables particuliers. Là où l'\emph{analyse} mathématique se préoccupe des variables réelles, de leur topologie et de leurs propriétés, l'\emph{optimisation combinatoire} s'est spécialisée dans l'étude des variables discrètes et la logique dans les variables booléennes. Cependant, la majorité des problèmes se composent souvent de plusieurs types de variables et les approches ci-dessus peinent à rester performantes. Un des domaines les plus polyvalents à ce niveau est la \emph{satisfaction de contraintes} qui focalise essentiellement sur les \emph{relations} qui existent entre les variables pour trouver une solution.
+
+\subsection{Relations}
+
+Les relations déterminent comment les variables interagissent entre elles. Il existe de la même manière que les variables, plusieurs types de relations qui dépendent des variables mises en interaction. Par exemple, dans les problèmes de satisfaction de contraintes, les relations déterminent les tuples de valeurs autorisés. En optimisation convexe, les relations sont des inéquations linéaires délimitant les valeurs possibles des variables. En inférence bayésienne, les relations indiquent les probabilités conditionnelles de certaines valeurs de variables par rapport à la valeur d'autres variables.
+
+\hyphenation{d\'e-ter-mi-ni-stes}
+\hyphenation{d\'e-ter-mi-ni-ste}
+On peut regrouper les classes de relations en deux types principaux: les relations déterministes et les relations incertaines. Les deux premiers exemples donnés ci-avant sont des relations de type déterministe alors que la troisième est incertaine. Les relations incertaines apparaissent lorsque certaines variables ne peuvent pas être connues avec certitude (les intentions d'autres agents ou en cas d'observabilité partielle par exemple). Ce type de relation est généralement pris en compte avec des relations probabilistes, mais d'autres domaines existent comme les relations floues~\citep{RCA.06}, ou les relations possibilistes~\citep{DP.88}.
+
+On différencie également trois types de relations particulières parmi toutes les relations entre variables. La première est la relation qui définit comment une variable à un instant donné interagit avec elle-même et avec les autres à un instant futur. On appelle ce type de relation la \emph{dynamique} de la variable. La seconde relation définit la mesure de performance associant une décision et un état à une valeur immédiate acquise par l'agent. Cette relation de \emph{récompense} indique les décisions souhaitables ou non selon l'état du système. La dernière est la relation qui détermine quelles sont les variables d'environnement dont l'agent dispose pour prendre sa décision à un instant donné, on appelle cette relation l'observabilité de l'environnement.
+
+\subsubsection{Dynamique}
+
+La dynamique au sens large n'explique pas seulement comment interagit une variable avec elle-même dans un instant futur, mais également comment elle interagit avec les autres et comment ses relations évoluent au cours du temps. La dynamique n'est cependant pas toujours présente dans les problèmes de prise décision. Il est possible de rencontrer des problèmes à une seule étape où aucune conséquence sur les décisions futures ne serait engendrée par la décision courante. Les domaines concernés sont l'\emph{optimisation}, la \emph{satisfaction de contraintes}, et l'\emph{apprentissage statistique}.
+
+Dans le cadre de cette thèse, qui est le cas où la décision courante influence les décisions futures, on parle de problème de décisions \emph{séquentielles}. La dynamique des relations et des variables devient alors primordiale pour pouvoir prédire l'évolution de l'environnement et l'influence d'une décision sur les décisions suivantes. Ici les domaines sont la \emph{planification} ou l'\emph{apprentissage par renforcement}. La planification suppose la connaissance exacte de la dynamique de l'environnement, des variables et des relations et utilise cette connaissance pour prévoir la séquence de décisions à effectuer. L'apprentissage par renforcement, au contraire, ne suppose aucune connaissance \emph{a priori} sur la dynamique du problème et essaie de trouver la bonne séquence de décisions par essais-erreurs directement dans l'environnement. Bien que très intéressant, l'apprentissage par renforcement ne sera pas abordé dans cette thèse et nous supposerons dans la suite du document que la dynamique complète du système dans lequel l'agent planifie est connue.
+
+\subsubsection{Récompense}
+
+La mesure de performance pour la résolution d'un problème donné peut généralement être spécifiée de deux manières. Soit sous la forme d'une satisfaction booléenne comme le fameux problème \textsc{sat} ou sous la forme de valeur réelle à optimiser. Les domaines associés au premier sont la \emph{satisfaction de contraintes} ou la \emph{logique} sous toutes ses formes. Dans le second cas, on parle plutôt de \emph{théorie de l'utilité}~\citep{RN.03}. La théorie de l'utilité décrit les bases et les fondements du raisonnement sur les préférences d'une entité intelligente. En présence d'incertitude, c'est très souvent le principe d'\emph{utilité espérée} qui est appliqué. Ce principe stipule simplement que tout agent rationnel devrait toujours maximiser sa récompense espérée.
+
+Le principe d'utilité espérée sera employé dans le cadre de cette thèse plutôt que la satisfaction. Il est en effet plus naturel, lorsque l'on a affaire à un problème de décisions séquentielles,  d'estimer l'utilité de chaque action dans chaque état plutôt que de simplement indiquer si une action est satisfaisante ou non. Cela permet non seulement d'estimer l'utilité espérée d'une action à une étape selon les issues possibles de cette action, mais cela permet également d'estimer l'\emph{utilité espérée moyenne} sur l'horizon de planification et ainsi de garantir que la séquence d'actions choisie sera meilleure que toute autre séquence d'actions possible \emph{en moyenne}.
+
+\subsubsection{Observabilité}
+
+La relation d'observabilité détermine l'information dont dispose l'agent au moment où il prend sa décision. Dans le cas le plus simple, l'agent a accès à toute l'information suffisante pour planifier et donc à l'état complet du système. Dans le cas inverse, l'agent doit raisonner sur ses incertitudes et donc maintenir une croyance sur les valeurs des variables qu'il ne connaît pas. Dans le cas où en plus les variables n'ont pas de dynamique, le domaine usuellement associé et l'inférence bayésienne ou les \emph{réseaux bayésiens}. Dans le cas où s'ajoute en sus une relation de récompense, on parle de \emph{diagramme de décision} et la valeur de l'information devient alors importante~\citep{RN.03}.
+
+Dans le cadre de cette thèse, plusieurs cas d'observabilité seront considérés et les différentes implications de l'observabilité sur la complexité du problème à résoudre seront étudiées. Voyons maintenant un résumé de la formalisation du type de problèmes à résoudre.
+
+\subsection{En résumé}
+
+En résumé, plusieurs caractéristiques peuvent être extraites des problèmes de prise de décision:
+\begin{description}
+\item[Problème épisodique/séquentiel:] Une première caractéristique des problèmes concerne le degré d'influence de chacune des décisions sur les décisions à venir. Lorsque le problème est épisodique, l'agent perçoit sa situation, trouve la meilleure action à entreprendre dans cette situation et l'exécute. Une nouvelle situation est alors perçue, indépendamment de l'action entreprise. Dans le cas séquentiel, en revanche, l'action effectuée par l'agent influence le prochain état du système et les états subséquents. Il devient donc nécessaire de raisonner sur toutes les séquences futures d'états possibles pour évaluer une action convenablement. Seuls ces derniers types de problèmes seront abordés dans cette thèse.
+\item[Problème de satisfaction/d'optimisation:] Qu'il soit épisodique ou séquentiel, une solution au problème est toujours évaluée par une mesure de performance. Certains problèmes exigent seulement de trouver une solution satisfaisante en regard des relations exprimées entre les variables ou atteignant une certaine valeur minimale en utilité. D'autres exigent que la meilleure solution possible soit retournée pour être résolus. Cette thèse se concentre essentiellement sur les problèmes d'optimisation.
+\item[Environnement discret/continu:] Lors d'une prise de décision, l'agent doit souvent prendre en compte des quantités aussi bien discrètes que continues. Lorsqu'il s'agit d'orienter un véhicule ou de choisir la poussée d'un moteur par exemple, l'agent doit choisir parmi une infinité de possibilités. Alors que lorsqu'il se déplace sur une grille, ou un graphe, ses différents choix sont souvent énumérables. La majorité des problèmes considérés dans cette thèse sont discrets.
+\item[Environnement contraint/libre:] Il est fréquent de trouver dans la définition de problème la présence d'une connaissance à priori qui contraint la prise de décision ou les situations possibles. Ces relations spécifiques peuvent être alors utilisées pour améliorer la recherche d'une solution optimale au problème considéré.
+\item[Dynamique déterministe/stochastique:] Lorsque l'action d'un agent peut éventuellement échouer ou mener à plus d'une situation possible, alors on parle de problème stochastique. Dans le cas inverse, si l'action d'un agent dans un état conduit toujours dans le même état suivant, alors l'environnement est considéré déterministe. Cette thèse est particulièrement intéressée par les problèmes stochastiques bien que certains résultats présentés ne s'appliquent qu'aux problèmes déterministes.
+\item[Observabilité complète/partielle:] L'observabilité de l'environnement est un des axes majeurs de cette thèse. En effet, la complexité d'un problème est très souvent rattachée à la capacité que l'agent a à déterminer précisément dans quel état is se trouve. L'observabilité complète est définie dès lors que l'agent à accès à toute l'information nécessaire pour prendre sa décision. Dans le cas inverse, où certaines parties de l'état ne sont pas observées ou le sont avec un certain bruit, l'agent doit ainsi raisonner sur une croyance sur les valeurs que peuvent prendre ces parties d'état.
+\item[Un ou plusieurs agents:] La dernière caractéristique du problème concerne le nombre d'agents dans l'environnement. Dans cette thèse, nous ne considérerons pas le cas ou plusieurs agents travaillent les uns \emph{contre} les autres, néanmoins, nous serons amenés à considérer des problèmes où plusieurs agents devront coopérer en vue d'attendre un objectif commun. La première partie de cette thèse focalise plus sur les problèmes monoagents alors que la seconde s'oriente vers les problèmes de décisions distribuées. La principale difficulté associée à la distribution de la décision est essentiellement due au fait que chacun des agents doit raisonner sur toutes les actions possibles des autres agents augmentant considérablement le nombre d'options possibles.
+\end{description}
+
+Ainsi, les problèmes de décisions séquentielles considérés dans cette thèse peuvent être représentés comme à la figure~\ref{fig:decPb} et se formalisent à l'aide de \emph{variables d'environnement} $\cs$ (les cercles), de \emph{variables de décisions} $\ca$ (les carrés), de \emph{relations de la dynamique} (flèches pleines), de \emph{relations d'observation} (flèches hachées) et de \emph{relation d'utilité} $r$ (doubles flèches vers les losanges). À chaque étape de temps $t$, chaque variable d'environnement est non contrôlable par opposition aux variables de décisions qui le sont et dont les valeurs sont choisies par l'agent. Dans la figure~\ref{fig:decPb}, la dynamique indique que chaque variable $\cs^{t}$ au temps suivant dépend de la variable $\cs^{t-1}$ et de la décision $\ca^{t-1}$ au temps précédent. La récompense relie l'état courant $\cs^t$ et la décision courante $\ca^t$ à une valeur réelle $r^t$. La relation d'observabilité spécifie qu'à chaque instant de décision $\ca^t$, la variable d'environnement de l'étape précédente $\cs^{t-1}$ est connue. L'objectif de l'agent est alors de maximiser la récompense espérée obtenue sur les $T$ étapes de décisions:
+\[
+\max \Esp\left[ \sum_{t=1}^{T} r^t \bigg| \cs_0\right]
+\]
+
+\begin{figure}[h!tb]
+        \begin{center}
+        \begin{tikzpicture}[scale=.7]%
+        %\draw[step=1cm,color=gray,very thin] (-5,-1) grid (9,5);%%
+        \begin{scope}[shape=diamond,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (r1) at (-9,-3)  {$r^{t-1}$}; %%
+        \node (r2) at (-4,-3)  {$r^{t}$}; %%
+        \node (r3) at (1,-3)  {$r^{t+1}$}; %%
+        \node (rt) at (6,-3)  {$r^T$}; %%
+        \end{scope}%
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-12,0)  {$\cs^{t-2}$}; %%
+        \node (s1) at (-7,0)  {$\cs^{t-1}$}; %%
+        \node (s2) at (-2,0)  {$\cs^t$}; %%
+        \node (s3) at (3,0)  {$\cs^{t+1}$}; %%
+        \node (st) at (8,0)  {$\cs^T$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-10,3)  {$\ca^{t-1}$}; %%
+        \node (a12) at (-5,3)  {$\ca^t$}; %%
+        \node (a13) at (0,3)  {$\ca^{t+1}$}; %%
+        \node (a1t) at (5,3)  {$\ca^T$}; %%
+        \end{scope}
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex,dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a11)-- +(1.5,-3) --(s1);  %%
+        \draw[->,-latex] (a12)-- +(1.5,-3) --(s2);  %%
+        \draw[->,-latex] (a13)-- +(1.5,-3) --(s3);  %%
+        \draw[->,-latex] (a1t)-- +(1.5,-3) --(st);  %%
+        \draw[->,-latex,dashed] (s0)--(a11); %%
+        \draw[->,-latex,dashed] (s1)--(a12); %%
+        \draw[->,-latex,dashed] (s2)--(a13); %%
+        \draw[->,-latex,loosely dashed,thick] (s3)--(a1t); %%
+        \draw[->,-latex,double] (s1)--+(-2,-1)--(r1);  %%
+        \draw[->,-latex,double] (a11)--+(1,-4)--(r1);  %%
+        \draw[->,-latex,double] (s2)--+(-2,-1)--(r2);  %%
+        \draw[->,-latex,double] (a12)--+(1,-4)--(r2);  %%
+        \draw[->,-latex,double] (s3)--+(-2,-1)--(r3);  %%
+        \draw[->,-latex,double] (a13)--+(1,-4)--(r3);  %%
+        \draw[->,-latex,double] (st)--+(-2,-1)--(rt);  %%
+        \draw[->,-latex,double] (a1t)--+(1,-4)--(rt);  %%
+        \end{tikzpicture}%
+        \caption{Représentation graphique d'un problème de décisions séquentielles sous incertain.\label{fig:decPb}}
+    \end{center}
+\end{figure}
+
+Voyons maintenant quelques exemples de problèmes s'appliquant à la description ci-dessus et pour lesquels nous avons proposé des solutions originales.
+
+\section{Exemples de problèmes}
+
+Nous présenterons tout d'abord le problème qui a occupé la première partie de cette thèse avant de se focaliser sur les problèmes multiagents qui ont occupé la seconde partie.
+
+\subsection{Problème monoagent}\label{ssect:nereus}
+
+Le premier problème auquel nous nous sommes intéressés est un problème d'allocation de ressources dans un environnement incertain. Ce problème concerne un bâtiment de marine devant se défendre en présence de menaces ennemies comme présenté par la figure~\ref{fig:nereus}. Le bateau est équipé d'un certain nombre d'armes possédant différentes portées pour se défendre de missile air-mer ou mer-mer arrivant à des vitesses différentes.
+
+\begin{figure}[htb]
+\centering
+  \includegraphics[width=.5\textwidth]{nereus}\\
+  \caption{NEREUS: a Naval Environment for Resource Engagement in Unpredictable Situations.\label{fig:nereus}}
+\end{figure}
+
+Pour percevoir les missiles s'approchant, le navire possède un radar disposant d'une portée de 3 km que nous supposerons parfait. Il possède également deux STIRs (radars dédiés au guidage) permettant d'attacher aux menaces ennemies des missiles longue portée ou une mitrailleuse lourde de portée moyenne. Enfin, un système de mitrailleuse légère à courte portée peut également être activé si un missile adverse entre dans son champ d'action.
+
+Nous considérons dans ce problème que la seule incertitude possible porte sur l'efficacité des armes, à savoir la probabilité que chacune détruise la menace ciblée. Ainsi, bien que discutable, l'hypothèse est faite que le navire perçoit parfaitement le nombre et la position des missiles adverses.
+
+Si l'on considère ce problème comme un problème stochastique de prise de décisions séquentielles, il est possible de modéliser au niveau d'un état les missiles adverses présents et les armes disponibles pour les engager et modéliser la dynamique de ces objets selon leurs capacités et les probabilités que chaque arme a de détruire une menace. Le but est d'optimiser la probabilité de survie du navire face à une attaque complexe pouvant comporter jusqu'à une dizaine de missiles.
+
+Une formalisation mathématique et une solution à ce problème sont présentés dans le chapitre~\ref{chap:3} de cette thèse. La solution proposée est essentiellement basée sur une combinaison des modèles de planification classique sous incertitude avec une modélisation efficace des contraintes du problème, permettant un gain substantiel en terme de temps de calcul de la séquence de décision optimale.
+
+\subsection{Problèmes multiagents}\label{ssect:multi}
+
+Il a ensuite été suggéré d'étudier le cas ou plusieurs de ces navires auraient à communiquer pour se défendre conjointement d'une attaque. Cependant, au vu de l'état actuel de la littérature multiagent pour résoudre les problèmes de planification décentralisée avec communication, et du peu de résultats de modélisation du domaine, nous nous sommes plutôt consacrés à modéliser la communication dans des problèmes de coordination de la littérature plutôt que le problème de défense maritime. Voici quelques exemples de ces problèmes.
+
+\subsubsection{Patrouille de véhicules aériens autonomes}
+
+Le problème de la patrouille est un très vieux problème qui prend ses racines dans les problèmes de la théorie des graphes, notamment celui de la découverte d'un circuit hamiltonien~\citep{H.858}. Dans son expression la plus simple, il consiste à trouver un circuit hamiltonien sur un graphe de telle sorte à optimiser la mise à jour de l'information qui serait disponible à chaque n\oe ud. Néanmoins, si certains endroits doivent être mis à jour plus fréquemment (par exemple si certains endroits sont plus ``sensibles'' ou ``à risque'' que d'autres), alors il est possible que le circuit hamiltonien ne soit plus la solution optimale et plusieurs agents aériens autonomes doivent alors se coordonner pour conjointement maintenir une connaissance optimale de l'état courant de l'environnement.
+
+\begin{figure}[htb]
+\centering
+  \includegraphics[width=.5\textwidth]{patrol}\\
+  \caption{Un exemple de problème de patrouille à deux agents.\label{fig:patrol}}
+\end{figure}
+
+Dans ce contexte, les agents n'accèdent pas à chaque instant à l'état complet de l'environnement, mais seulement au n\oe ud sur lequel ils se trouvent. Il leur faut donc maintenir une croyance sur la ``fraîcheur'' de l'information perçue dans les n\oe uds précédemment visités en considérant par exemple un taux d'obsolescence de l'information sur chaque sommet.
+
+Du point de vue de la modélisation stochastique, le graphe à patrouiller et la position des agents sur ce graphe constituent l'état du système complet. Néanmoins, les agents n'ont pas accès à cet état complet puisque nous faisons l'hypothèse qu'ils ne savent pas si oui ou non leurs capteurs ont pu transmettre une information pertinente sur les sommets qu'ils viennent de patrouiller. Dès lors, les agents maintiennent une croyance sur l'état de ``fraîcheur'' de l'information et cherche à la maximiser étant donné une pondération initiale des sommets selon leur importance.
+
+\subsubsection{Expédition \pac{mars} rovers}
+
+\hyphenation{\'e-chan-til-lon-ner}
+Initialement proposé par~\cite{SS.04} pour un seul agent, \emph{MultiAgent Rock Sample} (\textsc{mars}) décrit comment plusieurs robots doivent interagir et communiquer pour échantillonner de la manière la plus efficace possible un ensemble de roches ayant potentiellement une valeur scientifique (cf. figure~\ref{fig:mars}).
+
+\begin{figure}[htb]
+\centering
+  \includegraphics[width=.5\textwidth]{mars}\\
+  \caption{Un exemple de problème d'expédition d'échantillonnage de roche à 4 agents.\label{fig:mars}}
+\end{figure}
+
+\hyphenation{ro-ches}
+On suppose que les agents connaissent leur position exacte dans l'environnement et que leurs déplacements sont déterministes. L'incertitude réside sur la valeur scientifique des roches à échantillonner. Pour cela, un scanneur leur indique à chaque déplacement la qualité des roches avoisinantes, avec une certaine confiance. Plus le robot est proche de la roche et plus le scanner est précis quant à la qualité de celle-ci. L'objectif est donc d'échantillonner toutes les roches ayant une valeur scientifique puis de quitter l'environnement au plus vite par le côté droit de la grille.
+
+L'état de ce problème se modélise aisément par la position des agents et la valeur scientifique (partiellement observable) des roches. La dynamique quant à elle, est extrêmement simple puisque quasiment déterministe. Il convient enfin de maximiser le nombre de bonnes roches échantillonnées tout en minimisant le temps passé à le faire.
+
+\subsubsection{Les déménageurs}\label{sect:demenageurs}
+
+Ce problème a été proposé par~\cite{SZ.07} et décrit le comportement de deux robots déménageurs qui doivent ranger des boites dans un
+environnement de type grille. Il y'a 3 boites dans l'environnement, deux petites et une grande. La grande nécessite que les deux agents se
+coordonnent pour pouvoir la pousser. Le but est d'amener une boite (et une seule) dans la zone but (en haut de la grille, voir figure
+\ref{fig:coordbox}). L'optimal étant bien sur d'apporter la grosse boite dans la zone but.
+
+\begin{figure}[htb]
+\centering
+  \includegraphics[width=.5\textwidth]{coordbox}\\
+  \caption{Un exemple de problème de déménageurs.}\label{fig:coordbox}
+\end{figure}
+
+Les agents n'ont ici qu'une vague idée de leur position de départ (ils savent seulement qu'ils sont à côté d'un mur). De plus, ils n'observent l'autre agent, un mur ou une boite que lorsque l'objet est exactement en face d'eux. Cette observabilité très limitée rend le problème particulièrement difficile lorsqu'en plus aucune communication n'est autorisée.
+
+L'état de ce problème contient la position des agents et des boites et la dynamique est simple. Chaque agent peut avancer dans la direction qui lui fait face ou peut faire un quart de tour sur place. Les petites boites peuvent être poussées dans toutes les directions par un agent, mais la grosse boite nécessite la poussée coordonnée des deux agents pour être déplacée. Le problème initial stipule que l'environnement est réinitialisé dès qu'une boite atteint la zone en haut de la salle, mais on peut aussi essayer de trouver une stratégie qui cherche simplement à minimiser le nombre d'étapes permettant à la grosse boite d'être poussée en haut.
+
+%Dans les problèmes présentés ci-avant, plusieurs problèmes ont été présentés où les agents n'avaient accès qu'à une partie seulement de l'état et non plus à l'état complet du système. d'autres problèmes on également été présentés où la dynamique pouvait être déterministe. Voyons maintenant comment sont organisées les contributions de cette thèse.
+
+\section{Contributions de la thèse}
+
+Cette thèse propose plusieurs nouvelles contributions au domaine de la prise de décisions séquentielles sous incertitude. La figure~\ref{fig:contributions} représente graphiquement la topologie des contributions effectuées vis-à-vis des modèles existants. Parmi ceux-ci, nous avons représenté quatre modèles majeurs de la prise de décisions séquentielles sous incertitude qui seront plus amplement  détaillés au chapitre suivant.
+
+Le processus décisionnel de Markov (\mdp) concerne un agent évoluant dans un environnement stochastique complètement observable. Plus complexe et plus général, le \mdp partiellement observable (\pomdp) ajoute un degré d'incertitude en n'autorisant la perception de l'état qu'au travers d'observations -- généralement bruitées -- de celui-ci. Le \pomdp multiagent, quant à lui, étend le \pomdp au contexte à plusieurs agents en faisant l'hypothèse que ces agents communiquent librement. La suppression de cette dernière hypothèse mène au modèle le plus complexe, le \pomdp décentralisé (\decpomdp).
+
+\begin{figure}[htb]
+\centering
+\begin{tikzpicture}[scale=1.1]%
+%%MODELES
+\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (.8,0) rectangle (10.2,10.2);%%
+\filldraw[rounded corners,ultra thick,vert,draw=green!70!blue] (1.1,4.1) rectangle (9.9,9.9);%%
+\filldraw[rounded corners,ultra thick,bleu,draw=blue!70!green,dashed] (3.5,1) rectangle (9.9,3.8);%%
+\filldraw[rounded corners,ultra thick,mauve,draw=blue!70!red] (3.5,5) rectangle (9.8,9.8);%%
+\filldraw[rounded corners,ultra thick,fill=blue!30!green!5!white,draw=blue!50!green] (6,6) rectangle (9.7,9.7);%%
+\filldraw[rounded corners,ultra thick,fill=orange,draw=red!70!green,dashed] (1.2,8.8) rectangle (9.6,9.6);%%
+%%TEXTE MODELES
+\node[font=\small] at (5.5,.5)  {Processus Décisionnel de Markov}; %%
+\node[font=\footnotesize] at (7,3)  {Problèmes de Satisfaction}; %%
+\node[font=\footnotesize] at (7,2)  {de Contraintes Markoviens}; %%
+\node[font=\small] at (5.5,4.5)  {Partiellement Observable}; %%
+\node[font=\footnotesize] at (8.25,5.3)  {Multiagent}; %%
+\node[font=\footnotesize] at (8.25,6.3)  {Décentralisé}; %%
+\node[font=\footnotesize] at (5.4,9.2)  {Quasi-Déterministe}; %%
+%%ALGOS+BORNES
+%\node [decorate, decoration=zigzag, fill=yellow!20,draw,circle, font=\scriptsize] at (3,3) {\textsc{r-frtdp}};%%
+%\node [decorate, decoration=zigzag, fill=yellow!20,draw,circle, font=\scriptsize] at (6,6) {Rollout};%%
+\node [fill=yellow!20,draw,circle, font=\scriptsize] at (3,3) {\textsc{r-frtdp}};%%
+\node [fill=yellow!20,draw,circle, font=\scriptsize] at (6,6) {dRollout};%%
+%\filldraw[rounded corners,thick,fill=gray!1.2,draw] (1,1.3) rectangle (3,2);%%
+\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (2.5,2.5)  {+ Bornes}; %%
+%\filldraw[rounded corners,thick,fill=gray!1,draw] (2.5,8.35) rectangle (9.5,8.95);%%
+%\node[font=\tiny] at (6,8.65)  {+ Bornes PAC}; %%
+\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (8.3,9.2)  {+ Bornes PAC}; %%
+%%PROBLEMES
+%\filldraw [decorate, decoration=bumps, fill=gray!1,draw] (2.2,1.2) rectangle (4,1.6);%%
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=0pt] at (3.1,1.4)  {\textsc{nereus}}; %%
+%\filldraw [decorate, decoration=bumps, fill=gray!1,draw] (3.7,7.95) rectangle (5.8,8.45);%%
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-3pt] at (4.75,8.2)  {Patrouille}; %%
+%\filldraw [decorate, decoration=bumps, fill=gray!1,draw] (3.7,7.05) rectangle (5.8,7.55);%%
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=0pt] at (4.75,7)  {\textsc{mars}}; %%
+%\filldraw [decorate, decoration=bumps, fill=gray!1,draw] (6.7,7.55) rectangle (9.2,8.05);%%
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-5pt] at (7.95,7.8)  {Déménageurs}; %%
+%\node[font=\small] at (3,2)  {Text}; %%
+%%GRILLE
+%\draw[step=1cm,color=gray,very thin] (0,0) grid (10,10);%%
+%%LEGENDE
+\filldraw[rounded corners,thick,fill=gray!1,draw] (11,4.5) rectangle (15,10);%%
+\node[font=\footnotesize] at (13,9.5)  {Légende}; %%
+\filldraw[rounded corners,ultra thick,fill=gray!15,draw] (11.2,8.1) rectangle (14.8,8.9);%%
+\node[font=\footnotesize] at (13,8.5)  {Modèle Existant}; %%
+\filldraw[rounded corners,ultra thick,fill=gray!15,draw,dashed] (11.2,7.1) rectangle (14.8,7.9);%%
+\node[font=\footnotesize] at (13,7.5)  {Modèle Proposé}; %%
+%\filldraw[decorate, decoration={zigzag,amplitude=.5mm}, fill=yellow!20,draw] (11.2,6.1) rectangle (14.8,6.9);%%
+%\filldraw[fill=yellow!20,draw] (11.2,6.1) ellipse (14.8,6.9);%%
+\node[font=\footnotesize,fill=yellow!20,draw,ellipse] at (13,6.5)  {Algorithme}; %%
+%\filldraw[decorate, decoration=bumps, fill=gray!1,draw] (11.2,5.15) rectangle (14.8,5.75);%%
+\node[font=\footnotesize,fill=gray!1,draw,cloud, aspect=2,inner sep=-5pt] at (13,5.25)  {Problème}; %%
+\end{tikzpicture}
+  \caption{Représentation hiérarchique des contributions de la thèse.\label{fig:contributions}}
+\end{figure}
+
+\hyphenation{d\'e-cen-tra-li-s\'e}
+Cette thèse contribue à plusieurs niveaux de cette hiérarchie:
+\begin{description}
+\item[Au niveau des \mdps:]~\\
+    \begin{itemize}\vspace{-15pt}
+    \item Nous avons proposé, en collaboration avec Pierrick Plamondon, un algorithme de résolution des problèmes d'allocation de ressources sous incertitude (\textsc{r-frtdp}), ainsi que des bornes serrées pour ce type de problème;
+    \item Nous avons également proposé un modèle prenant en compte une connaissance à priori des contraintes sur les décisions possibles ainsi que l'évolution de l'algorithme précédent pour ce nouveau modèle. Des résultats théoriques et expérimentaux sont fournis et discutés dans ce contexte dans le chapitre~\ref{chap:3};
+    \end{itemize}
+\item[Au niveau des \pomdps:]~\\
+    \begin{itemize}\vspace{-15pt}
+        \item Nous avons proposé un nouveau modèle appelé quasi-déterministe présenté dans le chapitre~\ref{chap:4};
+        \item Des modèles contraints d'observations pour ce modèle sont également proposés, permettant la dérivation de nouveaux résultats de complexité associés à une borne probablement approximativement correcte (\textsc{pac});
+    \end{itemize}
+\item[Au niveau des \mpomdps:]~\\
+    \begin{itemize}\vspace{-15pt}
+    \item Dans la deuxième partie du chapitre~\ref{chap:4}, nous avons proposé l'extension du modèle quasi-déterministe au contexte multiagent et nous l'avons ensuite appliqué aux problèmes de coordination d'agents de patrouille et d'exploration \textsc{mars};
+    \item Pour cela, un algorithme de mélange de politiques locales a été proposé en collaboration avec Jean-Samuel Marier pour résoudre les deux problèmes précédents;
+    \end{itemize}
+\item[Au niveau des \decpomdps:]~\\
+    \begin{itemize}\vspace{-15pt}
+    \item Nous avons proposé un algorithme d'approximation décentralisé (dRollout) ainsi que son application au problème des déménageurs. Différents résultats sont présentés dans le chapitre~\ref{chap:5} selon certaines hypothèses de mise à jour des états de croyance;
+    \item Le modèle quasi-déterministe est également détaillé dans le cas décentralisé, des résultats théoriques sont dérivés et l'application à un nouveau problème jouet décentralisé sous communication non fiable démontre de son efficacité expérimentale.
+    \end{itemize}
+\end{description}
+
+\section{Organisation de la thèse}
+
+À partir de cette topologie, nous avons organisé cette thèse comme suit:
+\begin{description}
+\item[Le Chapitre~\ref{chap:2}] présente la base des processus décisionnels de Markov monoagents et multiagents. Il introduit également quelques algorithmes basiques de la littérature et certains résultats choisis de complexité pour ces modèles;
+\item[Le Chapitre~\ref{chap:3}] présente les contributions apportées aux processus décisionnels de Markov à un seul agent et sous observabilité complète dans le cadre du problème d'allocation de ressources présenté à la section~\ref{ssect:nereus}. À cette fin, il introduit le problème d'allocation d'armes à des cibles puis les problèmes de satisfaction de contraintes. Le modèle proposé est ensuite détaillé puis analysé théoriquement. Finalement, un algorithme adapté pour ce modèle, ainsi que de nouvelles bornes utilisées comme heuristiques, sont présentés et analysés empiriquement;
+\item[Le Chapitre~\ref{chap:4}] présente le nouveau modèle quasi-déterministe pour certains problèmes partiellement observables monoagents et multiagents. Une borne \textsc{pac} sur l'horizon maximal de planification est dérivée sous certaines conditions permettant l'obtention de résultats de complexité intéressants. Ces modèles sont ensuite utilisés pour la représentation des problèmes formalisés à la section~\ref{ssect:multi}. Quelques résultats expérimentaux sont également présentés;
+\item[Le Chapitre~\ref{chap:5}] présente l'algorithme de résolution approchée en ligne dans le cas décentralisé basé sur un algorithme de type Rollout~\citep{B.00}. Une étude empirique de la mise à jour de l'état de croyance est également réalisée sur le problème des déménageurs;
+\item[Le Chapitre~\ref{chap:conclusion}] conclut cette thèse et présente quelques travaux futurs.
+\end{description}
+
+
+
+
+
+
+
+
+
+%*****************************************************************************************************************************
+
+%\subsection*{Agents}
+%
+%Il est possible de rencontrer des problèmes où la décision à prendre ne puisse se faire de manière centralisée. Par exemple lorsque qu'une équipe de véhicules autonomes patrouillent un territoire, chacun fait face à des situations locales qui n'ont que peu d'influence sur le comportement des autres et où la décentralisation de la solution est préférable. Dans ce contexte \emph{multiagents}, on différencie trois domaines en particuliers:
+%\begin{itemize}
+%\item \emph{La théorie des jeux} qui étudie le comportement d'un agent en \emph{compétition} avec d'autres agents. Dans l'exemple de la patrouille on pourrait imaginer des véhicules autonomes ennemis qui tenteraient détruire les patrouilleurs.
+%\item \emph{La Coopération et la coordination} étudient les problèmes où les agents tentent d'atteindre un but commun et connu de tous.
+%\item \emph{L'émergence et intelligence d'essaim} étudie les problèmes où un très grand nombre d'agents très simples tentent de réaliser un comportement complexe émergent seulement des interactions locales entre les agents.
+%\end{itemize}
+
+%\subsection*{Critère d'optimalité}
+
+%Finalement, selon la nature du problème, il est nécessaire de définir un critère formalisant les buts et les désirs de chacun des agents. Ce critère peut être un critère de \emph{satisfaction} ou bien d'\emph{optimisation} selon que l'on cherche seulement à trouver une situation satisfaisante ou alors à ordonner les solutions puis à prendre la plus satisfaisante (l'optimale). Il est également possible de ne trouver qu'une solution proche de la solution optimale mais ``suffisamment'' satisfaisante pour l'agent. Tout cela est déterminé par le critère d'optimalité du problème.
+
+%\subsection*{En résumé ...}
+%
+%Récapitulons rapidement les différents domaines que nous avons énoncés pour nous focaliser le domaine bien particulier pour lequel nous avons contribué. Nous allons discuter dans cette thèse:
+%\begin{itemize}
+%\item d'un problème de décision séquentiel
+%\item impliquant un ou plusieurs agents interagissant avec
+%\item un environnement à variables et à événements discrets mais partiellement observables,
+%\item avec un modèle stochastique de la dynamique, explicitement donné initialement,
+%\item et cherchant à maximiser un critère d'optimisation unique par interaction avec l'environnement.
+%\end{itemize}
+%
+
+%*****************************************************************************************************************************
+
+%\subsection{En résumé : caractéristiques des problèmes}
+%
+%Dans les problèmes présentés ci-avant, nous avons vu plusieurs problèmes ou le ou les agents n'avaient accès qu'à une partie seulement de l'état et non plus à l'état complet du système. Nous avons également vu des problèmes ou la dynamique pouvait être déterministe. Nous allons donc faire ici un bilan des caractéristiques des problèmes présentés en vue de préparer la présentation des contributions de cette thèse :
+%\begin{description}
+%\item[Problème épisodique / séquentiel :] Une première caractéristique des problèmes concerne le degré d'influence de chacune des décision sur les décisions à venir. Lorsque le problème est épisodique, l'agent perçoit sa situation, trouve la meilleure action à entreprendre dans cette situation et l'exécute. Une nouvelle situation est alors perçue, indépendamment de l'action entreprise. Dans le cas séquentiel, en revanche, l'action effectuée par l'agent influence le prochain état du système et les états subséquents. Il devient donc nécessaire de raisonner sur toutes les séquences futures d'états possibles pour évaluer une action convenablement. Seuls ces derniers types de problèmes seront abordés dans cette thèse.
+%\item[Environnement discret / continu :] Lors d'une prise de décision, l'agent doit souvent prendre en compte des quantités aussi bien discrètes que continues. Lorsqu'il s'agit d'orienter un véhicule ou de choisir la poussée d'un moteur par exemple, l'agent doit choisir parmi une infinité de possibilité. Alors que lorsqu'il se déplace sur une grille, ou un graphe, ses différents choix sont souvent énumérables. La majorité des problèmes que nous considérerons dans cette thèse sont discrets.
+%\item[Environnement contraint / libre :] Il est fréquent de trouver dans la définition de problème la présence d'un connaissance à priori qui contraint la prise de décision ou les situations possibles. Dans le cadre de la defense maritime par exemple, les armes n'ont pas une portée infinie. Ces contraintes peuvent être alors utilisées pour améliorer la recherche d'une solution optimale au problème considéré.
+%\item[Dynamique déterministe / stochastique :] Lorsque l'action d'un agent peut éventuellement échouer ou mener à plus d'une situation possible, alors on parle de problème stochastique. Dans le cas inverse, si l'action d'un agent dans un état conduit toujours dans le même état suivant, alors l'environnement est considéré déterministe. Cette thèse est particulièrement intéressée par les problèmes stochastiques bien que certains résultats présentés ne s'appliquent qu'aux problèmes déterministes.
+%\item[Observabilité complète / partielle :] L'observabilité de l'environnement est un des axes majeurs de cette thèse. En effet, la complexité d'un problème est très souvent rattachée à la capacité que l'agent a à déterminer précisément dans quel état is se trouve. L'observabilité complète est définie dès lors que l'agent à accès à toute l'information nécessaire pour prendre sa décision. Dans le cas inverse, où certaines parties de l'état ne sont pas observées ou le sont avec un certain bruit, l'agent doit ainsi raisonner sur une croyance sur les valeurs que peuvent prendre ces parties d'état.
+%\item[Un ou plusieurs agents :] La dernière caractéristique du problème concerne le nombre d'agents dans l'environnement. Dans cette thèse, nous ne considérerons pas le cas ou plusieurs agents travaillent les uns \emph{contre} les autres, néanmoins, nous serons amenés à considérer des problèmes où plusieurs agents devront coopérer en vue d'attendre un objectif commun. La première partie de cette thèse focalise plus sur les problèmes monoagents alors que la seconde s'oriente vers les problèmes de décisions distribuées. La principale difficulté associée à la distribution de la décision est essentiellement due au fait que chacun des agents doit raisonner sur toutes les actions possibles des autres agents augmentant considérablement le nombre d'options possibles.
+%\end{description}

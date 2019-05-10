@@ -1,0 +1,267 @@
+\chapter{Les différentes approches de planification}
+\label{anx:plan}
+
+\begin{summary}
+Dans cette annexe les différentes approches de planification sont présentées. L'approche initiale classique est tout d'abord expliquée en profondeur, depuis la planification \textsc{strips} jusqu'à Graphplan en passant par la planification à base de plans partiels. L'approche hiérarchique est ensuite survolée avant de présenter les grandes classes de planification probabilistes.
+\end{summary}
+
+La recherche sur la planification en Intelligence Artificielle s'est souvent concentrée sur des problèmes incluant un grand nombre d'actions interagissant de manière complexe. Au contraire de la recherche en ordonnancement qui s'est plutôt attachée à résoudre des problèmes impliquant un petit nombre de choix d'actions, mais où l'ordre de ces actions dans le temps et l'utilisation des ressources pour chacune d'entre elles rendaient ces problèmes tout aussi difficiles.
+
+\cite{SFJ.00} ont proposé une taxinomie de la planification donnée par la figure \ref{fig:tax}. Ces auteurs décomposent la planification en deux champs: d'une part un champ propre à la planification dans un monde modélisé, où le temps est discrétisé, comprenant la planification classique, la planification à base de probabilités, etc. D'autre part un champ consacré à la planification dans le monde réel plus proche de l'ordonnancement, où le temps est continu, et où la résolution est basée sur des méthodes telles que la satisfaction de contraintes (\textsc{csp}) ou encore la logique propositionnelle (\textsc{sat}).
+
+\begin{figure}[!hbt]
+\begin{center}
+    \input{taxinomie}
+%    \includegraphics[width=.95\textwidth]{taxinomie}
+    \caption{\label{fig:tax} Taxinomie de la planification inspirée de~\cite{SFJ.00}.}
+\end{center}
+\end{figure}
+
+Dans cette annexe, nous allons étudier les différentes méthodes proposées par les articles de~\cite{ZG.00} et de~\cite{DMRSW.03} au travers de la taxinomie présentée par~\cite{SFJ.00} (figure \ref{fig:tax}). Nous allons donc présenter dans un premier temps les méthodes de planification décrites dans~\citep{SFJ.00} et discuter de leur capacité à gérer le temps et les ressources, puis, dans un second temps nous positionnerons les stratégies employées par~\cite{ZG.00}, \cite{DMRSW.03} ainsi que celle proposée par~\cite{SFJ.00}.
+
+\section{Planification classique}\label{strips}
+La plupart des travaux en planification des trente dernières années se positionnent essentiellement dans le cadre la planification classique. Dans un problème de planification classique, l'objectif est d'atteindre un ensemble donné de buts, usuellement représentés par des littéraux (positifs ou négatifs) de la logique propositionnelle. L'état initial du monde est, quant à lui, également représenté par des littéraux. La planification consiste alors à trouver une succession d'actions possibles faisant évoluer le monde d'un état initial à un état but. Le langage de représentation du monde généralement utilisé en planification classique est le langage \textsc{strips}\footnote{Pour STanford Research Institute Problem Solver} basé sur les hypothèses restrictives suivantes:
+\begin{itemize}
+    \item l'agent est omniscient, au sens ou l'environnement est totalement observable\,; toute information est disponible et certaine à tout instant.
+    \item les actions sont atomiques et déterministes: aucune action de l'agent ne peut être interrompue et les effets des actions sont connus avec certitude.
+    \item l'univers est statique, au sens ou si l'agent n'agit pas, l'environnement n'évolue pas.
+\end{itemize}
+Ces hypothèses peuvent généralement être étendues pour permettre:
+\begin{itemize}
+    \item la prise en compte du temps (synchronisation d'actions, durée des actions, \dots),
+    \item la prise en compte des ressources (énergie, materiel, \dots),
+    \item la prise en compte de l'incertitude (dynamique de l'environnement, incertitudes sur les effets des actions ou sur des états de l'environnement,~\dots).
+\end{itemize}
+
+Sous les hypothèses restrictives nous pouvons définir:
+\begin{description}
+\item[L'état:] Tout d'abord un état $e$ du monde de la planification est représenté par un ensemble fini de formules atomiques sans symbole de variable. Une formule atomique de base est aussi appelée un \emph{fluent}.
+\item[L'action:] Ensuite, un opérateur $o$ représente un modèle d'action. Un tel opérateur est généralement défini par son nom et un triplet $<Prec, Add, Del>$ où $Prec$, $Add$ et $Del$ sont des ensembles finis de fluents. $Prec(o)$ représente les préconditions de l'opérateur $o$, i.e. un ensemble fini de fluents qui doivent être vérifiés pour que l'opérateur puisse être appliqué. $Add(o)$ représente les ajouts de $o$ i.e. un ensemble fini de fluents qui sont ajoutés à l'état du monde. Finalement, $Del(o)$ représente les retraits de $o$, i.e. un ensemble fini de fluents qui sont retirés de l'état du monde. Une action, dénotée par $a$, est une instance de base d'un opérateur $o$ (toutes les variables de $o$ sont instanciées).
+\end{description}
+
+Dans ce contexte, un problème de planification est un triplet $<O, I, B>$ où:
+\begin{itemize}
+\item $O$ dénote un ensemble fini d'opérateurs utilisables dans le domaine de la planification considéré,
+\item $I$ est l'état initial du problème, il est représenté par un ensemble fini de fluents,
+\item $B$ est le but du problème, il est représenté par un ensemble fini de fluents.
+\end{itemize}
+
+Par exemple, dans le monde des blocs constitué de deux blocs $B1$ et $B2$, un opérateur pourrait être $Saisir(x)$. Les actions seraient alors instanciées en $Saisir(B1)$ et $Saisir(B2)$.
+
+Il existe dans la littérature un grand nombre de méthodes et techniques qui se sont concentrées sur la résolution de problèmes de planification classique. Notre objectif ici n'est pas de toutes les expliciter en détail, mais de couvrir les approches les plus répandues en se concentrant sur les idées principales, les avantages et les défauts de chacune d'entre elles.
+
+\subsection{Espaces d'états}
+
+La recherche dans les espaces d'états consiste à explorer l'ensemble des états du monde atteignables par les actions disponibles pour trouver un état où tous les buts sont vérifiés. Cette recherche correspond en fait à l'exploration d'un arbre ou les n\oe uds sont les états du monde et les arcs les actions appliquées pour passer d'un état à un autre (i.e les opérateurs instanciés). La recherche dans cet arbre peut se faire de deux manières: soit en partant de l'état initial du monde et en appliquant successivement les actions possibles jusqu'a atteindre un état but, soit en régressant un état but jusqu'a atteindre l'état initial:
+\begin{itemize}
+\item Application d'une action $a$ à un état $e$: $e \uparrow a$ (chaînage avant) (cf. algorithme~\ref{Alg:fss}):
+    \begin{itemize}
+     \item une action $a$ est applicable sur un état $e$ ssi $Prec(a) \subseteq e$,
+     \item le nouvel état est l'ensemble de fluents:\\
+        $e \uparrow a = (e - Del(a)) \cup add(a)$
+    \end{itemize}
+\item Régression d'un état $e$ par une action $a$: $e \downarrow a$ (chaînage arrière) (cf. algorithme~ \ref{Alg:goa}):
+    \begin{itemize}
+     \item la régression d'un état (partiel) $b$ à travers une action $a$ est possible ssi:
+        \begin{itemize}
+         \item $a$ est une action pertinente: $add(a) \cap b \neq \emptyset$ et
+         \item $a$ est une action consistante avec $b$ : $Del(a) \cap b = \emptyset$,
+        \end{itemize}
+     \item le nouvel état (partiel) est l'ensemble de fluents:\\
+     $b \downarrow a = (b - add(a)) \cup Prec(a)$
+    \end{itemize}
+\end{itemize}
+
+Ce type de recherche engendre un très grand nombre d'états à explorer pour trouver un état satisfaisant les buts. Il existe cependant un bon nombre d'algorithmes des plus naïfs (profondeur d'abord, largeur d'abord, \dots) aux plus efficaces (A, A$^\star$, WA$^\star$, A$^\star\star$ \dots), ces derniers nécessitant des heuristiques plus ou moins complexes souvent basées sur la connaissance du domaine du problème, mais permettant de guider la recherche. Les planificateurs utilisant ce type d'algorithmes de recherche avec heuristique sont à ce jour les plus performants en terme de vitesse pour trouver une solution en comparaison des algorithmes décrits un peu plus loin, bien que les plans solution trouvés soient souvent plus coûteux que ceux générés par les autres algorithmes.
+
+Un des problèmes majeurs de la recherche dans les espaces d`états est qu'elle ne permet de trouver que des plans séquentiels, totalement ordonnés, n'autorisant pas la parallélisation d'actions indépendantes\footnote{Une définition de l'indépendance de deux actions peut être trouvée dans la section \ref{interactions}} et ne profitant pas de la décomposition du problème.
+
+\begin{algorithm}
+\caption{$ChainageAvant(EtatCourant,PlanSolution)$. \label{Alg:fss}}
+\begin{algorithmic}[1]
+    \If{$buts \subseteq EtatCourant$}
+        \State{\Return($PlanSolution$)}
+    \EndIf
+    \State{\textbf{Choisir} une action $A$ (instance d'un opérateur) t.q.:}
+    \Statex{\hspace{1cm} $Prec(A)\subseteq EtatCourant$}
+    \Statex{\hspace{1cm} et suivant une heuristique}
+    \If{$A$ n'existe pas}
+        \State{\textbf{Échec}}
+    \EndIf
+    \State{Construire un nouvel état $EtatSuivant$:}
+    \Statex{\hspace{1cm} $EtatSuivant \leftarrow (EtatCourant \setminus Del(A)) \cup Add(A)$}
+    \State $ChainageAvant(EtatSuivant,PlanSolution \mid A)$
+\end{algorithmic}
+%\caption{ Algorithme de recherche dans les espaces d'états par chaînage avant. Le choix de l'action est un point de backtrack.}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{$ChainageArriere(Buts,Contraintes,PlanSolution)$. \label{Alg:goa}}
+\begin{algorithmic}[1]
+    \If{$\square \models Contraintes$}\Comment{Si on ne peut satisfaire les contraintes}
+        \State{\textbf{Échec}}
+    \EndIf
+    \If{$Buts \subseteq EtatInitial$}
+        \State{\Return($PlanSolution$)}
+    \EndIf
+    \State{Sélectionner un but $b \in Buts$}
+    \State{\textbf{Choisir} une action $A$ (instance d'un opérateur) t.q.:}
+    \Statex{\hspace{1cm} $b \in Add(A)$}
+    \Statex{\hspace{1cm} et suivant une heuristique}
+    \If{$A \in PlanSolution$}
+        \State{$ChainageArriere(Buts \setminus \{b\},$ $ContraintesMAJ,$\,$PlanSolution)$}
+    \Else{$ChainageArriere((Buts \cup Prec(A))\setminus\,\{b\}, ContraintesMAJ, PlanSolution \mid A)$}
+    \EndIf
+\end{algorithmic}
+%\caption{Algorithme de recherche dans les espaces d'états par chaînage avant. Le choix de l'action est un point de backtrack.}
+\end{algorithm}
+
+\subsection{Espace des Plans Partiels}\label{sect:epp}
+
+La recherche dans l'espace des plans partiels a été popularisée par~\cite{MAR.91}. Elle se base sur une recherche par chaînage arrière vue dans la section précédente: L'idée est de choisir une action qui puisse établir un des buts et de l'ajouter au plan. Le but est alors retiré de l'ensemble de buts à atteindre et remplacé par des sous-buts correspondant aux préconditions de l'action. Ce processus est répété jusqu'a ce que tous les sous-buts restants soit une sous-partie de l'ensemble des conditions initiales. Ainsi, cette approche permet de travailler sur plusieurs sous-buts indépendamment, de les résoudre à l'aide de plusieurs sous-plans puis de combiner ces sous-plans.
+
+Un plan partiel est défini comme un triplet $<OP, CO, CI>$ où:
+\begin{itemize}
+\item $OP$ est l'ensemble des opérateurs du plan partiel,
+\item $CO$ est un ordre partiel sur OP, autrement dit, c'est l'ensemble des contraintes de précédence qui lient les opérateurs deux à deux,
+\item $CI$ est l'ensemble des contraintes d'instanciation des variables associées au plan.
+\end{itemize}
+
+L'espace de recherche est donc encore une fois un arbre où les n\oe uds sont des plans partiels et ou les arcs sont les opérations de modification de ces plans partiels:
+\begin{itemize}
+    \item \emph{Choix d'un établisseur}: On appelle une action $E$ un établisseur ssi $\exists A$, $Add(E) \cap Prec(A) \neq \emptyset$. À partir de là, choisir un établisseur, c'est placer avant une action $A$ une autre action $E$ pour établir une précondition de $A$\,;
+    \item \emph{Promotion d'un casseur}: On appelle une action $C$ un casseur ssi $\exists E$, $Del(C) \cap Add(E) \neq \emptyset$. Promouvoir un casseur $C$, c'est le contraindre à s'exécuter avant l'établisseur $E$: $C \prec E \prec A$ (l'établissement de la précondition de $A$ par $E$ n'est pas remis en cause par $C$)\,;
+    \item \emph{Séparation casseur/demandeur} : On appelle une action $A$ un demandeur ssi un fluent des préconditions de $A$ n'a pas encore été établi. Séparer un casseur $C$ et un demandeur $A$, c'est contraindre l'instanciation de $C$ pour qu'il ne nuise pas à $A$ par la suite ($C$ ne peux empêcher d'établir la précondition de $A$ qui est concernée)\,;
+    \item \emph{Démotion d'un casseur}: Démettre un casseur $C$, c'est contraindre $C$ à s'exécuter après $A$: $A \prec C$ ($C$ ne détruira pas la précondition de $A$ créée par $E$)\,;
+    \item \emph{Choix d'un white knight}: Choisir un white knight $W$, c'est placer entre $C$ et $A$ une action $W$ pour rétablir les préconditions de $A$ détruites par $C$. $W$ n'a généralement pas de préconditions ni de retraits ($Prec(W) = \emptyset$ et $Del(W) = \emptyset$ ).
+\end{itemize}
+
+À l'aide de ces opérations sur les plans partiels, il devient aisé de construire un plan en instanciant les opérateurs de $OP$. Chaque instanciation d'opérateur est ajoutée à l'ensemble $CI$. Les contraintes de précédence, que ce soit pour les choix d'établisseurs ou la promotion/démotion de casseurs sont ajoutés au cours de la résolution dans l'ensemble $CO$. Des exemples de planification dans les espaces de plans partiels peuvent être trouvés dans~\citep{RN.03} pp. 391--393.
+
+\subsection{Graphplan}\label{sect:graphplan}
+Graphplan est un algorithme à part des deux autres approches vues précédemment. Il se base sur un graphe de planification. Ce graphe de planification permet, en plus d'extraire un plan à l'aide de Graphplan, de fournir des informations utiles à la création d'heuristiques efficaces pour les algorithmes décrits auparavant.
+
+Un graphe de planification est, selon~\cite{RN.03}, une séquence de niveaux correspondant aux étapes de temps dans le plan, où le niveau zéro est l'état initial. Chaque niveau contient un ensemble de fluents et un ensemble d'actions (des instances des opérateurs). Les fluents sont ceux qui sont \emph{possiblement} présents à cette étape du plan, les actions, celles qui ont leurs préconditions \emph{possiblement} satisfaites à cette étape du plan. Il peut néanmoins arriver que des interactions négatives apparaissent entre les actions les empêchant de s'exécuter simultanément. \label{interactions}On définit les interactions de la manière suivante:
+
+\begin{definition}
+Interactions \emph{positives}: Deux actions a1, a2 sont en interaction positive ssi:
+\begin{itemize}
+    \item $Add/Add: \exists f, f \in Add(a1) \cap Add(a2)$
+    \item $Add/Prec: \exists f, f \in Add(a1) \cap Prec(a2)$
+\end{itemize}
+\end{definition}
+
+\begin{definition}
+Interactions \emph{négatives}: Deux actions a1, a2 sont en interaction négative ssi:
+\begin{itemize}
+    \item Effets antagonistes: $\exists f, f \in Add(a1) \cap Del(a2)$ ou
+    \item Interactions croisées: $\exists f, f \in Del(a2) \cap Prec(a1)$
+\end{itemize}
+\end{definition}
+
+\begin{definition}
+Interactions \emph{indépendantes}: Deux actions a1, a2 sont indépendantes (noté a1 \# a2) ssi elles n'ont pas d'interactions négatives i.e.,
+\begin{itemize}
+    \item $Del(a1) \cap (Prec(a2) \cup Add(a2)) = \emptyset$ et
+    \item $Del(a2) \cap (Prec(a1) \cup Add(a1)) = \emptyset$
+\end{itemize}
+\end{definition}
+
+De la, on peut définir des fluents et des actions mutuellement exclusives:
+\begin{definition}
+Actions \emph{mutuellement exclusives}: Deux actions d'un même niveau dans le graphe de planification sont mutuellement exclusives (\emph{mutex}) ssi:
+\begin{itemize}
+    \item elles ne sont pas indépendantes ou,
+    \item elles ont des préconditions \emph{mutex} au niveau précédent (elles ne peuvent donc pas être déclenchées en même temps) (voir Définition \ref{mutex}):\\
+$ \exists (p,q) \in Prec(a1) \times Prec(a2)$, telles que p et q sont \emph{mutex}.
+\end{itemize}
+\end{definition}
+
+\begin{definition}\label{mutex}
+Fluents \emph{mutuellement exclusifs}: Deux fluents p et q sont \emph{mutex} au niveau i ssi tous les couples d'actions qui les produisent à ce même niveau sont \emph{mutex}:
+$\forall a1, a2$ t.q.  $p \in Add(a1)$, $q \in Add(a2),$ a1 et a2 \emph{mutex}.
+\end{definition}
+
+\begin{figure}[!hbt]
+\begin{center}
+    %\includegraphics[width=0.9\textwidth]{graphplan}
+    \input{graphplan}
+    \caption{\label{afig:graphplan} Un exemple de graphe de planification.}
+\end{center}
+\end{figure}
+
+Graphplan possède plusieurs propriétés importantes: En dehors de la possibilité de rechercher directement un plan à l'intérieur avec Graphplan, il fournit suffisamment d'informations qui permettent de produire des heuristiques très efficaces pour la recherche dans les espaces d'états ou de plans partiels.  De plus il se construit de manière polynômiale en temps et en espace par rapport à la taille des données (le nombre d'actions possibles dans le plan), une propriété très intéressante dans ce domaine. Le problème est que la recherche d'un plan solution dans ce graphe de planification est, elle, exponentielle.
+
+Un exemple de graphe de planification est fourni par la figure \ref{afig:graphplan}. Le niveau 0 comprend les fluents existant à l'état initial. Au niveau 1 apparaissent les actions pouvant être exécutées ainsi que les ajouts et retraits qu'elles effectuent. Dès lors, on voit apparaître à ce niveau des actions \emph{mutex} dues au fait que l'action $B$ retire le fluent $a$ de l'environnement, nécessaire à l'exécution de l'action $A$ et à l'action $N\_a$ (action qui consiste juste à simuler que $a$ n'a pas disparu entre deux niveaux). Par conséquent, le fluent $c$ ajouté par $B$ au niveau 1 se retrouve \emph{mutex} avec les ajouts de $A$ et $N\_a$ (resp. les fluents $b$ et $a$). Ensuite, au niveau 2, toutes les actions ayant des préconditions \emph{mutex}, se retrouvent également \emph{mutex}. Et ainsi de suite jusqu'a ce qu'apparaisse le fluent $d$ (notre but, encadré figure \ref{afig:graphplan}) au niveau 4. Le fluent $d$ n'a pas pu être obtenu avant car l'action $C$ qui l'ajoute au monde possède comme précondition les fluents $b$ et $c$ qui étaient \emph{mutex} jusqu'au niveau 3. Enfin, à l'aide de l'algorithme Graphplan (Algorithme non donné ici mais basé sur un chaînage arrière donné par l'algorithme \ref{Alg:goa}), on peut extraire un plan de ce graphe de planification comme indiqué en gras/encadré dans la figure~\ref{afig:graphplan2}.
+
+\begin{figure}[!hbt]
+\begin{center}
+    %\includegraphics[width=0.8\textwidth]{graphplan2}
+    \input{graphplan2}
+    \caption{\label{afig:graphplan2} Extraction de plan d'un graphe de planification.}
+\end{center}
+\end{figure}
+
+\subsection{Discussion}
+\label{dis:STRIPS}
+Malgré leur efficacité, les algorithmes classiques précédemment évoqués, utilisables dans des environnements déterministes et totalement observables, ont de sérieuses limitations attribuées à \textsc{strips}:
+\begin{description}
+    \item[Temps:] Il n'existe pas de représentation explicite du temps dans la représentation \textsc{strips}. Il n'est pas possible de spécifier la durée d'une action ou des contraintes de temps entre les buts ou les actions.
+    \item[Ressources:] Rien n'est prévu dans la représentation pour spécifier les besoins en ressources ou pour modéliser la consommation de ressources.
+    \item[Incertitude:] \textsc{strips} n'a pas la capacité de modéliser l'incertitude. L'état initial doit être connu entièrement et les buts, une fois atteints, sont considérés comme certains.\\
+\end{description}
+
+Néanmoins, de nombreuses extensions de \textsc{strips} existent. Tant pour la modélisation du temps~\citep{SW.99,PW.94} que pour la gestion de nombreux types de ressources~\citep{KW.99,K.98} ou de l'incertitude~\citep{WAS.98,DHW.94}. Seulement, ce type d'extensions dégénèrent significativement les performances~\citep{SFJ.00}.
+
+Ceci dit, si l'on ne considère que les méthodes intrinsèquement, depuis le système TWEAK de~\cite{Ch.87} et jusqu'aux formalisations de~\cite{KS.96}, l'approche de la planification était essentiellement fondée sur les stratégies de raffinements dans les espaces de plans partiels, les autres approches étant très marginalisées au sein de la communauté.
+
+En 1995 cependant, l'apparition du planificateur Graphplan fut à l'origine d'un bouleversement de cet ordre bien établi. Les idées qui guidaient sa conception ont initié des travaux qui ont permis aux algorithmes de planification d'augmenter leurs performances de manière si importante que l'on peut maintenant commencer à envisager des applications réelles. Par un curieux retour des choses, la planification par recherche heuristique dans les espaces d'états s'est (re)trouvée être très performante avec l'apparition de planificateurs utilisant des heuristiques inspirées par Graphplan. Elle permet actuellement de résoudre des problèmes qui étaient très largement hors de portée des planificateurs il y a seulement quelques années, mais toujours dans le cadre des limitations de \textsc{strips}.
+
+Plusieurs méthodes algorithmiques, issues d'autres domaines classiques de l'IA sont maintenant en concurrence : recherche heuristique dans les espaces d'états, dans les espaces de plans partiels, Graphplan, planification \textsc{sat}, planification \textsc{csp}, recherche locale, etc. Les différents planificateurs qui en découlent font l'objet d'évaluations comparatives régulières dans le cadre des compétitions IPC (\emph{International Planning Competition}) des conférences AIPS, et maintenant ICAPS.
+
+Il est à noter que nous avons délibérément omis de citer les méthodes de planification \textsc{sat} pour la simple mais excellente raison que la représentation de contraintes temporelles en logique propositionnelle augmente considérablement le nombre de clauses \textsc{sat} et rend la résolution proprement impossible. Il en est tout de même fait état dans~\citep{SFJ.00} car ce type de modélisation permet aisément la représentation des ressources et l'optimisation. Dans un contexte d'utilisation de la planification sur des horizons infinis ou en temps continu, nous ne pouvons pas prendre en compte une approche complexifiant à ce point la représentation du temps.
+
+\section{Planification hiérarchique}
+
+La plupart des planificateurs développés dans le cadre d'applications réelles utilisent les réseaux de hiérarchisation de tâches (\textsc{htn} pour \emph{Hierarchical Task Network}). La principale différence avec la planification classique et est que cette dernière essaie de décomposer des tâches de haut niveau en tâches de plus bas niveau là où la planification classique cherche juste à assembler des actions pour atteindre des buts. De plus, un but est plutôt spécifié, dans la planification hiérarchique, comme une tâche de haut niveau, que comme un ensemble de littéraux à obtenir.
+
+L'algorithme de planification consiste donc à décomposer chaque tâche en tâches élémentaires, tout en vérifiant qu'elles n'aient pas d'interactions négatives entre elles. La planification se termine lorsque le réseau ne contient que des tâches élémentaires et lorsque l'ensemble des contraintes d'ordre relatives à la gestion des conflits est consistant (i.e. qu'il n'existe pas de boucles). L'algorithme \ref{Alg:htn} est une simplification en pseudo-code de la planification hiérarchique.
+
+\begin{algorithm}
+\caption{\label{Alg:htn} $\textsc{htn}-Plan(Plan)$}
+\begin{algorithmic}[1]
+    \If{$Plan$ contient des conflits}
+        \If{il n'existe pas de manière de résoudre les conflits}
+            \State{\textbf{Échec}}
+        \Else{\textbf{Choisir} une manière de résoudre les conflits et l'appliquer}
+        \EndIf
+    \EndIf
+    \If{$Plan$ ne contient que des tâches élémentaires}
+        \State{\Return($Plan$)}
+    \EndIf
+    \State{Sélectionner une tâche non élémentaire $t \in Plan$}
+    \State{\textbf{Choisir} une décomposition $E$ de $t$}
+    \State{$NouveauPlan \leftarrow$ Remplacer $t$ par $E$ dans $Plan$}
+    \State{$\textsc{htn}-Plan(NouveauPlan)$}
+\end{algorithmic}
+\end{algorithm}
+
+Le temps et la gestion de données métriques ne posent pas de réelles difficultés pour les planificateurs \textsc{htn}. Ces contraintes peuvent être directement spécifiée à l'intérieur des tâches ou alors évaluées pas le biais de test de consistance de l'algorithme. Seulement, selon~\cite{SFJ.00}, les planificateurs \textsc{htn} essuient pour le moment trois critiques importantes:
+\begin{description}
+    \item[Sémantique:] Il n'existe pas de sémantique bien définie pour la décomposition de tâche, cela a pour conséquence de rendre difficile tout jugement de la complétude ou de la consistance d'un plan.
+    \item[Conception:] La conception de ce type de planificateur nécessite de prévoir et d'analyser toutes les tâches possiblement existantes et décomposables. Il est vraiment difficile d'une part, de produire la liste exhaustive de toutes les décompositions d'une tâche, mais d'autre part, à chaque ajout de fonctionnalité au système, il faudra prévoir et lister toutes les nouvelles décompositions à ajouter pour utiliser au mieux les fonctionnalités du système.
+    \item[Fragilité:] Les planificateurs \textsc{htn} sont loins d'être robustes. En effet, ils sont incapables de prendre en compte des tâches non explicitement prévues par le concepteur, même si les tâches élémentaires sont suffisantes pour construire un plan correct.
+\end{description}
+
+\section{Planifications probabilistes}
+
+Jusqu'à présent nous avons considéré que des domaines de la planification classique totalement observables, statiques et déterministes. De plus nous avons considéré que la description des actions était correcte et complète. Dans ces circonstances, un agent peut, après avoir élaboré un plan, l'exécuter sans aucune surprise d'aucunes sorte. En revanche, dans un environnement incertain, cet agent devra utiliser ses moyens de perception pour analyser et éventuellement anticiper en modifiant ou en adaptant son plan en cours d'exécution. Les méthodes utilisées pour réagir dans ces types d'environnements utilisant les probabilités d'occurrence d'événements incertains pour les prévoir et les modéliser, sont qualifiées de probabilistes. Une autre classe de méthodes utilisant la logique pour modéliser l'incertitude ne sera pas étudiée ici puisqu'elle n'intervient pas dans la catégorisation des techniques intéressantes pour notre thèse.
+
+Il existe selon~\cite{RN.03} quatre méthodes de planification probabilistes, les deux premières sont plus attachées à résoudre les problèmes à indétermination limitée (dans le sens où les actions ont un nombre fixe d'effets définis ayant chacun sa probabilité d'occurrence), les deux suivantes s'attachent plus à l'indétermination pure (dans le sens ou les actions ont des effets en trop grand nombre ou inconnus):
+\begin{itemize}
+    \item \emph{Planification Aveugle}: Aussi connue sous le nom de planification \emph{conformante}, cette méthode construit un plan standard séquentiel qui doit pouvoir être exécuté sans perceptions. Le plan construit doit pouvoir assurer d'atteindre les buts voulus dans toutes les circonstances possibles en regard des certitudes sur l'état initial et des sorties actuelles des actions.
+    \item \emph{Planification Conditionnelle}: Aussi connue sous le nom de planification contingente, cette approche ajoute des branches conditionnelles au plan aux endroits ou pourraient survenir des contingences. L'agent choisit quelle branche du plan exécuter en utilisant ses percepts comme test conditionnel.
+    \item \emph{Supervision d'exécution et replanification }: Dans cette approche, un agent peut utiliser toutes les techniques vues précédemment (classique, aveugle ou contingente) pour produire un plan, mais ajoute à cela une supervision de l'exécution. La replanification intervient lorsque l'exécution ne se passe pas comme prévu.
+    \item \emph{Planification continue}: Tous les planificateurs vus ci-dessus cont conçus pour atteindre un but et s'arrêter. Un planificateur continu est conçu pour durer indéfiniment. Il est capable de supporter les imprévus et même jusqu'a l'abandon des buts courants en utilisant des mécanismes de reformulation des buts.\\
+\end{itemize}
+Il existe également toute la planification sous incertain représentée essentiellement par les modèles de Markov et détaillée au chapitre~\ref{chap:2} que nous ne présenterons donc pas ici. 

@@ -1,0 +1,78 @@
+        \begin{tikzpicture}[scale=.7]%
+        %\draw[step=1cm,color=gray,very thin] (-5,-1) grid (9,5);%%
+        \filldraw[draw,rounded corners,ultra thick,bleu] (-13,3) rectangle (6,1);%%
+        \filldraw[draw,rounded corners,ultra thick,vert] (-13,-3) rectangle (6,-1);%%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-10,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-4,0)  {$\cs^2$}; %%
+        \node (s3) at (-1,0)  {$\cs^3$}; %%
+        \node (st) at (6,0)  {$\cs^T$}; %%
+        \node (o11) at (-7,2)  {$\co_1^1$}; %%
+        \node (o21) at (-7,-2)  {$\co_2^1$}; %%
+        \node (o12) at (-4,2)  {$\co_1^2$}; %%
+        \node (o22) at (-4,-2)  {$\co_2^2$}; %%
+        \node (o13) at (-1,2)  {$\co_1^2$}; %%
+        \node (o23) at (-1,-2)  {$\co_2^2$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-8.5,2)  {$\ca_1^1$}; %%
+        \node (a21) at (-8.5,-2)  {$\ca_2^1$}; %%
+        \node (a12) at (-5.5,2)  {$\ca_1^2$}; %%
+        \node (a22) at (-5.5,-2)  {$\ca_2^2$}; %%
+        \node (a13) at (-2.5,2)  {$\ca_1^3$}; %%
+        \node (a23) at (-2.5,-2)  {$\ca_2^3$}; %%
+        \node (a1t) at (4,2)  {$\ca_1^T$}; %%
+        \node (a2t) at (4,-2)  {$\ca_2^T$}; %%
+        \end{scope}
+        \node[font=\small] at (-11,2)  {Agent 1}; %%
+        \node[font=\small] at (-11,-2)  {Agent 2}; %%
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (a21)--(s1); %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (a22)--(s2); %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (a23)--(s3); %%
+        \draw[->,-latex,densely dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+        \draw[->,-latex] (a2t)--(st); %%
+        \draw[->,-latex] (a11)--(o11);  %%
+        \draw[->,-latex] (a21)--(o21); %%
+        \draw[->,-latex] (s1)--(o11);  %%
+        \draw[->,-latex] (s1)--(o21); %%
+        \draw[->,-latex] (a12)--(o12);  %%
+        \draw[->,-latex] (a22)--(o22); %%
+        \draw[->,-latex] (s2)--(o12);  %%
+        \draw[->,-latex] (s2)--(o22); %%
+        \draw[->,-latex] (a13)--(o13);  %%
+        \draw[->,-latex] (a23)--(o23); %%
+        \draw[->,-latex] (s3)--(o13);  %%
+        \draw[->,-latex] (s3)--(o23); %%
+%        \draw[->,-latex] (a1t)--(o1t);  %%
+%        \draw[->,-latex] (a2t)--(o2t); %%
+%        \draw[->,-latex] (st)--(o1t);  %%
+%        \draw[->,-latex] (st)--(o2t); %%
+        \draw[->,-latex,dashed] (o11)--(a12); %%
+        \draw[->,-latex,dashed] (o21)--(a22);  %%
+        \draw[->,-latex,dashed] (o12)--(a13); %%
+        \draw[->,-latex,dashed] (o22)--(a23);  %%
+        \draw[->,-latex,loosely dashed,thick] (o13)--(a1t); %%
+        \draw[->,-latex,loosely dashed,thick] (o23)--(a2t);  %%
+        \draw[->,-latex,dashed] (o21)--(a12); %%
+        \draw[->,-latex,dashed] (o11)--(a22);  %%
+        \draw[->,-latex,dashed] (o22)--(a13); %%
+        \draw[->,-latex,dashed] (o12)--(a23);  %%
+        \draw[->,-latex,loosely dashed,thick] (o23)--(a1t); %%
+        \draw[->,-latex,loosely dashed,thick] (o13)--(a2t);  %%
+        \draw[->,-latex,dashed] (a11)-- +(1,-2.5)--(a22); %%
+        \draw[->,-latex,dashed] (a21)-- +(1,2.5)--(a12);  %%
+        \draw[->,-latex,dashed] (a12)-- +(1,-2.5)--(a23); %%
+        \draw[->,-latex,dashed] (a22)-- +(1,2.5)--(a13);  %%
+        \draw[->,-latex,loosely dashed] (a13)-- +(1,-2.5)--(a2t); %%
+        \draw[->,-latex,loosely dashed] (a23)-- +(1,2.5)--(a1t);  %%
+        \end{tikzpicture}% 

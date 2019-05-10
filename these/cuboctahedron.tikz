@@ -1,0 +1,40 @@
+\begin{tikzpicture}[scale=.4]
+\tikzstyle{vertex}=[circle,draw=black,node distance=2mm,minimum size=1mm,inner sep=1pt]
+\node [vertex] (0) at(-2.5,2.5) [fill=black] {};
+\node [vertex] (1) at(2.5,2.5) {};
+\node [vertex] (2) at(0,1.5) {};
+\node [vertex] (3) at(-0.5,0.5) {};
+\node [vertex] (4) at(0.5,0.5) {};
+\node [vertex] (5) at(-1.5,0) {};
+\node [vertex] (6) at(1.5,0) {};
+\node [vertex] (7) at(-0.5,-0.5) {};
+\node [vertex] (8) at(0.5,-0.5) {};
+\node [vertex] (9) at(0,-1.5) {};
+\node [vertex] (10) at(-2.5,-2.5) {};
+\node [vertex] (11) at(2.5,-2.5) {};
+
+\path (0) edge (1);
+\path (0) edge (2);
+\path (0) edge (5);
+\path (0) edge (10);
+\path (1) edge (2);
+\path (1) edge (6);
+\path (1) edge (11);
+\path (2) edge (3);
+\path (2) edge (4);
+\path (3) edge (4);
+\path (3) edge (5);
+\path (3) edge (7);
+\path (4) edge (6);
+\path (4) edge (8);
+\path (5) edge (7);
+\path (5) edge (10);
+\path (6) edge (8);
+\path (6) edge (11);
+\path (7) edge (8);
+\path (7) edge (9);
+\path (8) edge (9);
+\path (9) edge (10);
+\path (9) edge (11);
+\path (10) edge (11);
+\end{tikzpicture}

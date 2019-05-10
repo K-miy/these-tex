@@ -1,0 +1,25 @@
+\begin{tikzpicture}[scale=2.5]
+
+	\tikzstyle{vertex}=[circle,draw=black,node distance=7mm,minimum size=1mm,inner sep=1pt]
+
+	\node [vertex] (0) [fill=black]			{};
+	\node [vertex] (1) [right of=0]			{};
+	\node [vertex] (2) [above right of=1]	{};
+	\node [vertex] (3) [below right of=1]	{};
+	\node [vertex] (4) [left of=0]			{};
+	\node [vertex] (5) [above left of=4]	{};
+	\node [vertex] (6) [below left of=4]	{};
+	\node [vertex] (7) [above of=0]			{};
+	\node [vertex] (8) [above right of=7]	{};
+	\node [vertex] (9) [above left of=7]	{};
+
+	\node at (0) [below=1mm,font=\footnotesize] {0};
+
+		\path	(0)	edge (1) edge (4) edge (7)
+		(1)	edge (2) edge (3)
+		(2)	edge (3)
+		(4)	edge (5) edge (6)
+		(5)	edge (6)
+	(7) edge (8) edge (9)
+		(8) edge (9);
+\end{tikzpicture}

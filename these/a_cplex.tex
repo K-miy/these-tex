@@ -1,0 +1,375 @@
+\chapter{Complexité algorithmique des modèles de Markov multiagents}
+\label{anx:cplx}
+
+\begin{summary}
+Dans cette annexe une autre approche de la complexité dans les processus de Markov multiagents à horizon fini est présentée selon les degrés d'observabilité de chacun des agents. Les modèles les plus simples sont tout d'abord présentés, suivis ensuite par les modèles les plus complexes. La complexité algorithmique des modèles monoagents n'est pas précisée dans cette annexe puisqu'elle reste identique à celle des modèles multiagents dans la mesure où le nombre d'agents est fixé.
+\end{summary}
+
+Les hypothèses classiques des modèles de Markov stipulent qu'un groupe d'agents évolue \emph{simultanément} dans un environnement stochastique \emph{commun à tous}. À chaque étape de temps discrète, chacun des agents choisit une action à partir de sa politique locale, et l'ensemble des actions choisies constitue l'action jointe effectuée dans l'environnement. Cette action jointe provoque la transition de l'environnement depuis l'état $s$ vers un état $s'$ déterminé par la fonction de transition de l'environnement. Dans le cas partiellement observable, chacun des agents reçoit alors une observation de ce nouvel état, ou le nouvel état lui-même si l'environnement est complètement observable. Plus formellement, on peut rappeler qu'un processus de décision de Markov complètement observable est défini de la manière suivante:
+\begin{definition}(\mmdp)
+Un \mmdp est défini par un tuple $\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra, \Rew, T \ra$, où:
+\begin{itemize}
+\item  $\alpha$ est un ensemble fini d'\emph{agents} $i \in \alpha, 1 \leq i \leq n$;
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$;
+\item $\Act_i$ est un ensemble fini d'\emph{actions} pour l'agent $i$ $a_i \in \Act_i$;
+\item $\Tra(s,a_1,\ldots,a_n,s'): \Sta \times \JAct \times \Sta \mapsto [0,1]$ est la \emph{probabilité de transition} du système de l'état $s$ vers l'état $s'$ après l'exécution de l'action jointe $\ba = \la a_1,\ldots,a_n,\ra$;
+\item $\Rew(s,a_1,\ldots,a_n): \Sta \times \JAct\mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action  jointe $\ba$ est exécutée dans l'état $s$;
+\item $T$ est l'horizon de planification.
+\end{itemize}
+\end{definition}
+
+Graphiquement, ce modèle se représente comme montré par la figure~\ref{afig:mmdp} pour le cas à deux agents. Chacun des agents connaît l'état à chaque étape de décision et influence l'état suivant. Les récompenses ont été omises pour des raisons de clarté.
+
+\begin{figure}[h!tb]
+\begin{center}
+  \input{mmdp}
+  \caption{Problème de décision de Markov à deux agents et à horizon fini (\mmdp).\label{afig:mmdp}}
+\end{center}
+\end{figure}
+
+Dès lors que les agents n'accèdent plus directement à l'état mais seulement à une observation de celui-ci, le problème devient alors partiellement observable. Si tous les agents ont tout de même accès aux observations de tous les autres agents, le modèle utilisé est un \pomdp multiagent ou \mpomdp:
+\begin{definition}
+ Un \mdp partiellement observable multiagent (\mpomdp) est défini par un tuple $\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra,\{\Omega_i\}_{i\in\alpha},\Obs, \Rew, T \ra$, où:%\\
+\emph{\begin{itemize}
+\item $\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra, \Rew, T \ra$ est un \mmdp;%\\
+\item $\Omega_i$  est l'ensemble fini des \emph{observations} de l'agent $i$ et $\JObs = \varprod_{i\in\alpha} \Omega_i$  est l'ensemble des observations jointe, où $\bo = \la o_1,\ldots,o_n\ra \in \JObs$, $o_i \in \Omega_i$, est une observation jointe;%\\
+\item $\Obs(\bo|\ba,s'): \Sta \times \JAct \times \JObs \mapsto [0,1]$ est la \emph{fonction d'observation} représentant la probabilité de recevoir l'observation jointe $\bo$ lors de la transition vers $s'$ sous l'effet de l'action jointe~$\ba$.
+\end{itemize}}
+\end{definition}
+
+La figure~\ref{afig:mpomdp} représente graphiquement un \mpomdp à deux agents à horizon fini. Chacun des agents connaît l'observation reçue par tous les autres agents à chaque étape de décision. Comparativement à la figure~\ref{afig:mmdp}, les agents ne reçoivent qu'une information partielle à propos de l'état. Tous les agents peuvent toutefois maintenir la même distribution pour l'état de croyance puisqu'ils ont tous accès à toutes les observations. Finalement, dans le cas où ils n'ont précisément pas accès aux observations des autres agents, le modèle devant être utilisé est un \decpomdp:
+\begin{definition}
+Un \pomdp décentralisé (\decpomdp) est un tuple $\la\alpha,$ $\Sta,$ $\{\Act_i\}_{i\in\alpha},$ $\Tra,$ $\{\Omega_i\}_{i\in\alpha},$ $\Obs,$ $\Rew, T\ra$, où:%\\
+\emph{\begin{itemize}
+\item $\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra,\{\Omega_i\}_{i\in\alpha},\Obs, \Rew, T \ra$ est un \mpomdp;%\\
+\item Chaque agent $i$ a uniquement accès à son propre historique $h_i^t$ des observations $o_i^1$ à $o^{t-1}_i$ pour prendre sa décision $a_i^t$ au temps $t$.
+\end{itemize}}
+\end{definition}
+Dans le reste de cette annexe, nous supposerons que $\forall i, \Act_i = \Act$ et $\Omega_i = \Omega$ pour la simplicité des explications.
+\begin{figure}[h!tb]
+\begin{center}
+  \input{mpomdp}
+  \caption{Problème de décision de Markov partiellement observable à deux agents et à horizon fini (\mpomdp).\label{afig:mpomdp}}
+\end{center}
+\end{figure}
+
+La figure~\ref{afig:decpomdp} représente graphiquement un \decpomdp à deux agents à horizon fini. Chacun des agents ne connaît dans ce modèle que son propre historique des observations et des actions représenté par les cadres. Comparativement à la figure~\ref{afig:mpomdp}, les agents ne reçoivent plus aucune information quant à l'observation de l'autre agent ou à son action.
+\begin{figure}[h!tb]
+\begin{center}
+  \input{a_decpomdp}
+  \caption{Problème de décision de Markov partiellement observable décentralisé à deux agents et à horizon fini (\decpomdp).\label{afig:decpomdp}}
+\end{center}
+\end{figure}
+
+Comme nous l'avons expliqué au chapitre~\ref{chap:2}, résoudre un modèle de Markov multiagent consiste à trouver une \emph{politique} pour chaque agent qui maximise l'\emph{utilité espérée} $EU$ (pour \emph{expected utility}) de tous les agents. Une politique est un ensemble de règles de décision, une pour chaque étape de temps, qui associe l'historique des observations des agents à l'action jointe à effectuer dans l'environnement. Dans le cas complètement observable (\mmdp), puisque l'état est une statistique suffisante pour le choix de la meilleure action à effectuer selon la fonction de récompense (Propriété de Markov), une politique associe simplement une action à tous les états accessibles à une étape de temps. Pour résumer:
+\begin{definition}\label{acplx:mmdpPolDef}
+Dans le cas complètement observable,
+\begin{itemize}
+  \item Une \emph{règle de décision individuelle} $\delta_i^t$ pour l'agent $i$, est une association $\Sta \mapsto \Act$ pour chaque étape $t$;
+  \item Une \emph{règle de décision jointe} $\delta^t = \{\delta_i^t\}_{i\in \alpha}$ est une association $\Sta \mapsto \JAct$ pour chaque étape~$t$;
+  \item Une \emph{politique individuelle} $\Delta_i$ est une séquence de $T$ règles de décisions individuelles, une pour chaque étape;
+  \item Une \emph{politique jointe} $\Delta = (\delta^1, ..., \delta^T) = \la \Delta_1, ..., \Delta_n\ra$ est une séquence de $T$ règles de décisions jointes, une pour chaque étape, ou bien un ensemble de politiques individuelles, une pour chaque agent.
+\end{itemize}
+\end{definition}
+
+Cependant, dans le cas partiellement observable, les agents ne perçoivent l'état réel du système qu'au travers d'observations souvent bruitées ou statistiquement insuffisantes. Chacun d'eux doit alors mémoriser la séquence complète des observations perçues (appelé l'historique) pour pouvoir agir de manière optimale. Une \emph{politique jointe} $\Delta$ à horizon $T$ est alors définie comme une séquence de $T$ règles de décisions $\delta^t$ où chaque $\delta^t$ associe un historique de longueur $t$ à une action jointe de $\JAct$:
+\begin{definition}\label{acplx:decpomdpPolDef}
+Dans le cas partiellement observable,
+\begin{itemize}
+  \item Une \emph{règle de décision individuelle} $\delta_i^t$ pour l'agent $i$, est une association $\mathcal{H}_i^t \mapsto \Act$ pour chaque étape $t$;
+  \item Une \emph{règle de décision jointe} $\delta^t = \{\delta_i^t\}_{i\in \alpha}$ est une association $\varprod_{i\in\alpha}\mathcal{H}_i^t \mapsto \JAct$ pour chaque étape $t$;
+  \item Une \emph{politique individuelle} $\Delta_i$ et une \emph{politique jointe} $\Delta$ sont identiques à celles de la définition~\ref{acplx:mmdpPolDef}.
+\end{itemize}
+Où $\mathcal{H}_i^t$ est l'ensemble des historiques $h_i^t = (o_i^1, ...,o_i^{t-1})$ à horizon $t$.
+\end{definition}
+
+Si l'on dénote par $w^T$ le \emph{monde} à horizon $T$ qui contient l'historique joint à horizon $T$ de toutes les observations et la séquence -- possiblement non observable -- des états de l'environnement sur les $T$ étapes de temps, on peut alors calculer la probabilité de cette séquence étant donné une politique $\Delta$:
+\begin{equation}\label{aeq:prw}
+\Pr\nolimits_\Delta(w^T) = \Pr(s^0) \prod_{t=1}^{T-1} \Obs(\bo^{t}|s^{t},\ba^{t}) \prod_{t=1}^T \Tra(s^{t}|s^{t-1},\ba^{t})
+\end{equation}
+Où $\ba^{t} = \delta^t(h^{t})$. Il convient de remarquer que dans les \mmdps $\Obs(\bo^{t}|s^{t},\ba^{t}) = 1$ si et seulement si $\forall i, o_i^t = s^t$.
+
+La contribution à l'utilité espérée d'un monde à horizon $T$ est alors donnée par:
+\begin{equation}\label{aeq:euw}
+eu_\Delta(w^T) = \Pr\nolimits_\Delta(w^T) \sum_{t=1}^{T} \Rew(s^{t},\ba^{t})
+\end{equation}
+
+Finalement, trouver une \emph{politique optimale} correspond à trouver une \emph{politique jointe} $\Delta$ qui maximise l'utilité espérée de tous les mondes possibles sur l'horizon $T$:
+\begin{eqnarray}%\max_{\{\delta^t\}_{t=1}^T}
+    EU(\Delta) &=& \sum_{\{s^t\}_{t=0}^T} \sum_{\{\bo^t\}_{t=1}^{T-1}} eu_\Delta(w^t) \\
+    \mathrm{et donc }\Delta^{*} &=& \arg \max_{\{\delta^t\}_{t=1}^T} EU(\Delta) \label{aeq:EU}
+\end{eqnarray}
+
+Décrivons maintenant un exemple permettant d'aider à la compréhension des concepts précédents et de la complexité des algorithmes détaillés dans la suite de cette annexe.
+\begin{description}
+\item[Problème du tigre multiagent~\citep{NTYPM.03}:] Décrit au chapitre~\ref{chap:5} de cette thèse, ce problème représente deux agents faisant face à deux portes. Derrière l'une d'entre elles se trouve un tigre féroce (associé d'une grosse pénalité). Derrière l'autre se trouve un trésor fabuleux (la récompense). Chacun des agents peut ouvrir l'une ou l'autre des portes (par une action $o_\textsc{r}$ ou $o_\textsc{l}$ pour \emph{open right} et \emph{open left}) ou se contenter d'écouter ($\textsc{l}is$ pour \emph{listen}). Lorsqu'un agent écoute, une petite pénalité est infligée et l'agent qui écoute reçoit une observation bruitée de là où se situe le tigre ($\textsc{r}$ ou $\textsc{l}$ pour \emph{right} et \emph{left}). Dès qu'un des agents tente d'ouvrir une porte, le monde est réinitialisé, replaçant le tigre derrière l'une des portes aléatoirement. Les deux agents ont $T$ étapes de temps pour maximiser leur utilité. Le problème contient donc deux états -- $\textsc{r}$\emph{ight} et $\textsc{l}$\emph{eft}--, trois actions -- $o_\textsc{r},o_\textsc{l}$ et $\textsc{l}is$ -- et deux observations par agent -- $\textsc{r}$ et $\textsc{l}$ --. Il peut être factorisé en utilisant une variable d'état $\cs$ avec $\Sta = \{\textsc{r},\textsc{l}\}$, deux variables de décision $\ca_1$ et $\ca_2$ avec $\Act = \{o_\textsc{r},o_\textsc{l},\textsc{l}is\}$ et deux variables d'observation $\co_1$ et $\co_2$ avec $\Omega = \{\textsc{r},\textsc{l}\}$ par étape de temps.
+\end{description}
+La figure~\ref{afig:decpomdp} donne une représentation graphique de l'exemple pour $T$ étapes de temps.
+
+Une politique jointe peut aussi être représentée par un \emph{arbre de décision} où les n\oe uds sont étiquetés par des actions et les arcs par des observations. Pour exécuter un arbre de politique, chaque agent commence à la racine de l'arbre, effectue l'action correspondante, suit la branche de l'arbre étiquetée par l'observation reçue, et répète le processus jusqu'à atteindre l'horizon final. Un exemple de politique à horizon 3 est donné dans le cas du \mpomdp, i.e que les agents partagent leurs actions et observations. Cette politique consiste à écouter deux fois avant de choisir quelle porte ouvrir ou de réécouter si les agents ont reçu une information contradictoire quant à la position du tigre. Cet exemple est donné par la figure~\ref{afig:treetiger}. Selon l'équation~\eqref{aeq:EU}, il est possible d'écrire:
+\begin{equation}\label{aeq:dectreehard}
+    EU(\Delta^{*}) = \max_{\delta^1(h^1),\delta^2(h^2),\delta^3(h^3)} \sum_{\{s^t\}_{t=0}^3} \sum_{\bo^1,\bo^2} eu_\Delta(w^3)
+\end{equation}
+Où le monde $w^3$ correspond à une assignation des variables $(s^0,s^1,s^2,s^3,\bo^1,\bo^2)$.
+
+Puisqu'au temps de décision $\ba^3 = \delta^3(\bo^1,\bo^2)$ les agents on déjà observé $\bo^1$ et $\bo^2$ et effectué les actions $\ba^1$ et $\ba^2$, en utilisant la règle algébrique suivante:
+\begin{equation}\label{aeq:trans}
+\mbox{If } \pi_x: \mathcal{Y}\mapsto\mathcal{X} \mbox{ alors } \max_{\pi_x} \sum_{y\in\mathcal{Y}}  f(\pi_x(y),y) = \sum_{y\in\mathcal{Y}}\max_{x\in\mathcal{X}} f(x,y)
+\end{equation}
+Il est possible de transformer l'équation~\eqref{aeq:dectreehard},en:
+\begin{equation}
+      \eqref{aeq:dectreehard} \Leftrightarrow EU(\Delta^{*}) = \max_{\ba^1} \sum_{\bo^1} \max_{\ba^2} \sum_{\bo^2}\max_{\ba^3} \sum_{\{s^t\}_{t=0}^3} eu_\Delta(w^3)\label{dectree}
+\end{equation}
+La règle~\ref{aeq:trans} modèle simplement le fait qu'à l'étape de l'application de la fonction $\pi_x$, la valeur de la variable $y$ est connue et la maximisation est donc réalisée seulement sur les valeurs possibles de $x$ plutôt que sur toutes les associations possibles $\mathcal{Y}\mapsto\mathcal{X}$, assurant ainsi un gain exponentiel dans la complexité en pire cas. L'intérêt de telles transformations sera explicité un peu plus loin dans cette annexe.
+
+\begin{figure}[thb]\centering\begin{tikzpicture}[line width=.1ex, scale=1.2]
+\tikzstyle{every node}=[font=\footnotesize] %%
+\tikzstyle{level 1}=[sibling distance=3cm]
+\tikzstyle{level 2}=[sibling distance=1.5cm]
+\tikzstyle{level 3}=[sibling distance=.5cm]
+\node (d1) at (0,0){$\delta^1$};%%
+\node (o1) at (0,-.75){$\bo^1$};%%
+\node (d2) at (0,-1.5){$\delta^2(\bo^1)$};%%
+\node (o2) at (0,-2.25){$\bo^2$};%%
+\node (d3) at (0,-3){$\delta^3(\bo^1,\bo^2)$};%%
+\node (ld1) at (7,0) {$\la\textsc{l}is, \textsc{l}is\ra$}
+   child {
+            node (ld2) {$\la\textsc{l}is, \textsc{l}is\ra$}
+            child {
+                node(ld3) {$\la o_\textsc{l}, o_\textsc{l}\ra$}
+                edge from parent
+                node[left](1) {$\la \textsc{l}, \textsc{l}\ra$}
+            }
+            child {
+                node {$\la\textsc{l}is, \textsc{l}is\ra$}
+                edge from parent
+                node[right](2) {$\la \textsc{r}, \textsc{r}\ra$}
+            }
+            edge from parent
+            node[left] (lo1) {$\la \textsc{l}, \textsc{l}\ra$}
+        }
+    child {
+            node {$\la\textsc{l}is, \textsc{l}is\ra$}
+            child {
+                node {$\la o_\textsc{l}, o_\textsc{l}\ra$}
+                edge from parent
+                node[left](3) {$\la \textsc{l}, \textsc{l}\ra$}
+            }
+            child {
+                node {$\la o_\textsc{r}, o_\textsc{r}\ra$}
+                edge from parent
+                node[right](4) {$\la \textsc{r}, \textsc{r}\ra$}
+            }
+            edge from parent
+            node[left] {$\la \textsc{l}, \textsc{r}\ra$}
+        }
+    child {
+            node {$\la\textsc{l}is, \textsc{l}is\ra$}
+            child {
+                node {$\la o_\textsc{l}, o_\textsc{l}\ra$}
+                edge from parent
+                node[left](5) {$\la \textsc{l}, \textsc{l}\ra$}
+            }
+            child {
+                node {$\la o_\textsc{r}, o_\textsc{r}\ra$}
+                edge from parent
+                node[right](6) {$\la \textsc{r}, \textsc{r}\ra$}
+            }
+            edge from parent
+            node[right] {$\la \textsc{r}, \textsc{l}\ra$}
+        }
+    child {
+            node {$\la\textsc{l}is, \textsc{l}is\ra$}
+            child {
+                node {$\la\textsc{l}is, \textsc{l}is\ra$}
+                edge from parent
+                node[left](7) {$\la \textsc{l}, \textsc{l}\ra$}
+            }
+            child {
+                node {$\la o_\textsc{r}, o_\textsc{r}\ra$}
+                edge from parent
+                node[right](8) {$\la \textsc{r}, \textsc{r}\ra$}
+            }
+            edge from parent
+            node[right] {$\la \textsc{r}, \textsc{r}\ra$}
+   };
+\draw[dotted] (1)--(2);
+\draw[dotted] (3)--(4);
+\draw[dotted] (5)--(6);
+\draw[dotted] (7)--(8);
+\draw[dashed] (d1)--(ld1);
+\draw[dashed] (d2)--(ld2);
+\draw[dashed] (d3)--(ld3);
+\draw[dashed] (o1)--(lo1);
+\draw[dashed] (o2)--(1);
+\end{tikzpicture}
+\caption{Exemple d'arbre de politique à horizon 3 dans le problème du tigre.}\label{afig:treetiger}
+\end{figure}
+
+\section{Comprendre les modèles de Markov via l'algèbre}\label{sect:unimarkov}
+
+Voyons maintenant les conséquences sur la complexité en pire cas de l'ignorance des valeurs passées de toutes les variables de l'environnement au travers de l'étude de l'équation de l'utilité espérée décrite par l'équation~\eqref{aeq:EU}.
+
+\subsection{\pac{mmdp}}
+Dans les \mmdps, puisqu'il n'existe pas d'observation explicite, l'expression de la contribution à l'utilité espérée devient:
+\begin{eqnarray}
+    \eqref{aeq:euw}\Rightarrow eu_\Delta(w^T) &=& \Pr(s^0) \prod_{t=1}^{T} \Tra(s^{t}|s^{t-1},\ba^{t}) \sum_{t=1}^{T} \Rew(s^{t},\ba^{t})\notag\\
+    \eqref{aeq:EU}\Rightarrow EU(\Delta^*) &=& \max_{\{\delta^t\}_{t=1}^T} \sum_{\{s^t\}_{t=0}^T} eu_\Delta(w^T)\label{aeq:EUmm}
+\end{eqnarray}
+Où $w^t = (s^0,...,s^{t-1})$.
+
+La figure~\ref{afig:mmdp} montre une représentation graphique d'un \mmdp à horizon $T$. Il convient de remarquer ici que bien que les états ne fassent pas partie de la connaissance des agents initialement, ils deviennent totalement observables au travers des liens d'informations. En considérant ce fait, il est également possible d'observer qu'au cours du temps, les agents ont effectivement accès à toutes les valeurs des variables de l'environnement. L'équation~\eqref{aeq:EUmm} peut être alors transformée en utilisant la règle~\eqref{aeq:trans}:
+\begin{equation}
+    \eqref{aeq:EUmm}\Leftrightarrow EU(\Delta^*) =\sum_{s^0}\max_{\ba^1}\sum_{s^1}...\max_{\ba^T}\sum_{s^T} eu_\Delta(w^T)\label{aeq:EUmms}
+\end{equation}
+Où $\ba^1 = \delta^1(s^0)$, $\ba^2 = \delta^2(s^0,s^1)$, etc.
+
+\subsection{\pac{mpomdp}}
+Dans les \mpomdps, puisque les agents n'ont pas accès à l'état réel du monde, l'historique entier des actions et des observations passées doit être maintenu~\citep{SS.73}. Dans ce cas, l'expression de l'utilité espérée devient:
+\begin{eqnarray}
+\eqref{aeq:EU}\Rightarrow EU(\Delta^*) &=& \max_{\{\delta^t\}_{t=1}^T} \sum_{\{s^t\}_{t=0}^T} \sum_{\{\bo^t\}_{t=1}^{T-1}} eu_\Delta(w^T)\label{aeq:EUmpomdp}
+\end{eqnarray}
+
+La figure~\ref{afig:mpomdp} montre une représentation graphique d'un \mpomdp à horizon $T$. Les liens d'information montrent que les agents ont accès à l'ensemble de l'historique des actions et des observations de l'autre agent (mais pas à l'état) et peuvent donc raisonner sur la même information. On observe alors que le nombre de transformations possibles dans l'équation de l'utilité espérée est moindre; ainsi, de la même manière que nous avons transformé l'équation~\eqref{aeq:EUmm} en l'équation ~\eqref{aeq:EUmms}, il est possible de transformer l'équation~\eqref{aeq:EUmpomdp} par l'application de la règle~\eqref{aeq:trans}:
+\begin{equation}
+    \eqref{aeq:EUmpomdp}\Leftrightarrow EU(\Delta^*) =\max_{\ba^1}\sum_{\bo^1}...\max_{\ba^T} \sum_{s^0,...,s^T} eu_\Delta(w^T) \label{aeq:EUpos}
+\end{equation}
+Il convient alors de remarquer que la dernière somme sur les états possibles ne peut être distribuée de la même manière que la somme sur les observations puisque les agents n'ont pas accès à la valeur réelle de ces états passés au moment d'effectuer les décisions et doivent donc maintenir un \emph{état de croyance}. Cette croyance est représentée explicitement par la séquence des observations reçues depuis le début, ou peut être maintenue implicitement au travers d'une \emph{distribution de probabilité sur les états} par l'utilisation de la règle de Bayes:
+\[\bel^{t+1}(s') \propto \Obs(\bo|\ba,s') \int \Tra(s'|s,\ba) \bel^t(s)\,\mathrm{d}s\]
+Où $\bel^{t} \in \Delta\Sta$ est une distribution de probabilité sur le simplex sur $\Sta$ est est appelé \emph{état de croyance}.
+
+\subsection{\pac{dec-pomdp}}
+Bien plus complexes, les \decpomdps font l'hypothèse que les agents n'ont pas accès à l'historique des autres agents. Chaque agent doit alors maintenir un \emph{état de croyance sur tous les historiques possibles des autres agents} et les transformations faites ci-avant sur l'équation de l'utilité espérée ne fonctionnent plus. La figure~\ref{afig:decpomdp} montre une représentation graphique d'un \decpomdp à horizon $T$. Par comparaison aux figures précédentes, il existe beaucoup moins de liens d'informations et les agents n'ont donc pas accès à l'observation ni à l'action des autres agents.
+
+L'utilité espérée d'un \decpomdp est originalement la même que celle d'un \mpomdp (équation~\eqref{aeq:EUmpomdp}). Cependant, puisque les simplifications ne s'appliquent pas à cause des connaissances partielles des agents. il est seulement possible de décomposer chaque politique jointe et chaque observation jointe pour chaque agent. Par exemple, si l'on considère seulement l'agent 1, la règle~\eqref{aeq:trans} peut être appliquée sur les décisions de l'agent 1:
+\begin{eqnarray}
+    EU(\Delta^*) &=& \max_{\delta^1,...,\delta^T} \sum_{s^0,...,s^T} \sum_{\bo^1,...,\bo^T} eu_\Delta(w^T) \notag\\
+    &=& \max_{\{\delta_i^1,...,\delta_i^T\}_{i=1}^n} \sum_{\{o_i^1,...,o_i^{T-1}\}_{i=1}^n} \sum_{s^0,...,s^T} eu_\Delta(w^T) \notag\\
+    &=& \max_{\{\delta_i^1,...,\delta_i^T\}_{i=2}^n}  \max_{a_1^1}\sum_{o_1^1}...\max_{a_1^{T-1}}\sum_{o_1^{T-1}}\max_{a_1^T}
+    %\notag \\&&
+    \sum_{\{o_i^1,...,o_i^{T-1}\}_{i=2}^n} \sum_{s^0,...,s^T} eu_\Delta(w^T) \label{aeq:EUdec2}
+\end{eqnarray}
+Cette dernière équation~\eqref{aeq:EUdec2} représente à la fois que l'agent 1 doit raisonner sur un \emph{état de croyance} -- au travers de la somme sur les états -- et sur un \emph{état de croyance multiagent} qui consiste en toutes les politiques possibles de tous les autres agents considérant tous les historiques possibles d'observations. Un état de croyance multiagent peut aussi être vu comme un point dans le simplex sur $\Sta \times Q_{\neq i}^T$, où $Q_{\neq i}^T$ représente l'ensemble de toutes les politiques jointes à horizon $T$ pour tous les agents sauf $i$.
+
+Voyons maintenant la complexité algorithmique de ces modèles à partir de la représentation algébrique de leur utilité espérée.
+
+\section{Complexité algorithmique des modèles de Markov}\label{sect:cplxmarkov}
+
+Pour cela considérons deux types d'algorithmes différents: un qui met à profit l'espace mémoire pour améliorer les temps de calcul et un autre qui, au contraire, économise la mémoire au détriment du temps de calcul.
+
+\subsection{Variable Elimination (\pac{ve})}
+
+Le premier type algorithme considéré pour résoudre ces problèmes de Markov multiagents et l'algorithme par élimination de variable (\textsc{ve}~\citep{D.99}). Le principe de \textsc{ve} est d'utiliser la structure algébrique du problème pour calculer l'utilité espérée globale en ne faisant que des calculs locaux du type de la programmation dynamique.
+
+Par exemple, considérons trois fonctions $f(x,y), f(x,z), f(x,u)$ et supposons que l'on veut calculer $C = \max_{x,y,z,u} (f(x,y) + f(x,z) + f(x,u))$. Le principe de \textsc{ve} est d'\emph{éliminer} chaque variable successivement. Éliminer $z$ consiste d'abord à décomposer $C$ comme
+$C = \max_{x,y,u} (f(x,y)+(\max_z f(x,z))+ f(x,u))$. De fait, $z$ est éliminé en considérant seulement les fonctions locales qui dépendent de $z$. Cela crée ainsi une nouvelle fonction $g(x)=\max_z f(x,z)$ qui ne dépend que de $x$. Les autres variables peuvent ensuite être éliminées de manière similaire pour obtenir la valeur de $C$. Les valeurs optimales de chacune des variables peuvent être mémorisées pendant les calculs.
+
+Plus généralement, \textsc{ve} peut être utilisé pour calculer l'élimination de variable sur une combinaison de fonctions, i.e sur des quantités de la forme $\mathop{\oplus}_V ( \otimes_{f \in F} f )$, où $V$ est l'ensemble des variables à éliminer, $F$ est l'ensemble des fonctions locales (chacune des fonctions dépendant d'un sous-ensemble de $V$), et $\oplus$ et $\otimes$ sont des opérateurs satisfaisant les propriétés algébriques telles que la commutativité, l'associativité ou la distributivité de $\oplus$ sur $\otimes$. Il est également possible d'adapter \textsc{ve} à des cas incorporant plusieurs opérateurs d'élimination et de combinaison~\citep{N.94}. Cette adaptation est requise pour les modèles de Markov qui impliquent l'opérateur d'élimination $\max$ sur les règles de décision et $\sum$ sur les états et les observations (cf. e.g. équation~\eqref{aeq:dectreehard}), et l'opérateur de combinaison $\times$ pour les probabilités conditionnelles et $\sum$ pour les récompenses.
+
+La complexité temporelle et spatiale de \textsc{ve} est $O(|F|d^{\omega+1})$, où:
+\begin{itemize}
+\item $|F|$ est le nombre de fonctions locales;
+\item $d$ est la taille maximum des domaines des variables à éliminer;
+\item $\omega$ est la \emph{taille induite par l'ordre d'élimination}. Ce paramètre est le nombre maximal de variables impliquées dans une fonction créée pendant les éliminations. Certains ordres d'élimination sont meilleurs que d'autres: dans l'exemple considéré ci-dessus, la taille induite par l'ordre d'élimination $z,y,x,u$ est de $1$ alors que que celle induite par l'ordre $x,y,z,u$ est de $3$. Si $\omega$ est la taille minimum induite quelque soit l'ordre d'élimination, il est simplement appelé \emph{taille induite}. Le trouver est généralement un problème \textsc{np}-complet~\citep{D.99}.
+\end{itemize}
+
+Lorsque plusieurs opérateurs d'élimination sont impliqués, la complexité théorique n'est pas exponentielle dans la taille induite mais dans la \emph{taille induite contrainte}~\citep{PD.04,PSV.06b}, qui prend en compte le fait que la présence de plusieurs opérateurs d'élimination impose généralement des contraintes sur l'ordre d'élimination.
+
+Pour \textsc{ve}, l'intérêt principal de la transformation de quantité de la forme \[(a)~\max_{\pi_x} \sum_{y} f(\pi_x(y),y) \mbox{ vers } (b)~\sum_{y} \max_x f(x,y)\] est de diminuer la taille du plus grand domaine des variables. Plus précisément, dans $(a)$, la règle de décision $\pi_x$ peut être considérée comme une variable dont le domaine est l'ensemble des tuples $E = \{(x_1,\ldots, x_{dom(y)|}),|,x_i \in dom(x)\}$. Chaque élément de $E$ définit la valeur prise par $\pi_x$ pour chaque valeur de $y$. La taille de $E$ est donc de $|dom(x)|^{|dom(y)|}$. Pour $(b)$, la taille du plus grand domaine impliqué est seulement de $\max( |dom(x)| , |dom(y)|)$, qui n'est pas exponentiel en $|dom(y)|$. Cela montre l'intérêt de l'utilisation de la règle~\eqref{aeq:trans} pour la transformation des équations~\eqref{aeq:EUmm} et~\eqref{aeq:EUmpomdp} en de nouvelles équations~\eqref{aeq:EUmms}, \eqref{aeq:EUpos} et~\eqref{aeq:EUdec2}.
+
+Il convient toutefois de remarquer que de telles transformations ne sont pas toujours possibles. Par exemple, \[\max\limits_{\pi_x , \pi_t} \sum_{y,z}  f(\pi_x(y),y , z , \pi_t(z))\] peut possiblement être transformée en \[\max_{\pi_t} \sum_{y} \max_x \sum_{z} f(x,y , z , \pi_t(z)),\] mais pas dans une forme n'impliquant aucune élimination de règle de décision. Une telle situation apparaît généralement un premier agent connaît seulement la valeur de la variable $y$ avant de prendre la décision $x$, tandis qu'un autre agent ne connaît que la valeur de $z$ avant de prendre la décision $t$.
+
+\subsection{Recherche dans un arbre}
+
+À l'inverse de l'algorithme \textsc{ve}, la recherche dans un arbre est une méthode de haut en bas qui cherche exhaustivement une solution optimale sur toutes les instanciations possibles des variables.
+
+l'idée principale de cet algorithme est d'instancier les variables et de calculer la valeur de chaque séquence de décisions considérant tous les mondes possibles. L'algorithme~\ref{aalg:dfs} est un algorithme de recherche en profondeur d'abord (\textsc{dfs} pour \emph{Depth First Search}) qui explore récursivement toutes les assignations possibles des n\oe uds. Selon le type de n\oe ud, \textsc{dfs} choisira de maximiser (pour les n\oe uds de décision -- ligne~\ref{aalg:dfs:decnode}) ou de sommer (pour les n\oe uds d'observations ou d'états -- ligne~\ref{aalg:dfs:chnode}) les valeurs espérées des différentes instanciations de chacun des n\oe uds fils. Dès qu'il rencontre un n\oe ud feuille (une récompense -- ligne~\ref{aalg:dfs:rewnode}), \textsc{dfs} calcule la valeur espérée $eu_{\Delta_A}(w^T_A)$ étant donné l'instanciation $A$ correspondant au chemin parcouru depuis la racine jusqu'à la feuille.
+
+\begin{algorithm}[h!tb]
+\caption{Depth First Search (\textsc{dfs})\label{aalg:dfs}}
+\begin{algorithmic}[1]
+%\small
+\algrenewcommand\alglinenumber{\tiny}
+%\vspace{1mm}
+%\Function{dfs}{$nL$, $A$}
+\State{\textbf{Entrée:} $L$: Une liste ordonnée de n\oe uds}
+\State{\phantom{\textbf{Entrée:}}$A$: Une assignation des n\oe uds qui ne sont pas dans $L$}
+\State{\textbf{Retourne:} La valeur espérée maximale $EU(\Delta^*)$}
+\State{$n \gets first(L)$}
+\If{$n$ est un n\oe ud de décision\label{aalg:dfs:decnode}}
+    \State{$val \leftarrow -\infty$}
+    \ForAll{$v \in domain(n)$}
+        \State{$val \gets \max(val,$\Call{dfs}{$queue(L)$,$A\cup\{n\gets v\}$}$)$}
+    \EndFor
+    \State{\Return{$val$}}
+\EndIf
+\If{$n$ est un n\oe ud d'observation ou d'état\label{aalg:dfs:chnode}}
+    \State{$val \gets 0$}
+    \ForAll{$v \in domain(n)$}
+        \State{$val \gets val+$\Call{dfs}{$queue(L)$, $A\cup\{n\gets v\}$}}
+    \EndFor
+    \State{\Return{$val$}}
+\EndIf
+\State{\textbf{Si} $n$ est un n\oe ud récompense \textbf{alors} \Return{$eu_{\Delta_A}(w^T_A)$}\label{aalg:dfs:rewnode}}
+%\EndFunction
+\vspace{1mm}
+\end{algorithmic}
+\end{algorithm}
+
+La complexité de \textsc{dfs} dépend principalement de la profondeur maximale de l'arbre $\sigma$ et du facteur de branchement $\beta$ à chaque n\oe ud. En fait, la complexité temporelle de l'algorithme est en $\Obs(\beta^\sigma)$: pour chaque n\oe ud de l'arbre, \textsc{dfs} doit évaluer chacun des n\oe uds fils. Cependant, la complexité spatiale reste polynômiale en $\sigma$ et $\beta$: \textsc{dfs} doit seulement mémoriser l'assignation courante des variables et la liste des variables non assignées et leurs valeurs non testées. Cela a des répercussions importantes sur la complexité en pire cas des algorithmes pour les modèles de Markov multiagent.
+
+\subsection{Complexité des algorithmes}
+
+\begin{table}
+  \centering
+  \resizebox{\textwidth}{!}{
+  \begin{tabular}{|r|c|c|c|c|}
+    \hline
+    \textsc{ve} & $\omega$ & $d$ & Time Comp. & Space Comp.\\
+    \hline
+    \hline
+    \mmdp & $n+1$ & $\max(|\Sta|,|\Act|)$ & $\poly(T)\exp(n)$ & $\poly(T)\exp(n)$\\
+    \mpomdp & $2nT+1-n$ & $\max(|\Sta|,|\Act|,|\Omega|)$ & $\exp(n,T)$ & $\exp(n,T)$\\
+    \decpomdp & $2nT+1-n$ & $|\Omega|^{T-1}$ & $\exp(n)\exp^2(T)$& $\exp(n)\exp^2(T)$\\
+    \decpomdp$\!\!_K$ & $2nT+1-n$ & $|\Omega|^{K}$ & $\exp(n,T)$& $\exp(n,T)$\\
+    \hline
+    \hline
+    % after \\: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textsc{dfs} & $\sigma \le$ & $\beta$ & Time Comp. & Space Comp.\\
+    \hline
+    \hline
+    \mmdp & $T(n+1)+1$ & $\max(|\Sta|,|\Act|)$ & $\exp(n,T)$ & $\poly(n,T)$\\
+    \mpomdp & $T(2n+1)+1-n$ & $\max(|\Sta|,|\Act|,|\Omega|)$ & $\exp(n,T)$ & $\poly(n,T)$\\
+    \decpomdp & $T+1+n(2T-1-T|\Omega|^{T-1})$ & $\max(|\Sta|,|\Act|,|\Omega|)$ & $\exp(n)\exp^2(T)$& $\poly(n)\exp(T)$\\
+    \decpomdp$\!\!_K$ & $T+1+n(2T-1-T|\Omega|^{K})$ & $\max(|\Sta|,|\Act|,|\Omega|)$ & $\exp(n,T)$& $\poly(n,T)$\\
+    \hline
+  \end{tabular}}
+  \caption{Complexité de \textsc{ve} et \textsc{dfs} dans les modèles de Markov multiagents. $\exp^2$ signifie doublement exponentiel.}\label{atab:cplex}
+\end{table}
+
+Si l'on se base sur l'équation~\eqref{aeq:EUmms} qui alterne des n\oe uds \emph{max} et des n\oe uds \emph{somme}, et si l'on décompose chaque action jointe comme une séquence de $n$ actions unitaires, la complexité de \textsc{dfs} pour un \mmdp à horizon $T$ peut-être facilement calculée. La profondeur de l'arbre est égale au nombre de variables à instancier: $T+1$ états et $nT$ décisions. La profondeur est donc de $\sigma = T(n+1)+1$. En ce qui concerne le facteur de branchement, la plus grand domaine d'une variable est le maximum entre le nombre d'état et le nombre d'actions. Puisque la profondeur croît linéairement en l'horizon, la complexité spatiale de l'algorithme est polynômiale.
+
+Si l'on regarde l'algorithme \textsc{ve} dans les \mmdps, la taille des domaines est la même. La taille induite contrainte est toutefois polynômiale en fonction du nombre d'agents puisqu'à chaque étape de temps $t$ une fonction des décisions des agents $a_i^t$ est induite par l'élimination de la variable d'état $s^t$. Les complexités spatiales et temporelles de l'algorithme sont donc exponentielles dans le nombre d'agents, mais polynômiales en l'horizon puisque $|F|$ croît linéairement avec l'horizon. On peut remarquer ici que \textsc{ve} considère naturellement $s^{t-1}$ comme un historique suffisant pour prendre la décision $a_i^t$.
+
+Le plus grand domaine $d$ pour les \mpomdps est similaire à $\sigma$ dans l'algorithme \textsc{dfs}, La taille induite contrainte $\omega$ devient toutefois polynômiale en l'horizon. Ceci est dû à la somme sur tous les états à la fin de l'équation~\eqref{aeq:EUpos} qui induit une large fonction de toutes les variables de décision et d'observation provoquant l'explosion de la complexité.
+
+Dans le cas des \decpomdps, l'Arbre de recherche est plutôt différent. De fait, selon l'équation~\eqref{aeq:EUdec2}, les agents doivent raisonner sur toutes les règles de décision possibles des autres agents sans aucune connaissance à priori de leurs observations. Ils doivent donc prendre des décisions pour tous leurs historiques possibles. Par exemple, un algorithme de recherche dans les arbres par profondeur d'abord pour résoudre le problème du tigre à horizon 2 est donné par la figure~\ref{afig:searchtreetiger}. La profondeur de l'arbre de recherche n'est alors plus polynômiale en fonction de l'horizon de planification puisque la taille des entrées des règles de décision croît linéairement en fonction de l'horizon, créant ainsi une croissance exponentielle du nombre de règles de décision possibles. Ce phénomène est principalement dû à l'ignorance des agents à propos du monde $w^T$. La profondeur de l'arbre de recherche $\sigma$ devient alors exponentielle en fonction de l'horizon ainsi que la complexité spatiale.
+
+\begin{figure}[h!tb]\centering
+\input{horizon2TreeSearchTiger2}
+\caption{Exemple d'arbre de recherche pour le problème du tigre à horizon 2 en \decpomdp.}\label{afig:searchtreetiger}
+\end{figure}
+
+Ce problème de la croissance exponentielle du nombre de règles de décision possibles produit des conséquences différentes sur l'algorithme \textsc{ve} mais sans changer l'interprétation finale sur la complexité: la taille induite contrainte $\omega$ dans les \decpomdps reste identique à celle dans les \mpomdps. Néanmoins, la taille maximale des domaines $d$ croît dramatiquement à cause de l'élimination de variables de décision spéciales ayant des domaines dont la taille dépend de l'historique au complet. $d$ devient alors exponentiel en l'horizon.
+
+On retrouve donc résumée dans la table~\ref{atab:cplex} la complexité des algorithmes \textsc{ve} et \textsc{dfs} qui sont en fait les résultats classiques de la littérature sur la complexité des modèles de Markov multiagent lorsque l'on fixe le nombre d'agents~\citep{PT.87,BZI.00}. L'approche proposée ici explique néanmoins beaucoup mieux la complexité de ces modèles que les réductions polynômiales que l'on peut trouver dans la littérature.
+
+Cette approche permet également de mettre en avant une autre classe de problèmes de Markov multiagent. En supposant que les agents n'ont qu'une mémoire limitée, il est possible de réduire significativement cette complexité. Si l'on définit par exemple un historique $K$-limité comme $\hat{h}_i^t = (o_i^{t-K}, ...,o_i^{t-1})$, alors en utilisant ce type d'historique seulement, la profondeur de l'arbre pour \textsc{dfs} devient $\sigma = T+1+n(2T-1-T|\Omega|^{K})$ qui reste linéaire en $T$ et donc:
+\begin{theorem}
+Decider que $EU(\Delta^*) > \alpha$ pour un \decpomdp à historique $K$-limité est \textsc{pspace}.
+\end{theorem}
+\begin{proof}
+L'algorithme \textsc{dfs} utilise seulement un espace polynomial pour résoudre un \decpomdp à horizon $K$-limité.
+\end{proof}
+
+Ce résultat est également la source des travaux réalisés au chapitre~\ref{chap:4}. Il convient toutefois de remarquer que même si le problème de décision dans ce cas est \textsc{pspace}, mémoriser la politique $\Delta^*$ telle que $EU(\Delta^*)>\alpha$ reste un problème exponentiel en complexité spatiale. 

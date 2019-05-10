@@ -1,0 +1,90 @@
+\usepackage{helvet}
+\usepackage{multimedia}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage{ams,amsmath, amssymb,amsbsy}
+\usepackage{beamerfoils}
+\usepackage{graphicx}
+\usepackage{pifont}
+\usepackage{array}
+\usepackage{algpseudocode}
+
+\usenavigationsymbolstemplate{}%
+
+%options pour les pr\'esentations :
+\mode<presentation>
+
+\definecolor{DamasBlack}{cmyk}{0,0,0,1}
+\definecolor{DamasGray}{cmyk}{0.1,0.1,0.1,0}
+\usecolortheme[named=DamasBlack]{structure}
+\beamertemplateshadingbackground{red!2}{blue!5} %fond d\'egrad\'e
+\useinnertheme[shadow=true]{rounded} %blocs ombr\'es et arrondis
+\usecolortheme{orchid} %couleur
+%\usecolortheme{lily} %couleur
+%\usecolortheme{whale} %bleu
+\useoutertheme{shadow} %menus
+\useoutertheme{split} %menus
+\usefonttheme[onlysmall]{structurebold}
+
+\setbeamercolor*{palette primary}{use=structure,fg=white,bg=structure.fg}
+\setbeamercolor*{palette secondary}{use=structure,fg=black,bg=structure.fg}
+%\setbeamercolor*{palette tertiary}{use=structure,fg=white,bg=structure.fg}
+%\setbeamercolor*{palette quaternary}{fg=white,bg=black}
+\setbeamercolor{title}{use=structure,fg=structure.fg,bg=DamasGray} %forme du titre
+\setbeamercolor{frametitle}{use=structure,fg=structure.fg,bg=DamasGray} %forme du titre
+%\setbeamerfont{block title}{size={},fg=DamasGray,bg=DamasBlack}
+%\setbeamerfont{block body}{size={},fg=DamasGray,bg=DamasBlack}
+\setbeamercolor{block title}{fg=DamasGray,bg=DamasBlack}
+\setbeamercolor{block body}{fg=DamasBlack,bg=DamasGray}
+
+\setbeamertemplate{items}[ball] %puces
+\setbeamertemplate{sections/subsections in toc}[ball] %puces dans les sommaires
+
+%options pour tous les modes :
+\mode<all>
+\usefonttheme[onlysmall]{structurebold}
+
+% Use some nice templates
+\beamertemplatetransparentcovereddynamic
+\logo{\includegraphics[height=.8cm]{damas}\hskip7.2cm\includegraphics[height=1cm]{ulaval}}
+
+
+%Template de la barre footer
+\usefoottemplate{%
+  \vbox{\tiny%
+  \hbox{%
+  \setbox\beamer@linebox=\hbox to\paperwidth{%
+    \hbox to.5\paperwidth{\includegraphics[height=2.625ex]{damas}\hskip0.2cm\includegraphics[height=2.625ex]{ulaval}
+    \hfill\tiny\color{DamasBlack}{\insertshorttitle}\hskip.3cm}%
+    \hbox to.5\paperwidth{\hskip.3cm\tiny\color{DamasGray}{\insertshortauthor\hfill\insertframenumber~/~\inserttotalframenumber~~}}%/\inserttotalframenumber~~}}
+    \hfill}%
+  \ht\beamer@linebox=2.625ex%
+  \dp\beamer@linebox=0pt%
+  \setbox\beamer@linebox=\vbox{\box\beamer@linebox\vskip1.125ex}%
+  \color{DamasGray}\hskip-\Gm@lmargin\vrule width.5\paperwidth
+  height\ht\beamer@linebox\color{structure}\vrule width.5\paperwidth
+  height\ht\beamer@linebox\hskip-\paperwidth%
+  \hbox{\box\beamer@linebox\hfill}\hfill\hskip-\Gm@rmargin}}}
+
+%Symboles de Navigation avec logos à droite
+\newcommand\DamasNav{\usenavigationsymbolstemplate{%
+ %
+  \vbox{%
+    \hbox{\insertslidenavigationsymbol%}
+%    \hbox{\insertframenavigationsymbol}
+    \insertsubsectionnavigationsymbol
+    \insertsectionnavigationsymbol
+    }
+%    \hbox{\insertdocnavigationsymbol}
+%    \hbox{\insertbackfindforwardnavigationsymbol}
+  }
+}}
+%Page de Titre avec remise automatique des symboles de navigation a la fin
+\newcommand\SlideTitre{\frame{\titlepage}\LogoOff
+%symboles de navigation :
+\DamasNav}
+
+%Items speciaux
+\newcommand\iplus{\item[\textcolor{green}{\ding{51}}]}
+\newcommand\imoins{\item[\textcolor{red}{\ding{55}}]}
+\newcommand\ifleche{\item[\ding{229}]}

@@ -1,0 +1,22 @@
+\begin{tikzpicture}[scale=2.5]
+	\tikzstyle{vertex}=[circle,draw=black,minimum size=1mm,inner sep=1pt]
+
+	\node [vertex] (9)									{};
+	\node [vertex] (1) [right of=9,fill=black]			{};
+	\node [vertex] (2) [above right of=9]				{};
+	\node [vertex] (3) [above of=9]						{};
+	\node [vertex] (4) [above left of=9]				{};
+	\node [vertex] (5) [left of=9]						{};
+	\node [vertex] (6) [below left of=9]				{};
+	\node [vertex] (7) [below of=9]						{};
+	\node [vertex] (8) [below right of=9]				{};
+
+		\path	(1)	edge (2)	edge (9)
+		(2)	edge (3)
+		(3)	edge (4)	edge (9)
+		(4)	edge (5)
+		(5)	edge (6)	edge (9)
+		(6)	edge (7)
+	(7)	edge (8)	edge (9)
+		(8)	edge (1);
+\end{tikzpicture}

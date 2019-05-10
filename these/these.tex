@@ -1,0 +1,249 @@
+%---------------------------------------------------
+% These - document principal
+%---------------------------------------------------
+% Camille Besse
+% Novembre 2009
+%---------------------------------------------------
+
+\documentclass[phd,final]{theseUL1_2_1}
+
+% Bibliographie
+%\bibliographystyle{cyclope}
+%\bibliographystyle{apalike}
+\bibliographystyle{apalike-fr}
+%\bibliographystyle{plainnat}
+\usepackage[square]{natbib}
+%\newcommand{\citep}[1]{\cite{#1}}
+
+% Fonts francais
+%\usepackage{times}
+\usepackage{lmodern}
+%\usepackage[square]{daedale}
+\usepackage[francais]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+%PDFlatex require - for Overfull hbox
+\usepackage{microtype}
+\DisableLigatures{encoding = *, family = * }
+%\setlength\overfullrule{250pt}
+
+%\usepackage{epsfig}
+
+%gestion des paragraphes
+%\usepackage{indentfirst}
+
+%Alphabet mathematique
+\usepackage{ams}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{dsfont}
+
+%insertion d'image
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{shapes.geometric}
+\usetikzlibrary{arrows,positioning}
+\usetikzlibrary{snakes}
+\usepgflibrary{shapes}
+%\usepgflibrary{snakes}
+%\usepackage{acronym}
+
+%\usepackage{url}
+%\usepackage[usenames]{color}
+\usepackage{colortbl}
+\colorlet{orange}{red!30!yellow!5!white}%%
+\colorlet{mauve}{blue!30!red!5!white}%%
+\colorlet{bleu}{blue!20}%%
+\colorlet{vert}{green!20}%%
+\colorlet{brouge}{red!70!blue}
+
+%%% ALGORITHMES
+\usepackage{algorithm}
+%\usepackage{algorithmic}
+\usepackage{algpseudocode}
+%--------------- Renommage en francais du pseudo code
+\renewcommand\listalgorithmname{Liste des algorithmes}
+\algrenewcommand\algorithmicend{\textbf{fin}}
+\algrenewcommand\algorithmicdo{\textbf{faire}}
+\algrenewcommand\algorithmicwhile{\textbf{tant que}}
+\algrenewcommand\algorithmicfor{\textbf{pour}}
+\algrenewcommand\algorithmicforall{\textbf{pour tout}}
+\algrenewcommand\algorithmicloop{\textbf{boucler}}
+\algrenewcommand\algorithmicrepeat{\textbf{répéter}}
+\algrenewcommand\algorithmicuntil{\textbf{jusqu'à}}
+\algrenewcommand\algorithmicprocedure{\textbf{procédure}}
+\algrenewcommand\algorithmicfunction{\textbf{fonction}}
+\algrenewcommand\algorithmicif{\textbf{si}}
+\algrenewcommand\algorithmicthen{\textbf{alors}}
+\algrenewcommand\algorithmicelse{\textbf{sinon}}
+\algrenewcommand\algorithmicrequire{\textbf{requiert:}}
+\algrenewcommand\algorithmicensure{\textbf{retourne:}}
+\algrenewcommand\algorithmicreturn{\textbf{retourner}}
+\algrenewcommand\textproc{\textsc}
+
+%Footnote double utilisation
+\newcommand{\footnoteremember}[2]{%
+  \footnote{#2}%
+  \newcounter{#1}%
+  \setcounter{#1}{\value{footnote}}%
+}
+\newcommand{\footnoterecall}[1]{%
+  \footnotemark[\value{#1}]%
+}
+
+%pour l'environnement comment
+\usepackage{verbatim}
+
+% Autres
+\usepackage{subfigure}
+%\usepackage{psfrag}
+\usepackage{xspace}
+\usepackage{itemsep}
+\usepackage{multirow}
+\usepackage{multicol}
+%\usepackage{draftcopy}
+
+
+\ThinSpaceInFrenchNumbers
+\setitemsep{3pt}
+
+\input{macros}%Macros MDP
+
+\newtheorem{definition}{Définition}
+\newtheorem{theorem}{Théorème}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemme}{Lemme}
+\newtheorem{corollary}{Corollaire}
+\newtheorem{exemple}{Exemple}
+
+\setcounter{secnumdepth}{3}
+
+\tikzstyle{mybox}=[draw, fill=gray!10,very thick,
+    rectangle, rounded corners, inner sep=10pt, inner ysep=20pt,text width=.9\textwidth,text justified]
+\tikzstyle{fancytitle}=[fill=black, text=white, ellipse]
+
+\tikzstyle{mynotebox}=[draw=red, fill=red!10,very thick,
+    rectangle, rounded corners, inner sep=10pt, inner ysep=20pt,text width=.9\textwidth,text justified]
+\tikzstyle{fancynotetitle}=[fill=red, text=white, ellipse]
+
+\usepackage{relsize}
+\makeatletter
+\DeclareRobustCommand*\pac[1]{%
+  \if b\expandafter\@car\f@series\@nil
+  % we're using a bold font
+    \textscale{.75}{\MakeUppercase{#1}}%
+  \else
+    {\textsc{#1}}%
+  \fi}
+\makeatother
+
+%\newenvironment{summary}{
+%\begin{center}
+%\begin{tikzpicture}
+%\node[mybox] (box) \bgroup}
+%{\egroup ;%
+%\node[fancytitle, right=10pt] at (box.north west) {Résumé};
+%\end{tikzpicture}
+%\end{center}}
+
+\newenvironment{summary}{
+\begin{tabular}{p{.9\textwidth}}
+\emph\bgroup
+}
+{
+\egroup
+\end{tabular}}
+
+
+\newenvironment{note}{
+\begin{center}
+\begin{tikzpicture}
+\node[mynotebox] (box) \bgroup}
+{\egroup ;%
+\node[fancynotetitle, right=10pt] at (box.north west) {\textsc{note}};
+\end{tikzpicture}
+\end{center}}
+
+\titre{Contraintes et observabilité dans les systèmes de Markov décentralisés}
+
+\PrenomNomMaj{Camille BESSE}
+\PrenomNomMin{Camille Besse}
+\programme{en Informatique}
+\grade{Philosophi\ae\,Doctor (Ph.D.)}
+\annee{2010}
+\mois{Mai}
+
+\faculte{Département d'Informatique et de Génie Logiciel\\ Faculté des Sciences et de Génie}
+
+\begin{document}
+%\draftcopySetGrey 0.01
+\maketitle
+\newpage\phantom{a}
+
+\begin{dedicace}
+À mes parents, mes frères, mes grands-parents et mes amis pour avoir fait de moi ce que je suis aujourd'hui.
+\end{dedicace}
+\newpage\phantom{a}
+
+\include{resume}
+\newpage\phantom{a}
+
+\include{avantpropos}
+%\newpage\phantom{a}
+
+\tableofcontents
+
+\listoffigures
+\newpage\phantom{a}
+
+\listoftables
+\newpage\phantom{a}
+
+\listofalgorithms
+\newpage\phantom{a}
+
+% repasser en numerotation chiffre romain
+\corps
+
+%\part{Introduction}
+
+%Introduction
+\include{chapitre1}
+\newpage\phantom{a}
+
+%Bases théorique MDPs -> DecPOMDPs
+\include{chapitre2}
+\newpage\phantom{a}
+
+%\part{Contraintes sur les décisions}
+
+% CSPs Markoviens
+\include{chapitre3}
+\newpage\phantom{a}
+
+%\part{Contraintes sur l'observation}
+
+% Bornes Observabilité
+\include{chapitre4}
+\newpage\phantom{a}
+
+% DecPOMDPs et Communication
+\include{chapitre5}
+
+
+%Conclusion et travaux futurs
+\include{chapitre6}
+
+
+%Annexes
+\include{annexes}
+\newpage\phantom{a}
+
+\nocite{BPC.07,BC.07,BC.08,BC.09,BC.10,BC.10a}
+\nocite{MBC.09,MBC.10,DBRC.09,DBC.09,DBC.10}
+
+\bibliography{these}
+
+\end{document}

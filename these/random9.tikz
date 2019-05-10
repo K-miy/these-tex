@@ -1,0 +1,36 @@
+\begin{tikzpicture}[-,auto,scale=5]
+\tikzstyle{vertex}=[circle,draw=black,inner sep=1pt]
+
+\node [vertex] (0) at(0.749563,0.303041)[inner sep=1.24068mm,fill=black] {};
+\node [vertex] (1) at(0.342026,0.358215)[inner sep=0.52077mm] {};
+\node [vertex] (2) at(0.00326993,0.433277)[inner sep=1.48483mm] {};
+\node [vertex] (3) at(0.98123,0.0810744)[inner sep=0.758856mm] {};
+\node [vertex] (4) at(0.288004,0.859338)[inner sep=1.35346mm] {};
+\node [vertex] (5) at(0.702893,0.549211)[inner sep=1.45262mm] {};
+\node [vertex] (6) at(0.231122,0.112766)[inner sep=0.100149mm] {};
+\node [vertex] (7) at(0.38929,0.012133)[inner sep=0.104132mm] {};
+\node [vertex] (8) at(0.542775,0.586424)[inner sep=0.389707mm] {};
+\node [vertex] (9) at(0.808943,0.734461)[inner sep=1.50618mm] {};
+
+\path (0) edge (1);
+\path (0) edge (3);
+\path (0) edge (5);
+\path (0) edge (7);
+\path (0) edge (8);
+\path (0) edge (9);
+\path (1) edge (2);
+\path (1) edge (4);
+\path (1) edge (6);
+\path (1) edge (7);
+\path (1) edge (8);
+\path (2) edge (4);
+\path (2) edge (6);
+\path (3) edge (7);
+\path (3) edge (9);
+\path (4) edge (8);
+\path (4) edge (9);
+\path (5) edge (8);
+\path (5) edge (9);
+\path (6) edge (7);
+\path (8) edge (9);
+\end{tikzpicture}

@@ -1,0 +1,132 @@
+\chapter{Théorie de l'Information appliquée aux \pac{pomdp}s}
+\label{anx:it}
+
+\begin{summary}
+Dans cette annexe les concepts de théorie de l'information telle que l'entropie ou l'information mutuelle sont introduits pour ensuite les appliquer dans le contexte des \pomdps. Un résultat théorique est dérivé montrant que l'entropie ne peut converger si le taux d'entropie instantané de la chaîne de Markov sous-jacente au \pomdp et à la politique n'est pas borné supérieurement. Plusieurs expérimentations ont également été réalisées et sont rapportées à la fin de cette annexe.
+\end{summary}
+
+\section{Entropie d'un état de croyance}
+
+Une mesure couramment utilisée en théorie de l'information de la quantité d'information et de la qualité de l'information contenue dans un distribution de probabilité telle que l'estimation d'un état de croyance~\citep{FBT.98} est l'entropie de~\cite{S.48}. L'entropie mesure la quantité d'incertitude contenue dans une distribution de probabilité discrète ou continue. Dans le cas particulier d'un état de croyance sur un ensemble fini d'état, l'entropie $H$ est calculée en utilisant la formule suivante:
+\begin{equation}\label{aeq:entropy}
+    H(\bel^t) = -\sum_{s\in\Sta} \bel^t(s) \log \bel^t(s)
+\end{equation}
+L'entropie est maximale est égale à $\log|\Sta|$ lorsque l'état de croyance est uniforme -- i.e il est possible d'être dans tous les états de manière équiprobable -- et tend vers zero à mesure que l'état de croyance devient déterministe\footnote{Par convention, $0\log 0\equiv 0$.}.
+
+Dans la littérature de la théorie de l'information, l'entropie associée à l'estimation de l'état courant a rarement été étudiée, excepté par~\cite{R.06} qui a appelé cette quantité \emph{entropie d'estimation}. En fait, cette entropie d'estimation, que nous noterons  $H(\bel^t)$, est égale à l'entropie de la distribution sur les états étant donnée une séquence d'observations reçues. Elle se calcule donc de la manière suivante:
+\begin{equation}\label{aeq:EstimationEntropy}
+    H(\bel^t) = H(s^t|o^t,o^{t-1},\dots,o^1) = H(s^t|o^t,\bel^{t-1})
+\end{equation}
+
+Ainsi en utilisant les règles connues de théorie de l'information, il est possible d'énoncer la proposition suivante:
+\begin{proposition}\label{ap:beliefEntropy} L'entropie $H(\bel^t)$ d'un état de croyance à l'étape $t$ depuis un état de croyance $\bel^{t-1}$ étant donnée n'importe quelle politique est donnée par l'équation suivante:
+\begin{equation}\label{aeq:beliefEntropyF}
+H(\bel^t) = H(s^t) - I(s^t;\bel^{t-1}) - I(o^t;s^t|\bel^{t-1}) \qquad
+\end{equation}
+\end{proposition}
+\begin{proof}\begin{eqnarray}
+  H(\bel^t)  &=& H(o^t|s^t,\bel^{t-1}) - H(o^t|\bel^{t-1}) + H(s^t|\bel^{t-1})\notag\\
+             &=& - I(o^t;s^t|\bel^{t-1}) + H(s^t|\bel^{t-1})\notag\\
+   \mbox{since }I(X;Y)  &=& H(X) - H(X|Y)\notag%\\
+\end{eqnarray}
+Où $H(s^t)$ est le \emph{taux instantané d'entropie}~\citep{CT.91} de la chaîne de Markov sous-jacente à la politique qui se construit par la combinaison de la politique et de la fonction de transition. $I(s^t;\bel^{t-1})$ est l'\emph{information mutuelle} entre l'état $s^t$ et l'état de croyance à l'étape $t-1$ et $I(o^t;s^t|\bel^{t-1})$ l'\emph{information mutuelle conditionnelle} entre l'état $s^t$ et l'observation $o^t$ étant donnée l'état de croyance à l'étape précédente.
+\end{proof}
+
+L'information mutuelle mesure l'indépendance mutuelle de deux variables aléatoires ou la quantité d'information que deux variables aléatoires partagent. Elle est donnée par:
+\begin{eqnarray*}
+I(X;Y) & = & \sum_{y \in Y} \sum_{x \in X} p(x,y) \log{ \left( \frac{p(x,y)}{p_1(x)\,p_2(y)} \right) }, \,\! \\
+&  = & H(X) - H(X|Y) \\
+&  = & H(Y) - H(Y|X) \\
+&  = & H(X) + H(Y) - H(X,Y) \\
+&  = & H(X,Y) - H(X|Y) - H(Y|X).
+\end{eqnarray*}
+
+L'information mutuelle conditionnelle mesure la même quantité d'information, mais étant donnée une troisième variable aléatoire:
+\[I(X;Y|Z) = \mathbb E_Z \big(I(X;Y)|Z\big)
+    = \sum_{z\in Z} \sum_{y\in Y} \sum_{x\in X}
+      p_Z(z) p_{X,Y|Z}(x,y|z) \log \frac{p_{X,Y|Z}(x,y|z)}{p_{X|Z}(x|z)p_{Y|Z}(y|z)},\]
+Qui peut être simplifiée en:
+\[I(X;Y|Z) = \sum_{z\in Z} \sum_{y\in Y} \sum_{x\in X}
+      p_{X,Y,Z}(x,y,z) \log \frac{p_Z(z)p_{X,Y,Z}(x,y,z)}{p_{X,Z}(x,z)p_{Y,Z}(y,z)}.\]
+
+De fait, dans le contexte d'information bijective exprimé par la définition~\ref{def:enough-obs} du chapitre~\ref{chap:4} où les observations apportent la même quantité d'information quelque soit l'action effectuée, il serait possible de croire que l'équation~\eqref{aeq:beliefEntropyF} correspond à l'entropie de l'état de croyance sachant que l'observation $o^t$ a été reçue quelque soit l'action effectuée. En réalité, cette action effectuée a un impact sur la fonction de transition, et ainsi la politique influence fortement l'entropie de l'état de croyance. L'entropie $H(\bel^t)$ peut donc être interprétée comme l'incertitude ajoutée par la fonction de transition à laquelle on retranche l'information apportée par l'observation $(I(o^t;s^t|\bel^{t-1}))$ et l'information déjà contenue dans l'état de croyance à l'étape précédente $(I(s^t;\bel^{t-1}))$.
+
+Si l'on tente de sommer cette entropie récursive sur $K$ étapes, on obtient:
+\begin{corollary}\label{ac:beliefEntropy} L'entropie $H(\bel^K)$ d'un état de croyance après $K$ étapes depuis un état de croyance $\bel^0$ et étant donnée n'importe quelle politique est donnée par:
+\begin{equation}\label{aeq:beliefEntropyK2}
+H(\bel^K) = H(s^K) - \sum_{i=1}^K \left(I(s^i;\bel^{i-1}) + I(o^i;s^i|\bel^{i-1})\right)
+\end{equation}
+Sous la condition que $H(\bel^0) = H(s^0)$.
+\end{corollary}
+\begin{proof}Ce corollaire découle directement de la proposition~\ref{ap:beliefEntropy}.
+\end{proof}
+
+Dans cette formulation, $H(s^t)$ est toujours le taux d'entropie~\citep{CT.91} de la chaîne de Markov sous-jacente. Ce taux d'entropie converge exponentiellement vite sous de petites hypothèses~\citep{HJ.99} vers
+\begin{equation}\label{aeq:entropyRate}
+H(s) = \sum_{s\in\Sta} \sum_{s'\in\Sta} \mu_{s} \Tra(s,\pi(s),s') \log \left[\Tra(s,\pi(s),s')\right]
+\end{equation}
+Où $\mu_s$ est la distribution stationnaire de la chaîne de Markov construite par la combinaison de la politique et de la fonction de transition.
+
+Toutefois, aucune recherche à notre connaissance ne fait état de l'évolution de ce terme au cours du temps. La majorité des recherches à ce sujet portent essentiellement sur l'étude en \emph{régime d'équilibre}, i.e. lorsque la chaîne de Markov est supposée avoir déjà convergé vers sa distribution stationnaire et ne dépends alors plus de la distribution initiale $\bel^0$. Certains travaux~\citep{Su.76,L.81,BG.78} expliquent qu'il existe des conditions sur la chaîne permettant la convergence vers la distribution stationnaire en un nombre d'étapes bornés, mais une adaptation reste à faire quant aux processus décisionnels puisque ces travaux reste sur les versions sans contrôle des chaînes de Markov. Très récemment des travaux de physique quantique semblent également faire état de résultats en régime non-stationnaire du taux d'entropie, mais sont restés hermétiques à notre compréhension.
+
+Voyons plutôt expérimentalement quelles sont les conditions sur la qualité des transitions et des observations telles que l'agent soit capable d'extraire l'information exacte à propos de l'état sous-jacent de l'environnement.
+
+\section{Expérimentations}
+
+Pour tester ces valeurs de convergence de l'entropie nous avons pris un problème simple de déplacement d'un robot sur une grille torique (une grille où les cellules sur les bords sont adjointes au cellules du bord opposé). Ce robot peut choisir de se déplacer dans les quatre directions cardinales ou de ne pas se déplacer, mais reçoit quand même à chaque étape une observation. Cet agent connaît évidemment les résultats espérés de chacune de ses actions. Il sait également que dû à certaines conditions environnementales, il peut glisser lors d'un de ses déplacements et se rendre dans une case adjacente à celle souhaitée initialement avec une certaine probabilité. Nous supposons ici que l'action de ne pas se déplacer entraîne également un glissement probable pour des raisons d'uniformité dans la génération de l'entropie au cours du temps.
+
+Nous avons choisi de représenter ces glissements par des distributions Gaussiennes discrétisées puisque c'est souvent ainsi que les bruits sont représentés dans la littérature robotique. Ces glissement surgissent donc selon une distribution de probabilité conjointe définie par une Gaussienne discrétisée isotropique à deux dimensions paramétrée par une variance $\sigma_\tau^2$. La figure~\ref{afig:tra} illustre donc la fonction de transition pour passer de l'état du centre de la grille à l'état en dessous par une distribution de probabilité représentant les chances de se retrouver dans les cases adjacentes.
+
+\begin{figure}[t]
+  \centering\includegraphics[width=.65\textwidth]{transitionPDF}
+  \caption{Densité de probabilité de la fonction de transition depuis l'état $(5,5)$ au travers de l'action \textsc{down}. $\sigma_\tau = 1$.}\label{afig:tra}
+\end{figure}
+
+Comme nous l'avons dit ci-dessus, dès que l'agent effectue une action, celui perçoit alors immédiatement une observation de l'environnement (de son système de positionnement global -- \textsc{gps} -- par exemple). Cette observation est aussi caractérisée par une distribution de probabilité Gaussienne discrétisée où la moyenne est exactement l'état dans lequel est arrivé l'agent suite à son action et où la variance est de $\sigma_o^2$. Cette distribution de probabilité est donc similaire à celle de la fonction de transition et plus particulièrement lorsque les variances sont égales.
+
+Puisque nous utilisons des distributions Gaussiennes discrétisées sur une grille torique dans nos expérimentations, les résultats seront présentés par rapport à la variance des ces distributions. L'erreur relative de l'observation étant donnée la variance de la Gaussienne est présentée dans la figure~\ref{afig:err}. Il convient de remarquer que cette erreur devient inférieure au millième lorsque la variance tombe en dessous de $0.3$. L'erreur sur les transitions évoluant de manière identique, nous ne la présentons pas ici.
+
+\begin{figure}[t]
+  \centering\includegraphics[width=.85\textwidth]{error}
+  \caption[Erreur $\varepsilon_o$ sur l'observation.]{Erreur $\varepsilon_o$ sur l'observation étant donnée la variance de la Gaussienne utilisée pour représenté le bruit. L'erreur est représentée par la ligen pleine alors que la ligne hachée représente $1-\frac{1}{\sigma_o\sqrt{2\pi}}$.}\label{afig:err}
+\end{figure}
+
+La première expérimentation que nous avons réalisé porte sur une politique aléatoire et nous calculons l'entropie d'estimation après 3000 étapes pour différentes variances allant de 0 à 3. Nous ne présentons toutefois que les résultat variant de 0.1 à 1, puisqu'en dessous de 0.1, la fonction \texttt{normpdf} de Matlab$^\circledR$ souffre de problèmes de précision, et au delà de 0.8, le mode de la distribution devient plus petit que $1\slash 2$ et les résultats sont très similaires à ceux pour des variances comprises entre 0.8 et 1.
+
+\begin{figure}[t]
+  \centering\includegraphics[width=.85\textwidth]{ent3000}
+  \caption{Entropie de l'état de croyance $\bel^{3000}$ par rapport à différentes valeurs de $\sigma_\tau$ et $\sigma_o$.}\label{afig:ent3000}
+\end{figure}
+
+La figure~\ref{afig:ConvTime} montre le temps minimal de convergence sur 100 trajectoires pour que l'entropie de l'état de croyance converge vers $\varepsilon = 10^{-3}$ sous l'influence d'une politique aléatoire. Cette courbe mets en valeur la fait que, dès que la politique fait en sorte que la chaîne de Markov sous-jacente est ergodique, l'entropie peut prendre un temps exponentiel avant de converge vers $\varepsilon$, si seulement il converge. En fait, les figures \ref{afig:belEnt1} à \ref{afig:belEnt50} montrent l'entropie à différentes étapes par rapport à la variance sur la transition et sur l'observation. Malheureusement, ces figures montrent également qu'il existe des valeurs de variance sur la transition qui induise des valeurs de convergence de l'entropie largement supérieures à $\varepsilon$, comme il était possible de s'y attendre.
+
+\begin{figure}[t]
+  \centering\includegraphics[width=.85\textwidth]{timeToConvZeroVarOnTra3}
+%    \begin{tikzpicture}[overlay]
+%    \draw[|-latex] (-6.1,2) -- (-6.3,2) -- (-6.4,1.5) node[at start,right,above] {Time = 60 steps};
+%    \draw[dashed] (-6.4,1.5) -- (-6.4,.62);
+%    %\fill (-4.4,1.5) circle (1pt);
+%    %\fill (-4.4,.62) circle (1pt);
+%    \end{tikzpicture}
+  \caption[Temps minimal de convergence de l'entropie d'estimation avec politique aléatoire.]{Temps minimal de convergence de l'entropie d'estimation avec politique aléatoire pour différentes variances sur la transition $\sigma_\tau$ et différentes variance sur l'observation $\sigma_o$.}\label{afig:ConvTime}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \subfigure[After 1 step]{\includegraphics[width=.48\textwidth]{belEnt1}\label{afig:belEnt1}}
+  \subfigure[After 5 steps]{\includegraphics[width=.48\textwidth]{belEnt5}\label{afig:belEnt5}}
+  \subfigure[After 8 steps]{\includegraphics[width=.48\textwidth]{belEnt8}\label{afig:belEnt8}}
+  \subfigure[After 50 steps]{\includegraphics[width=.48\textwidth]{belEnt50}\label{afig:belEnt50}}
+  \caption[Étude de la variation de l'entropie pour différents valeurs de bruits.]{Étude de la variation de l'entropie pour différents valeurs de bruits sur la transition et l'observation.}\label{afig:bee}
+\end{figure}
+
+En fait, la figure~\ref{afig:ent3000} montre la convergence de l'entropie d'estimation après voir suivi une politique aléatoire pendant trois milles étapes. Ces résultats montre qu'après un certain seuil sur l'erreur de transition (sur la figure entre 0.2 et 0.3), l'entropie de l'état de croyance ne peut être réduite plus. Ce seuil survient en fait lorsque la transition n'est plus déterministe puisqu'au delà de 0.3 l'erreur sur la transition devient supérieure au millième comme nous l'avons vu dans la figure~\ref{afig:err}.
+
+Un autre résultat intéressant survient également lorsque une politique déterministe est utilisée plutôt qu'une politique aléatoire (par exemple lorsque le robot cherche à se rendre à une position donnée et à y rester). Les résultats expérimentaux de la figure~\ref{afig:ConvTimeDet} montrent en effet que dans ce cas la convergence  est plus rapide pour des valeurs identiques de variances. Par exemple, la figure~\ref{afig:ConvTime} montre qu'il faut au minimum 60 étapes pour converger lorsque la variance sur l'observation est de 0.5 et que l'on suit une politique aléatoire, alors que ce temps est rarement atteint -- même avec une variance de~1 -- lorsque une politique déterministe est utilisée. Ce résultat s'explique très simplement par le fait qu'une politique stochastique induit nécessairement un taux d'entropie supplémentaire sur la chaîne de Markov sous-jacente. Il convient alors de n'utiliser que des politiques déterministes lorsque l'on cherche à récolter de l'information sur l'état sous-jacent du système.
+
+\begin{figure}[t]
+  \centering\includegraphics[width=.85\textwidth]{timeToConvZeroVarOnTra4_2}
+  \caption[Temps de convergence de l'entropie d'estimation lorsque l'agent suit une politique déterministe.]{Temps de convergence de l'entropie d'estimation pour des variances sur la transition de $\sigma_\tau =0.1$ et $\sigma_\tau =0.2$ en fonction de la variance sur l'observation $\sigma_o$ lorsque l'agent suit une politique déterministe. La moyenne, le minimum et le maximum sont calculés sur 100 simulations.}\label{afig:ConvTimeDet}
+\end{figure}
+
+Finalement, ces résultats préliminaires ont conduits aux résultats théoriques exprimés dans le chapitre~\ref{chap:4}. Il serait extrêmement intéressant d'étudier plus avant la théorie de l'information dans certaines chaînes de Markov spécifiques (et non déterministes) où le taux d'entropie instantané peut-être borné supérieurement, induisant ainsi une convergence assurée de l'entropie d'estimation vers 0. 

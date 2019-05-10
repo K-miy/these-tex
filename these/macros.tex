@@ -1,0 +1,134 @@
+
+%%Macro espacement des liste
+
+\newcommand\itema{\medskip\item}
+\newcommand\pitem{\phantom{a}$\bullet\;$}
+
+%% Macros Math
+
+\DeclareMathOperator\poly{\operatorname{poly}}
+\DeclareMathOperator\pr{\operatorname{Pr}}%%
+\DeclareMathOperator*\Esp{\raisebox{-.7ex}{\LARGE\ensuremath{\operatorname{E}}}}%%
+\DeclareMathOperator*\varprod{\raisebox{-.5ex}{\LARGE\ensuremath{\times}}}%%
+
+%% MACROS Models MDPs
+
+\newcommand\mtdp{\textsc{mtdp}\xspace}%Multi team decision process
+\newcommand\mtdps{\textsc{mtdp}s\xspace}
+
+\newcommand\macsp{\textsc{m}a\textsc{csp}s\xspace}
+\newcommand\macsps{\textsc{m}a\textsc{csp}s\xspace}
+
+\newcommand\mdp{\textsc{mdp}\xspace}
+\newcommand\mdps{\textsc{mdp}s\xspace}
+\newcommand\fmdp{\textsc{fmdp}\xspace}%Factored mdp
+\newcommand\fmdps{\textsc{fmdp}s\xspace}
+\newcommand\mmdp{\textsc{mmdp}\xspace}%Multiagent mdp
+\newcommand\mmdps{\textsc{mmdp}s\xspace}
+\newcommand\pomdp{\textsc{pomdp}\xspace}%Partially observable mdp
+\newcommand\mpomdp{\textsc{mpomdp}\xspace}%Multiagent partially observable mdp
+\newcommand\pomdps{\textsc{pomdp}s\xspace}
+\newcommand\mpomdps{\textsc{mpomdp}s\xspace}
+
+\newcommand\sg{\textsc{sg}\xspace}%Stochastic game
+\newcommand\sgs{\textsc{sg}s\xspace}
+\newcommand\posg{\textsc{posg}\xspace}%Partially observable stochastic game
+\newcommand\posgs{\textsc{posg}s\xspace}
+
+\newcommand\decmdp{\textsc{dec-mdp}\xspace}%Decentralized mdp
+\newcommand\decmdps{\textsc{dec-mdp}s\xspace}
+\newcommand\decpomdp{\textsc{dec-pomdp}\xspace}%Decentralized pomdp
+\newcommand\decpomdps{\textsc{dec-pomdp}s\xspace}
+
+\newcommand\decmdpcom{\textsc{dec-mdp-com}\xspace}%Decentralized mdp with communication
+\newcommand\decmdpcoms{\textsc{dec-mdp}s\textsc{-com}\xspace}
+\newcommand\decpomdpcom{\textsc{dec-pomdp-com}\xspace}%Decentralized pomdp with communication
+\newcommand\decpomdpcoms{\textsc{dec-pomdp}s\textsc{-com}\xspace}
+
+\newcommand\detpomdp{\textsc{Det}-\pomdp}
+\newcommand\detpomdps{\textsc{Det}-\pomdps}
+\newcommand\qdetpomdp{\textsc{qDet}-\pomdp}
+\newcommand\qdetpomdps{\textsc{qDet}-\pomdps}
+\newcommand\qdetdecpomdp{\textsc{qDet}-\decpomdp}
+\newcommand\qdetdecpomdps{\textsc{qDet}-\decpomdps}
+
+%% Macros Modèles
+
+%Decision variable
+\newcommand\ca{\textsc{a}}
+%State variable
+\newcommand\cx{\textsc{x}}
+%Observation variable
+\newcommand\co{\textsc{o}}
+%Unused ...
+\newcommand\cs{\textsc{s}}
+%Vector of State variables
+\newcommand\bcx{\textsc{\textbf{x}}}
+%Vector of Decision variables
+\newcommand\bca{\textsc{\textbf{a}}}
+%Unused ...
+%\newcommand\cs{\textsc{s}}
+\newcommand\bcs{\textsc{\textbf{s}}}
+%Reward
+\newcommand\Rew{\mathcal{R}}
+%Transition
+\newcommand\Tra{\mathcal{T}}
+%Observation function
+\newcommand\Obs{\mathcal{O}}
+%Joint Observation Set
+\newcommand\bOmega{\boldsymbol{\Omega}}
+%Joint Observation Set
+\newcommand\JObs{\boldsymbol{\Omega}}
+%Action Set
+\newcommand\Act{\mathcal{A}}
+%Joint Action set
+\newcommand\JAct{\boldsymbol{\mathcal{A}}}
+%State Set
+\newcommand\Sta{\mathcal{S}}
+%Joint State Set
+\newcommand\JSta{\boldsymbol{\mathcal{S}}}
+
+%Alpha Vector
+\newcommand\avec{{\boldsymbol{\alpha}}}
+%Belief State
+\newcommand\bel{{\boldsymbol{b}}}
+%A Joint Observation
+\newcommand\bo{{\boldsymbol{o}}}
+%A Joint Observation
+\newcommand\bz{{\boldsymbol{z}}}
+%A Joint Action
+\newcommand\ba{{\boldsymbol{a}}}
+%A Joint assignment of state variables
+\newcommand\bx{{\boldsymbol{x}}}
+%A Joint State
+\newcommand\bs{{\boldsymbol{s}}}
+
+%Raccourcis
+\newcommand\la{\langle}
+\newcommand\ra{\rangle}
+
+%Domain of variables
+\newcommand\Dom{\mathcal{D}}
+%Set of Knowledge constraints
+\newcommand\Know{\mathcal{K}}
+%Set of Constraints
+\newcommand\Cons{\mathcal{C}}
+%Set of State Variables
+\newcommand\Xta{\mathcal{X}}
+%A Joint Policy
+\newcommand\JPol{\boldsymbol{q}}
+%A Policy
+\newcommand\Pol{q}
+%Set of policies
+\newcommand\SPol{Q}
+%Set of policies
+\newcommand\SJPol{\boldsymbol{Q}}
+
+
+%% Macros Cymatom
+
+\newcommand\cymatom{\textsc{C}$\left[\textsc{Ma}\right]^2$\textsc{M}\xspace}
+\newcommand\lpocymatom{\textsc{lpo}-\cymatom}
+\newcommand\cyb{\raisebox{-.25em}{\includegraphics[height=1em]{cymatom_b}}\xspace}
+\newcommand\cyw{\raisebox{-.25em}{\includegraphics[height=1em]{cymatom_w}}\xspace}
+\newcommand\cy{\raisebox{-.25em}{\includegraphics[height=1em]{cymatom}}\xspace}

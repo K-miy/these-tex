@@ -1,0 +1,189 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage{xspace}
+\usepackage[square]{natbib}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{epsfig}
+\usepackage{Damas}
+\usepackage{pifont}
+\usepackage{amsmath}
+\usepackage{ams}
+\usepackage{fancyheadings}
+\usepackage{color}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\newtheorem{theorem}{Th\'eor\`eme}
+\newtheorem{lemme}{Lemme}
+\newtheorem{axiom}{Axiome}
+\newtheorem{note}{Note}
+\newtheorem{definition}{D\'efinition}
+
+%macros
+\newcommand\pb{problème\xspace}
+\newcommand\pbs{problèmes\xspace}
+\newcommand\ordo{ordonnancement\xspace}
+\newcommand\ar{apprentissage par renforcement\xspace}
+\newcommand\itema{\medskip\item}
+
+\setcounter{secnumdepth}{3}
+
+\textheight 9in \textwidth 145mm \topmargin -0.5in \oddsidemargin 10mm \evensidemargin 10mm \baselineskip 7mm
+
+\lhead[\fancyplain{}{\epsfig{file=ulaval.eps,height=12pt}}]
+      {\fancyplain{}{Idées en vrac}}
+\chead{\fancyplain{}{}} \rhead[\fancyplain{}{Damas}]
+      {\fancyplain{}{\epsfig{file=ulaval.eps,height=12pt}}}
+\lfoot[\fancyplain{}{Tous les jours, tout le temps}]
+      {\fancyplain{}{Camille Besse-Patin}}
+\cfoot[\fancyplain{}{\thepage}]
+      {\fancyplain{}{\thepage}}
+\rfoot[\fancyplain{}{Camille Besse-Patin}]
+      {\fancyplain{}{Tous les jours, tout le temps}}
+\setlength{\headrulewidth}{0.1pt} \setlength{\footrulewidth}{0.1pt}
+
+\setcounter{tocdepth}{2}     % Dans la table des matières
+\setcounter{secnumdepth}{4}  % Avec un numéro.
+
+
+\title{Idées en vrac\,: journal de mise à jour}
+\author{Camille Besse-Patin}
+\director{Pr. Brahim Chaib-draa}
+\encadrement{Julien Laumonier  \\ Stéphane Ross}
+\date{Tous les jours, tout le temps}
+\typdoc{Ou comment maintenir ses idées à jour}
+
+
+\pagestyle{fancyplain}
+
+\begin{document}
+
+% Title Page
+\pagetitre
+
+\pagenumbering{roman}
+\addtocontents{toc}{\protect\thispagestyle{fancy}}
+\newpage
+~\\
+%Page blanche derrière le titre
+\newpage
+
+\tableofcontents \thispagestyle{fancyplain}
+
+\newpage
+~\\
+
+\chapter{Idées à approfondir}
+\pagenumbering{arabic} \thispagestyle{fancyplain}
+\addcontentsline{toc}{chapter}{Introduction}
+
+\section{Cymatom}
+
+
+\newpage
+~\\
+%Page Blanche pour le début de chapitre en page impaire
+
+\chapter{Idées farfelues \& saugrenues}
+\thispagestyle{fancyplain} \label{Chapter1}
+
+\section{Comment inventer de nouvelles choses}
+\begin{itemize}
+    \itema Prendre un nom qui claque et essayer de faire coller une méthode avec,
+    \itema Prendre deux thèmes qui ont pas rapport et en trouver un,
+    \itema Essayer de s'inspirer d'autres domaines pour trouver des algos (Cuisine, Jardinage, \ldots).
+\end{itemize}
+
+\subsection{Noms qui claque}
+\begin{itemize}
+    \itema Catastrophic programming (Programmation en pire cas, sémantique démoniaque)
+    \itema Mediatic programming (Théorie du mensonge aux agents)
+    \itema Metallic programming (Recuit simulé, y'en a d'Autres à trouver peut être ...)
+    \itema Sardonic programming (minimiser la honte/risque)
+    \itema Comic programming (maximiser le fun ... TOON !!!)
+    \itema Political programming
+\begin{itemize}
+        \itema Capitalist = individually rational
+        \itema Communist = fully altruistic
+        \itema Anarchist = self centered but cooperative
+        \itema Democratic = hierarchical / majority votes
+        \itema Dictatorial = centralized
+\end{itemize}
+    \itema Prismatic (décomposition lumineuse, réfraction , réflexion ... il y'a kk chose à creuser la).
+    \itema Pathetic ... non ? ;p
+\end{itemize}
+
+\section{Comment prouver un théorème}
+
+\begin{description}
+  \item[by example] : \\
+    The author gives only the case n = 2 and suggests that it contains most
+    of the ideas of the general proof.
+  \item[by intimidation] : \\
+    `Trivial.'
+  \item[by vigorous handwaving] : \\
+    Works well in a classroom or seminar setting.
+  \item[by cumbersome notation] : \\
+    Best done with access to at least four alphabets and special symbols.
+  \item[by exhaustion] : \\
+    An issue or two of a journal devoted to your proof is useful.
+  \item[by omission] : \\
+    `The reader may easily supply the details.' \\
+    `The other 253 cases are analogous.' \\
+    `...'
+  \item[by obfuscation] : \\
+    A long plotless sequence of true and/or meaningless syntactically
+    related statements.
+  \item[by wishful citation] : \\
+    The author cites the negation, converse, or generalization of a theorem
+    from literature to support his claims.
+  \item[by funding] : \\
+    How could three different government agencies be wrong?
+  \item[by eminent authority] : \\
+    `I saw Karp in the elevator and he said it was probably NP-complete.'
+  \item[by personal communication] : \\
+    `Eight-dimensional colored cycle stripping is NP-complete
+    [Karp,personal communication].'
+  \item[by reduction to the wrong problem] : \\
+    `To see that infinite-dimensional colored cycle stripping is decidable,
+    we reduce it to the halting problem.'
+  \item[by reference to inaccessible literature] : \\
+    The author cites a simple corollary of a theorem to be found in a
+    privately circulated memoir of the Slovenian Philological Society, 1883.
+  \item[by importance] : \\
+    A large body of useful consequences all follow from the proposition in
+    question.
+  \item[by accumulated evidence] : \\
+    Long and diligent search has not revealed a counterexample.
+  \item[by cosmology] : \\
+    The negation of the proposition is unimaginable or meaningless. Popular
+    for proofs of the existence of God.
+  \item[by mutual reference] : \\
+    In reference A, Theorem 5 is said to follow from Theorem 3 in reference
+    B, which is shown from Corollary 6.2 in reference C, which is an easy
+    consequence of Theorem 5 in reference A.
+  \item[by metaproof] : \\
+    A method is given to construct the desired proof. The correctness of
+    the method is proved by any of these techniques.
+  \item[by picture] : \\
+    A more convincing form of by example. Combines well with by
+    omission.
+  \item[by vehement assertion] : \\
+    It is useful to have some kind of authority in relation to the audience.
+  \item[by ghost reference] : \\
+    Nothing even remotely resembling the cited theorem appears in the
+    reference given.
+  \item[by forward reference] : \\
+    Reference is usually to a forthcoming paper of the author, which is
+    often not as forthcoming as at first.
+  \item[by semantic shift] : \\
+    Some standard but inconvenient definitions are changed for the
+    statement of the result.
+  \item[by appeal to intuition] : \\
+    Cloud-shaped drawings frequently help here.
+\end{description}
+
+
+
+\end{document}

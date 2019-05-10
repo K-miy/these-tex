@@ -1,0 +1,79 @@
+\newcommand\red[1]{\textcolor{red}{#1}}
+\begin{tikzpicture}[scale=1.2]%
+\draw[line width=.1ex] (-5,5) -- (5,5) node[anchor=south west]{$(1)$ Prédiction};  %%
+\draw[fill=yellow,draw=black,thick] (-4.5,5) circle (4pt) node (1) {};%%
+\draw[fill=yellow,draw=black,thick] (-3,5) circle (4pt) node (2) {};%%
+\draw[fill=yellow,draw=black,thick] (-3.2,5) circle (4pt) node (3) {};%%
+\draw[fill=yellow,draw=black,thick] (-.5,5) circle (4pt) node (4) {};%%
+\draw[fill=yellow,draw=black,thick] (1.5,5) circle (4pt) node (5) {};%%
+\draw[fill=yellow,draw=black,thick] (1.9,5) circle (4pt) node (6) {};%%
+\draw[fill=yellow,draw=black,thick] (2.4,5) circle (4pt) node (7) {};%%
+\draw[fill=yellow,draw=black,thick] (3,5) circle (4pt) node (8) {};%%
+\draw[fill=yellow,draw=black,thick] (4.5,5) circle (4pt) node (9) {};%%
+\draw[fill=yellow,draw=black,thick] (5,5) circle (4pt) node (10) {};%%
+\draw[line width=.1ex] (-5,3.5) -- (5,3.5);  %%
+\draw[fill=yellow,draw=black,thick] (1.9,3.5) circle (20pt) node (6') {};%%
+\draw[fill=yellow,draw=black,thick] (-.5,3.5) circle (12pt) node (4') {};%%
+\draw[fill=yellow,draw=black,thick] (-4.5,3.5) circle (4pt) node (1') {};%%
+\draw[fill=yellow,draw=black,thick] (-3,3.5) circle (6pt) node (2') {};%%
+\draw[fill=yellow,draw=black,thick] (-3.2,3.5) circle (2pt) node (3') {};%%
+\draw[fill=yellow,draw=black,thick] (1.5,3.5) circle (5pt) node (5') {};%%
+\draw[fill=yellow,draw=black,thick] (2.4,3.5) circle (2pt) node (7') {};%%
+\draw[fill=yellow,draw=black,thick] (3,3.5) circle (2pt) node (8') {};%%
+\draw[fill=yellow,draw=black,thick] (4.5,3.5) circle (6pt) node (9') {};%%
+\draw[fill=yellow,draw=black,thick] (5,3.5) circle (4pt) node (10') {};%%
+\draw[->,-latex,dashed,thin] (1)--(1');
+\draw[->,-latex,dashed,thin] (2)--(2');
+\draw[->,-latex,dashed,thin] (3)--(3');
+\draw[->,-latex,dashed,thin] (4)--(4');
+\draw[->,-latex,dashed,thin] (5)--(5');
+\draw[->,-latex,dashed,thin] (6)--(6');
+\draw[->,-latex,dashed,thin] (7)--(7');
+\draw[->,-latex,dashed,thin] (8)--(8');
+\draw[->,-latex,dashed,thin] (9)--(9');
+\draw[->,-latex,dashed,thin] (10)--(10') node[midway,anchor=west]{$(2)$ Correction};
+\draw[line width=.1ex] (-5,2) -- (5,2);  %%
+\draw[fill=yellow,draw=black,thick] (-4.5,2) circle (4pt) node (1'') {};%%
+\draw[fill=yellow,draw=black,thick] (-3,2) circle (4pt) node (2'') {};%%
+\draw[fill=yellow,draw=black,thick] (-.5,2) circle (4pt) node (41') {};%%
+\draw[fill=yellow,draw=black,thick] (-.5,2.1) circle (4pt) node (42') {};%%
+\draw[fill=yellow,draw=black,thick] (1.5,2) circle (4pt) node (5'') {};%%
+\draw[fill=yellow,draw=black,thick] (1.9,2) circle (4pt) node (61') {};%%
+\draw[fill=yellow,draw=black,thick] (1.9,2.1) circle (4pt) node (62') {};%%
+\draw[fill=yellow,draw=black,thick] (1.9,2.2) circle (4pt) node (63') {};%%
+\draw[fill=yellow,draw=black,thick] (4.5,2) circle (4pt) node (9'') {};%%
+\draw[fill=yellow,draw=black,thick] (5,2) circle (4pt) node (10'') {};%%
+\draw[->,-latex,dashed,thin] (1')--(1'');
+\draw[->,-latex,dashed,thin] (2')--(2'');
+\draw[->,-latex,dashed,thin] (4')--(41');
+\draw[->,-latex,dashed,thin] (5')--(5'');
+\draw[->,-latex,dashed,thin] (6')--(61');
+\draw[->,-latex,dashed,thin] (9')--(9'');
+\draw[->,-latex,dashed,thin] (10')--(10'') node[midway,anchor=west]{$(3)$ Rééchantillonnage};
+\node[font=\large] at (-3.2,3) {\red{\bcx}};
+\node[font=\large] at (2.4,3) {\red{\bcx}};
+\node[font=\large] at (3,3) {\red{\bcx}};
+
+
+\draw[line width=.1ex] (-5,.5) -- (5,.5);  %%
+\draw[fill=yellow,draw=black,thick] (-4.5,.5) circle (3pt) node (n1) {};%%
+\draw[fill=yellow,draw=black,thick] (-3,.5) circle (3pt) node (n2) {};%%
+\draw[fill=yellow,draw=black,thick] (-.45,.5) circle (3pt) node (n3) {};%%
+\draw[fill=yellow,draw=black,thick] (-.55,.5) circle (3pt) node (n4) {};%%
+\draw[fill=yellow,draw=black,thick] (1.5,.5) circle (3pt) node (n5) {};%%
+\draw[fill=yellow,draw=black,thick] (1.8,.5) circle (3pt) node (n6) {};%%
+\draw[fill=yellow,draw=black,thick] (1.9,.5) circle (3pt) node (n7) {};%%
+\draw[fill=yellow,draw=black,thick] (2,.5) circle (3pt) node (n8) {};%%
+\draw[fill=yellow,draw=black,thick] (4.5,.5) circle (3pt) node (n9) {};%%
+\draw[fill=yellow,draw=black,thick] (5,.5) circle (3pt) node (n10) {};%%
+\draw[->,-latex,dashed,thin] (1'')--(n1);
+\draw[->,-latex,dashed,thin] (2'')--(n2);
+\draw[->,-latex,dashed,thin] (41')--(n3);
+\draw[->,-latex,dashed,thin] (41')--(n4);
+\draw[->,-latex,dashed,thin] (5'')--(n5);
+\draw[->,-latex,dashed,thin] (61')--(n6);
+\draw[->,-latex,dashed,thin] (61')--(n7);
+\draw[->,-latex,dashed,thin] (61')--(n8);
+\draw[->,-latex,dashed,thin] (9'')--(n9);
+\draw[->,-latex,dashed,thin] (10'')--(n10) node[midway,anchor=west]{$(1)$ Prédiction};
+\end{tikzpicture}%

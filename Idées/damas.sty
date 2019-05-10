@@ -1,0 +1,81 @@
+\newcommand{\footnoteremember}[2]{\footnote{#2}\newcounter{#1}\setcounter{#1}{\value{footnote}}}
+\newcommand{\footnoterecall}[1]{\footnotemark[\value{#1}]}
+
+\def\miniabstract#1{\gdef\@miniabstract{#1}}
+\def\@miniabstract{}
+\def\typdoc#1{\gdef\@typdoc{#1}}
+\def\@typdoc{}
+\def\director#1{\gdef\@director{#1}}
+\def\@director{}
+\def\encadrement#1{\gdef\@encadrement{#1}}
+\def\@encadrement{}
+\def\adr#1{\gdef\@adr{#1}}
+\def\@adr{Département d'informatique et de génie logiciel \\ %\medskip
+%\epsfig{file=ulaval.eps,height=70pt}
+\epsfig{file=damas.eps,height=2cm}%
+}
+
+\def\pagetitre{%
+  \thispagestyle{empty}%
+        \hrule height2pt
+        \vspace{0.05in}
+        \begin{center}
+        \epsfig{file=ulaval.eps,height=50pt}
+        \end{center}
+        \vspace{0.05in}
+        \hrule height2pt
+
+        \vfill
+
+        \begin{center}
+                \Large\expandafter\textbf{\textsc{\@title}}
+        \end{center}
+
+        \vfill
+
+        \begin{center}
+                \Large\expandafter\textbf{\@typdoc}
+        \end{center}
+
+        \vfill
+
+        \begin{center}
+                \large\expandafter\@author
+        \end{center}
+
+        \vfill
+
+        \begin{center}
+        Directeur : \\
+        \@director
+        \end{center}
+
+        \vfill
+        \bigskip
+
+        \begin{center}
+        \large{Comité d'encadrement :\\
+        \@encadrement}
+        \end{center}
+
+        \vfill
+        \bigskip
+
+        \begin{center}
+                \Large\@adr
+
+        \bigskip
+
+               \large{\@date} \\
+        \end{center}
+
+        \medskip
+        \hrule height2pt
+
+%        \bigskip
+%        \small{\textsc{R\'esum\'e} : \@miniabstract}
+        \newpage
+}
+
+
+

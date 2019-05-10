@@ -1,0 +1,140 @@
+\chapter{Processus gaussiens appliqués aux \pac{pomdp}s}
+\label{anx:gp}
+
+\begin{summary}
+Dans cette annexe nous détaillons plus avant les recherches effectuées en collaboration avec l'étudiant à la maîtrise Patrick Dallaire dans le cadre de l'apprentissage de \pomdps continus quasi-déterministes. Dans une première section les \pomdps continus sont détaillés avant de présenter les \pomdps à base de processus gaussiens. Des expérimentations sont ensuite présentées démontrant la faisabilité de l'approche.
+\end{summary}
+
+
+\section{\pac{pomdp} continu}
+
+Les \pomdps continus sont l'extension naturelle des \pomdps où l'espace des états, des actions et des observations sont des espaces continus à respectivement $m$, $n$, et $p$ dimensions. De fait les fonctions de transitions et d'observations sont alors des fonctions continues définissant des densités de probabilité plutôt que des distributions. Plus formellement, un \pomdp continu est défini par un tuple $(\Sta,\Act,\Omega,\Tra,\Obs,\Rew,b_1,\gamma)$, avec :
+\begin{itemize}
+	\item $\Sta \subset \mathbb{R}^m$ : L'espace d'états, continu et potentiellement multidimensionnel.
+	\item $\Act \subset \mathbb{R}^n$ : L'espace d'actions, continu et potentiellement multidimensionnel. Nous supposons ici que $\Act$ est un sous-ensemble fermé de $\mathbb{R}^n$, afin que le contrôle optimal défini plus bas existe.
+	\item $\Omega \subset \mathbb{R}^p$ : L'espace d'observations, continu et potentiellement multidimensionnel.
+	\item $\Tra : \Sta \times \Act \times \Sta \rightarrow [0, \infty]$ : La fonction de transition qui détermine la densité de probabilité conditionnelle  $\Tra(\mathbf{s},\mathbf{a},\mathbf{s}') = p(\mathbf{s}'|\mathbf{s},\mathbf{a})$ de se déplacer vers l'état $\mathbf{s}'$, lorsque l'agent exécute l'action $\mathbf{a}$ dans l'état $\mathbf{s}$.
+	\item $\Obs : \Sta \times \Act \times \Omega \rightarrow [0, \infty]$ : La fonction d'observation qui détermine la densité de probabilité conditionnelle $O(\mathbf{s}',\mathbf{a},\mathbf{z}') = p(\mathbf{z}|\mathbf{s}',\mathbf{a})$ d'observer $\mathbf{z}'$ lorsque l'agent atteint l'état $\mathbf{s}'$ suite à l'exécution de l'action $\mathbf{a}$.
+	\item $\Rew : \Sta \times \Act \times \mathbb{R} \rightarrow [0, \infty]$ : La fonction de récompense qui détermine la densité de probabilité conditionnelle $R(\mathbf{s}',\mathbf{a},r') = p(r'|\mathbf{s}',\mathbf{a})$ de recevoir la récompense $r'$, lorsque l'agent atteint l'état $\mathbf{s}'$ suite à l'exécution de l'action $\mathbf{a}$.
+	\item $b_1 \in \Delta \Sta$ : La distribution de l'état initial.
+	\item $\gamma$ : Le facteur d'escompte.
+\end{itemize}
+
+L'état de croyance $b$, qui est la densité de probabilité a posteriori sur l'état courant $\mathbf{s}$ de l'agent, peut toujours être maintenu à jour par l'utilisation de la règle de Bayes comme suit :
+\begin{equation}
+b^{\mathbf{a}\mathbf{z}}(\mathbf{s}') \propto \Obs(\mathbf{s}',\mathbf{a},\mathbf{z}') \int_\Sta \Tra(\mathbf{s},\mathbf{a},\mathbf{s}') b(\mathbf{s}) d\mathbf{s}\label{eq1:bel-update}
+\end{equation}
+
+Le comportement de l'agent est ainsi déterminé par une politique $\pi$ qui, pour tout état de croyance $b$ possible, précise l'action à exécuter. La politique optimale, noté $\pi^*$, est celle qui permet de maximiser la somme des récompenses escomptées espérées sur un horizon infini. Une telle politique optimale est obtenue en résolvant l'équation de Bellman :
+\begin{equation}
+V^*(b) = \max_{\mathbf{a} \in A} \left[ g(b,\mathbf{a}) + \gamma \int_Z f(\mathbf{z}|b,\mathbf{a}) V^*(b^{\mathbf{a}\mathbf{z}}) d\mathbf{z} \right]
+\end{equation}
+où $V^*$ est la fonction de valeur de la politique optimale et est aussi le point fixe de l'équation de Bellman. De plus,
+\[g(b,\mathbf{a}) = \int_S b(\mathbf{s}) \int_S T(\mathbf{s},\mathbf{a},\mathbf{s}') \int_{\mathbb{R}} r R(\mathbf{s}', \mathbf{a}, r) dr  d\mathbf{s}'d\mathbf{s}\]
+est la récompense espérée lorsque l'action $\mathbf{a}$ est exécutée dans l'état de croyance $b$; et
+\[f(\mathbf{z}|b,\mathbf{a}) = \int_S O(\mathbf{s}',\mathbf{a},\mathbf{z}) \int_S T(\mathbf{s},\mathbf{a},\mathbf{s}') b(s) d\mathbf{s} d\mathbf{s}'\]
+est la densité de probabilité conditionnelle d'observer $\mathbf{z}$ suite à l'exécution de l'action $\mathbf{a}$ dans l'état de croyance $b$. Pour obtenir l'état de croyance suivant, noté $b^{\mathbf{a}\mathbf{z}}$, il suffit de faire une mise à jour de $b$ en appliquant la règle de Bayes (précédemment introduite par l'équation \eqref{eq1:bel-update}) avec l'observation $\mathbf{z}$ et l'action $\mathbf{a}$.
+
+\section{\pac{gp-pomdp}}
+
+Dans cette annexe, nous considérons le problème d'apprendre la politique optimale dans un \pomdp continu, tel que décrit à la section précédente, lorsque les fonctions $\Tra$, $\Obs$ et $\Rew$ ne sont pas connues a priori. Pour envisager la prise de décisions optimales, le modèle est appris par modélisation via les processus gaussiens (\textsc{gp}s)~\citep{O.92,WB.98}, et ce, uniquement à partir de séquences d'action-observation. Les \textsc{gp}s sont une classe de modèle probabiliste qui met l'emphase sur les points où une fonction est instanciée, en utilisant la distribution gaussienne sur l'espace des fonctions. Généralement, la distribution gaussienne est paramétrée par un vecteur de moyenne et une matrice de covariance, mais dans le cas des \textsc{gp}s, ces deux paramètres sont des fonctions de l'espace sur lesquels ils opèrent.
+
+Pour notre problème de contrôle optimal, nous proposons d'utiliser un \emph{Modèle Dynamique par Processus gaussien} (\textsc{gpdm}) afin d'apprendre les fonctions de transition, observation et récompense, et proposons ensuite un algorithme de planification en ligne choisissant les actions qui maximisent à long terme les récompenses espérées en fonction du modèle courant.
+
+Afin d'utiliser une modélisation par processus gaussien pour apprendre les fonctions $\Tra$, $\Obs$ et $\Rew$ du modèle \pomdp, il faut d'abord faire l'hypothèse que les dynamiques du système peuvent être exprimées sous la forme quasi-déterministe suivante :
+\begin{eqnarray}
+\mathbf{s}_t & = & \Tra'(\mathbf{s}_{t-1},\mathbf{a}_{t-1}) + \epsilon_T\notag\\
+\mathbf{z}_t & = & \Obs'(\mathbf{s}_t, \mathbf{a}_{t-1}) + \epsilon_O\\
+r_t & = & \Rew'(\mathbf{s}_{t}, \mathbf{a}_{t-1}) + \epsilon_R\notag
+\end{eqnarray}
+où $\epsilon_T$, $\epsilon_O$ et $\epsilon_R$ sont des variables de bruit blanc gaussiens à moyenne nulle.  Les fonctions $\Tra'$, $\Obs'$ et $\Rew'$ sont des fonctions déterministes qui retournent respectivement l'état suivant, l'observation associée à ce dernier et la récompense obtenue. L'objectif est donc d'apprendre ce modèle et de maintenir une estimation par maximum de vraisemblance sur la trajectoire des états en utilisant un \textsc{gpdm} avec des méthodes d'optimisation.
+
+Pour simplifier la lecture, nous utiliserons une notation matricielle où $\mathbf{S} = [\mathbf{s}_1, \mathbf{s}_2, \dots, \mathbf{s}_{N+1}]^\top$ représente la matrice de séquence d'état, $\mathbf{A} = [\mathbf{a}_1, \mathbf{a}_2, \dots, \mathbf{a}_{N}]^\top$ la matrice de séquence d'action, $\mathbf{Z} = [\mathbf{z}_2, \mathbf{z}_3, \dots, \mathbf{z}_{N+1}]^\top$ pour les observations et $\mathbf{r} = [r_2, r_3, \dots, r_{N+1}]^\top$ le vecteur contenant les récompenses obtenues.
+
+\subsection{Modèle Dynamique par Processus gaussien}
+
+Un \textsc{gpdm} consiste en une fonction dont l'ensemble de départ est un espace latent et l'espace d'arrivée est celui des observations. Ce modèle probabiliste, dans le contexte du \pomdp, est défini tel que $\Sta \times \Act \rightarrow \Omega \times \Rew$. Il représente donc la fonction d'observation-récompense où l'action est complètement observable et l'état est une variable latente. Une seconde fonction permet de régir les dynamiques, qui sont par hypothèse Markovienne du premier ordre, dans cet espace latent. Le modèle des dynamiques est défini tel que $\Sta \times \Act \rightarrow \Sta$ et tel qu'il corresponde à la fonction de transition du \pomdp. Ces deux fonctions du \textsc{gpdm} sont définies par des combinaisons linéaires de fonctions de base non linéaires :
+\begin{eqnarray}
+\mathbf{s}_t & = & \sum_i \mathbf{b}_i \phi_i(\mathbf{s}_{t-1}, \mathbf{a}_{t-1}) + \mathbf{n}_{s}\\
+\mathbf{y}_t & = & \sum_j \mathbf{c}_j \psi_j(\mathbf{s}_{t}, \mathbf{a}_{t-1}) + \mathbf{n}_{y}
+\end{eqnarray}
+où $\mathbf{B} = \left[\mathbf{b}_1, \mathbf{b}_2, \dots \right]$ et $\mathbf{C} = \left[\mathbf{c}_1, \mathbf{c}_2, \dots \right]$ sont les poids des fonctions des base $\phi_i$ et $\psi_j$, $\mathbf{n}_{s}$ et $\mathbf{n}_{y}$ sont des bruits blancs gaussiens. L'espace d'observation-récompense conjoint est noté par $Y = \Omega \times \Rew$ et, par conséquent, $\mathbf{y}_t$ est le vecteur d'observation $\mathbf{z}_t$ augmenté de la récompense $r_t$. Pour suivre la méthodologie bayésienne, les paramètres inconnus doivent être marginalisés par intégration. Ceci peut être fait sous forme analytique~\citep{M.03,N.96} en appliquant une distribution gaussienne isotropique a priori sur les colonnes de $\mathbf{C}$ et ainsi mener à la fonction de vraisemblance gaussienne multivariée:
+\begin{equation}
+ p(\mathbf{Y} \mid \mathbf{S}, \mathbf{A}, \bar \alpha) = \frac{\left|\mathbf{W}\right|^N}{\sqrt{(2\pi)^{N(p+1)}\left|\mathbf{K}_{Y}\right|^{(p+1)}}}
+\exp \left(-\frac{1}{2} \text{tr}(\mathbf{K}_{Y}^{-1}\mathbf{Y}\mathbf{W}^2\mathbf{Y}^\top) \right)
+\end{equation}
+où  $\mathbf{Y} = [\mathbf{y}_2, \mathbf{y}_3, \dots, \mathbf{y}_{N+1}]^\top$ est la séquence des observations-récompenses conjointes, $\mathbf{K}_{Y}$ est une matrice de noyau calculé à partir des hyperparamètres $\bar\alpha = \{\alpha_1,\alpha_2,\dots,\mathbf{W}\}$. La matrice $\mathbf{W}$ est diagonale et contient $p+1$ facteurs de mise à l'échelle afin de tenir compte des différentes variances entre les dimensions d'observation. En utilisant une seule fonction de noyau pour l'état et l'action, les éléments de la matrice de noyau sont $(\mathbf{K}_{Y})_{i,j} = k_{Y}([\mathbf{s}_i, \mathbf{a}_{i-1}], [\mathbf{s}_j, \mathbf{a}_{j-1}])$. Notez que pour le cas de l'observation, l'action correspond à celle du pas de temps précédent. Le noyau choisi pour cette fonction est, avec $\mathbf{x}_i = [\mathbf{s}_i, \mathbf{a}_{i-1}]$, la fonction radiale de base (\textsc{rbf}) standard:
+\begin{equation}
+k_{Y}(\mathbf{x}, \mathbf{x}') = \alpha_1 \exp \left(-\frac{\alpha_2}{2}\left\|\mathbf{x}-\mathbf{x}'\right\|^2 \right) + \alpha_3^{-1}\delta_{\mathbf{x}\mathbf{x}'}
+\end{equation}
+où l'hyperparamètre $\alpha_1$ représente la variance en sortie, $\alpha_2$ est l'inverse de la largeur de la \textsc{rbf} qui représente à quel point la fonction est lisse et $\alpha_3^{-1}$ est la variance du bruit additif $\mathbf{n}_{y}$.
+
+Pour ce qui est de la modélisation des dynamiques dans l'espace latent, la méthode est similaire, mais nécessite l'application de la propriété de Markov. En utilisant une distribution gaussienne isotropique a priori sur les colonnes de $\mathbf{B}$, l'intégration peut se faire sous forme analytique. Il en résulte la densité de probabilité suivante sur les trajectoires latentes:
+\begin{equation}
+p(\mathbf{S} \mid \mathbf{A}, \bar \beta) = \frac{p(\mathbf{s}_1)}{\sqrt{(2\pi)^{N(m+n)}\left|\mathbf{K}_{X}\right|^{m+n}}}
+\exp \left(-\frac{1}{2} \text{tr}(\mathbf{K}_{X}^{-1}\mathbf{S}_{out}\mathbf{S}_{out}^\top) \right)
+\end{equation}
+où $p(\mathbf{s}_1)$ est la distribution initiale sur l'état $b_1$ qui est par hypothèse isotropique gaussienne, $\mathbf{S}_{out} = [\mathbf{s}_2, \dots, \mathbf{s}_{N+1}]^\top$ est la matrice des coordonnées latentes correspondant aux états cachés. La matrice de noyaux $\mathbf{K}_{X}$ de taille $N \times N$ est construite à partir de $\mathbf{X} = [\mathbf{x}_1, \dots ,\mathbf{x}_{N}]^\top$ où $\mathbf{x}_i = [\mathbf{s}_i, \mathbf{a}_i]$ avec $1 \leq i \leq t-1$. La fonction de noyau choisi pour la modélisation des dynamiques est:
+\begin{equation}
+k_{X}(\mathbf{x}, \mathbf{x}') = \beta_1 \exp \left(-\frac{\beta_2}{2}\left\|\mathbf{x}-\mathbf{x}'\right\|^2 \right)
++ \beta_3 \mathbf{x}^\top\mathbf{x}' + \beta_4^{-1}\delta_{\mathbf{x}\mathbf{x}'}
+\end{equation}
+où la mise à l'échelle du terme linéaire est représentée par le paramètre additionnel $\beta_3$. Comme tous les hyperparamètres sont inconnus, nous suivons la démarche de ~\cite{WLBS.05} et appliquons les distributions non informatives $p(\bar\alpha) \propto \prod_i \alpha_i^{-1}$ et $p(\bar\beta) \propto \prod_i \beta^{-1}$ a priori sur les hyperparamètres. Il en résulte une interprétation complètement probabiliste des séquences d'action-observation:
+\begin{equation}
+p(\mathbf{Z},\mathbf{r},\mathbf{S}, \bar\alpha, \bar\beta | \mathbf{A}) = p(\mathbf{Y}|\mathbf{S}, \mathbf{A}, \bar\alpha)
+p(\mathbf{S}|\mathbf{A}, \bar\beta) p(\bar\alpha) p(\bar\beta)
+\end{equation}
+
+Pour réaliser l'apprentissage d'un \textsc{gpdm}, Wang~\emph{et al.} ont proposé de minimiser la log distribution jointe a posteriori négative $- \ln p(\mathbf{S}, \bar\alpha, \bar\beta, \mathbf{W}|\mathbf{Z},\mathbf{r},\mathbf{A})$ par rapport aux paramètres inconnus et qui est défini par~\citep{WFH.08}:
+\begin{equation}\label{eq11}
+\begin{split}
+\mathcal{L} &= \frac{m+n}{2}\ln \left|\mathbf{K}_X\right|
++ \frac{1}{2}\text{tr}(\mathbf{K}_{X}^{-1}\mathbf{S}_{out}\mathbf{S}_{out}^\top) + \frac{1}{2}\mathbf{s}_1^\top\mathbf{s}_1 - N \ln \left|\mathbf{W}\right| \\&
++ \frac{p+1}{2}\ln \left|\mathbf{K}_{Y}\right|
++ \frac{1}{2} \text{tr}(\mathbf{K}_{Y}^{-1}\mathbf{Y}\mathbf{W}^2\mathbf{Y}^\top) + \sum_i \ln \alpha_i + \sum_i \ln \beta_i  + C
+\end{split}
+\end{equation}
+Pour plus de détails sur les méthodes d'apprentissage du \textsc{gpdm}, nous référons le lecteur intéressé à~\cite{WFH.08}. Le résultat de la phase d'apprentissage permet d'obtenir une estimation du maximum de vraisemblance a posteriori (\textsc{map}) de $\{\mathbf{S}, \bar\alpha, \bar\beta, \mathbf{W}\}$. Celui-ci est ensuite utilisé pour estimer les fonctions de transition et d'observation-récompense:
+\begin{eqnarray}
+\mathbf{s}_{t+1} &=& \mathbf{k}_X([\mathbf{s}_t, \mathbf{a}_t])^\top \mathbf{K}_{{X}}^{-1}\mathbf{S}_{out} \label{eq:sta-pred} \\
+\mathbf{y}_{t+1} &=& \mathbf{k}_Y([\mathbf{s}_{t+1}, \mathbf{a}_t])^\top \mathbf{K}_{{Y}}^{-1}\mathbf{Y} \label{eq:obs-rew-pred}
+\end{eqnarray}
+où $\mathbf{k}_X$ et $\mathbf{k}_Y$ sont des vecteurs de covariance entre la donnée test et les données contenues dans leurs ensembles d'entraînement respectifs. Les vecteurs de covariances sont calculés en utilisant les hyperparamètres $\bar\alpha$ pour le modèle d'observations et $\bar\beta$ pour le modèle de transition. De plus, comme $\mathbf{S}$ fait partie intégrante de l'estimation \textsc{map}, la séquence d'états obtenus est considérée la plus probable en fonction du modèle courant. Par conséquent, le dernier élément de cette matrice correspond à la meilleure estimation que l'on a de l'état courant. L'état de croyance complet de l'agent, conditionné uniquement par les observations, actions et récompenses, est donc déterminé par l'estimation MAP du modèle ainsi que la trajectoire $\mathbf{S}$ dans l'espace latent.
+
+Une fois le modèle $\Tra$, $\Obs$ et $\Rew$ appris, une simple planification approximative en ligne à partir de ce modèle est effectuée pour estimer quelle est la meilleure action à entreprendre. Voyons maintenant quels sont les résultats expérimentaux.
+
+\section{Expérimentations}
+
+Pour valider notre approche, en particulier l'apprentissage du modèle \textsc{gp-pomdp}, nous avons convenu de contrôler un dirigeable en ligne sans connaître le modèle physique de celui-ci. Nous avons choisi le dirigeable, car, comparativement aux autres appareils, il présente l'avantage d'opérer à une vitesse relativement lente et peut conserver son altitude sans nécessairement avoir à se déplacer.
+
+Le but des expérimentations que nous avons faites est de valider l'utilisation des \textsc{gpdm}s pour des fins d'identification de modèle en ligne et d'estimation de l'état. L'ajout d'un algorithme de planification en ligne nous permet d'évaluer la qualité du modèle dans un contexte de prise de décisions. L'agent doit maintenir autant que possible un dirigeable à une hauteur nulle en utilisant le minimum d'énergie. Chaque épisode débute à une hauteur de 0 ainsi qu'à une vélocité nulle et dure pendant $100$ étapes de temps. Concernant le simulateur de dynamique utilisé, la discrétisation du temps est de une seconde. Les observations sont constituées de la hauteur ($m$) et de la vélocité ($m/s$), toutes deux dégradées par un bruit blanc gaussien à moyenne nulle et d'écart-type de $1 cm$. Les récompenses sont aussi corrompues par le même bruit blanc. Les dynamiques du dirigeable sont simulées par une fonction de transition déterministe dont l'état en sortie, contenant la hauteur et la vélocité, est ensuite dégradé par un bruit blanc gaussien de moyenne nulle et d'écart-type de $0.5 cm$. L'ensemble des actions est continu et défini par $A = [-1,1]$ où les bornes représentent respectivement les poussées maximales vers le bas et vers le haut.
+
+En vue d'apprendre et de planifier à partir des observations et des récompenses, nous avons fait l'apprentissage de \textsc{gpdm} à chaque pas de temps afin de fournir à l'algorithme de planification un modèle et une séquence d'états probables. Pour assurer un bon compromis entre l'exploration et l'exploitation, l'agent-dirigeable choisit une action aléatoire suivant une distribution de probabilité décroissante au cours du temps, favorisant ainsi l'exploration au début de chaque épisode.
+
+Lors de nos expérimentations, la fonction de récompense fut cruciale en raison du peu de temps que l'agent-dirigeable avait pour apprendre et de la faible profondeur de l'arbre de l'algorithme de planification. Par conséquent, nous l'avons défini par la somme de deux gaussiennes. La première gaussienne ayant un écart-type de $1$ mètre a pour rôle de donner un demi-point lorsque l'agent-dirigeable est aux alentours de l'altitude cible. La seconde gaussienne possédant un faible écart-type de $5 cm$ donne un autre demi-point lorsque l'agent-dirigeable est à seulement quelques centimètres de son but. Un coût sur les actions est aussi appliqué afin de forcer l'agent-dirigeable à atteindre son but avec une quantité d'énergie minimale. De plus, toutes les récompenses observées sont corrompues par un bruit blanc gaussien d'écart-type de $0.01$
+
+La figure~\ref{fig1} montre la récompense moyenne reçue par l'agent-dirigeable. Notons que la courbe se stabilise autour d'une récompense $0.8$. Cette valeur correspond à la récompense octroyée lorsque le dirigeable est à une distance de $5 cm$ de l'altitude cible et qu'aucune action significative n'est exécutée. Sur la figure~\ref{fig2}, nous observons que la distance moyenne du dirigeable par rapport à l'altitude cible se stabilise autour de $10 cm$. La figure~\ref{fig3} montre l'erreur de prédiction moyenne de la séquence d'observation-récompense lorsque l'agent utilise l'équation~\eqref{eq:obs-rew-pred} et l'estimation du dernier état. Nous avons défini l'erreur comme étant la somme des erreurs absolues sur la prédiction de l'observation et la récompense bruitée. La figure~\ref{fig4} montre que la majorité des trajectoires du dirigeable ont une grande variance au début de l'épisode et que celle-ci diminue au fur et à mesure que l'agent reçoit des observations. Chaque boîte représente les 25ième et 75ième percentiles, la marque centrale est la médiane et les moustaches englobent les données non aberrantes. Pour comparaison avec la politique aléatoire, qui n'est pas rapportée dans cet article, cette stratégie diverge rapidement, et ce, jusqu'à 3 mètres du l'altitude cible.
+
+\begin{figure*}[!thb]
+\centering
+\includegraphics[width=0.8\textwidth]{reward_fr}\label{fig1}
+\caption{Récompense moyenne reçue}
+\end{figure*}
+
+\begin{figure*}[!thb]
+\centering
+\includegraphics[width=0.8\textwidth]{height_fr}\label{fig2}
+\caption{Distance moyenne à la hauteur requise}
+\end{figure*}
+
+\begin{figure*}[!thb]
+\centering
+\includegraphics[width=0.8\textwidth]{error_fr}\label{fig3}
+\caption{Erreur moyenne de prédiction}
+\end{figure*}
+
+\begin{figure*}[!thb]
+\centering
+\includegraphics[width=0.8\textwidth]{boxplot_fr}\label{fig4}
+\caption{Quantile à 2.5\%, 25\%, 50\%, 75\%, 97.5\% de la distribution des trajectoires}
+\end{figure*} 

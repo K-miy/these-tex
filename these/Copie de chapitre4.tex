@@ -1,0 +1,514 @@
+\chapter{Contraintes sur l'observabilité des processus de Markov}
+
+% \emph{«Ce qui est important c'est l'esprit d'équipe. Les mecs, y sont une équipe, y'a un esprit, alors forcement, il faut qu'ils partagent.»}
+% \begin{flushright} Coluche \end{flushright}
+% \bigskip
+% \emph{«Observer est le plus durable des plaisirs de la vie.»}
+% \begin{flushright} Diane à la croisée des chemins -- Georges Meredith \end{flushright}
+% \bigskip
+ \emph{«L'important, c'est de savoir ce qu'il faut observer.»}
+ \begin{flushright} Histoires Extraordinaires -- Edgar Allan Poe \end{flushright}
+ \bigskip
+
+\begin{summary}
+Ce chapitre introduit tout d'abord la problématique de la complexité associée à l'observabilité partielle dans les processus décisionnels de Markov. Pour commencer, un aperçu de la complexité des différents modèles existants est rappelé avant l'introduction d'un nouveau type d'observabilité contrainte par le concepteur. Ce nouveau type d'observabilité, qualifié de \emph{bijectivement observable} permet, dans certain cas identifiés, de réaliser des gains substantiels en complexité en pire cas. Ce chapitre détaille donc les apports pour le modèle à un seul agents partiellement observable (\pomdp) avant d'étendre au modèle à plusieurs agents (\decpomdp). Des exemples d'application sont ensuite modélisés et présentés.
+\end{summary}
+
+\label{chap:4}
+
+\section{Introduction}
+
+La disponibilité et la complétude de l'information a toujours été un facteur prépondérant dans le domaine de la prise de décision. Dans les processus décisionnels de Markov, où toute l'information nécessaire est rassemblée dans l'état du système, l'observabilité de cet état influence énormément la complexité de la prise de décision dans cet état. Toutefois, il est très rare de trouver des cas ou l'information disponible est parfaite et complète à la fois.
+
+Introduite par~\cite{D.62}, l'observabilité partielle modélise cet aspect incomplet ou bruité de l'observation de l'état par l'agent intelligent généralement par l'introduction d'un \emph{fonction d'observation} qui associe à chaque état une distribution sur un ensemble souvent restreint de symboles. Une autre manière de voir cette observabilité partielle est de considérer que l'état est transmis au travers d'un canal de communication bruité (e.g. les capteurs). Cette représentation très générale permet de modéliser tous les niveaux d'observabilité, depuis l'observabilité complète, où à chaque état est associé un symbole particulier qui peut être l'etat lui même, jusqu'à l'observabilité nulle, où à chaque état est associé le même symbole. Cette représentation à été utilisée dans tous les modèles de Markov depuis, et en particulier dans les \pomdps pour le cas à un seul agent, et dans les \decpomdps dans le cas multiagent.
+
+Cependant, avec l'observabilité partielle vient nécessairement une augmentation de la complexité algorithmique en pire cas. Comme démontrée dans la figure~\ref{fig:compObs}, à mesure que l'observabilité diminue, i.e. que les agents ont de moins en moins d'information pour raisonner, la complexité généralement augmente.
+
+\begin{figure}[h!tb]
+\begin{center}
+    \begin{tikzpicture}[line width=.1ex, scale=1]
+        %\draw[step=0.1cm,color=gray,very thin] (-2,-2) grid (11,11);%%
+        \begin{scope}[font=\footnotesize]
+        \node[below] at (8.5,0) {Partielle};  %%
+        \node[below=10pt] at (8.5,0) {\& Imparfaite};  %%
+        \node[below=] at (6,0) {Conjointe};  %%
+        \node[below=10pt] at (6,0) {\& Parfaite};  %%
+        \node[below] at (3.5,0) {Complète};  %%
+        \node[below=10pt] at (3.5,0) {\& Imparfaite};  %%
+        \node[below] at (1,0) {Complète};  %%
+        \node[below=10pt] at (1,0) {\& Parfaite};  %%
+        \node[below] at (10,0) {Nulle};  %%
+        \end{scope}
+%        \node[align=right,anchor=east] at (0,8.5) {\textsc{nexp}};  %%
+%        \node[align=right,anchor=east] at (0,7.5) {\textsc{exp}};  %%
+%        \node[align=right,anchor=east] at (0,7) {\textsc{pspace}};  %%
+%        \node[align=right,anchor=east] at (0,2) {\textsc{np}};  %%
+%        \node[align=right,anchor=east] at (0,1) {\textsc{p}};  %%
+        \node[anchor=east] at (0,8.5) {\textsc{nexp}};  %%
+        \node[anchor=east] at (0,7.5) {\textsc{exp}};  %%
+        \node[anchor=east] at (0,7) {\textsc{pspace}};  %%
+        \node[anchor=east] at (0,2) {\textsc{np}};  %%
+        \node[anchor=east] at (0,1) {\textsc{p}};  %%
+        \node at (5,4.5) {\LARGE{Fossé}};%%
+        \draw[thin] (0,8.5) -- (8.5,8.5); \draw[thin,dashed] (8.5,8.5) -- (10,8.5);
+        \draw[thin] (0,7) -- (8.5,7); \draw[thin,dashed] (8.5,7) -- (10,7);
+        \draw[thin] (0,2) -- (8.5,2); \draw[thin,dashed] (8.5,2) -- (10,2);
+        \draw[thin] (0,1) -- (8.5,1); \draw[thin,dashed] (8.5,1) -- (10,1);
+        \draw[thin,dashed,draw=gray] (10,0) -- (10,8.5);
+        \draw[thin,dashed,draw=gray] (8.5,0) -- (8.5,8.5);
+        \draw[thin,dashed,draw=gray] (6,0) -- (6,8.5);
+        \draw[thin,dashed,draw=gray] (3.5,0) -- (3.5,8.5);
+        \draw[thin,dashed,draw=gray] (1,0) -- (1,8.5);
+        \pgfsetfillopacity{0.5}
+        \shade [right color=white,left color=blue!50!white] (0,2.1) rectangle (11,6.9);
+        \pgfsetfillopacity{1.0}
+        \draw[->,-latex,line width=.5ex,red] (-.05,0) -- (11,0) node[anchor=south]{Observabilité};  %%
+        \draw[->,-latex,line width=.5ex,red] (0,-.05) -- (0,10) node[anchor=west]{Complexité};  %%
+        \filldraw (1,1) circle (2pt) node[anchor=250]{(\textsc{m})\textsc{mdp}$_\infty$};%%
+        \filldraw (10,2) circle (2pt) node[anchor=south]{\textsc{u}\mdp};%%
+        \filldraw (10,7) circle (2pt) node[anchor=south]{\textsc{umdp}$_\infty$};%%
+        \filldraw (3.5,7) circle (2pt) node[anchor=south]{(\textsc{m})\pomdp};%%
+        \filldraw (6,8.5) circle (2pt) node[anchor=north]{\decmdp};%%
+        \filldraw (6,1) circle (2pt) node[anchor=south]{Free Com.};%%
+        \filldraw (6,1) circle (2pt) node[anchor=north]{\decmdpcom};%%
+        \filldraw (8.5,8.5) circle (2pt) node[anchor=south]{\decpomdp};%%
+        \filldraw (8.5,7) circle (2pt) node[anchor=340]{Free Com.};%%
+        \filldraw (8.5,7) circle (2pt) node[anchor=20]{\decpomdpcom};%%
+    \end{tikzpicture}  \caption{Mesure de la complexité fonction de l'observabilité}\label{fig:compObs}
+\end{center}
+\end{figure}
+Ainsi, en présence d'information complète et parfaite -- lorsque le ou les agents ont entièrement accès à l'état réel du système -- le problème à résoudre est seulement \textsc{p}-complet. Seulement, dès que l'observation devient imparfaite, et même si elle reste complète -- lorsque tous les agents ont la même information bruitée de l'état du système -- résoudre le problème devient alors \textsc{pspace}-complet, et ce, même si la fonction de transition est déterministe (\textsc{d}et\pomdps~\citep{L.96}). La décentralisation de l'information -- lorsque les agents n'ont plus nécessairement accès à la même information bruitée sur l'état du monde -- accroît encore cette complexité du problème jusqu'à la \textsc{nexp}-complétude. Les cas particuliers du \decmdpcom avec communication gratuites et du \textsc{u}\mdp (Unobservable \mdp) sont facilement explicable. Dans le cas du \decmdpcom, les agent ont une vue non-bruitée locale du système. Ainsi, de par la communication, ils peuvent échanger toutes leur vues locales pour obtenir une vue globale équivalente au problème ou chacun aurait déjà la vue globale en partant. Dans le cas du \mdp non-observable, le cas est simple puisque ne sachant pas où ils se trouvent, les agents ne raisonnent plus sur les états possible du monde mais seulement sur les objectifs à atteindre et sur leur probabilité de réalisation.
+
+Il convient toutefois de remarquer qu'il existe un fossé extrême lorsque l'on passe du cas complètement observable (ou non-observable), au cas partiellement observable. Ceci s'explique en partie par la très grande capacité de représentation des modèles partiellement observables, leur conférant une expressivité à la mesure de leur complexité. Dans les sections suivantes, les travaux réalisés cherchent donc à réduire cette complexité tout en équilibrant au mieux l'expressivité. Pour cela des modèles particuliers d'observabilité ont été développés permettant de réduire cette complexité tout en gardant une expressivité suffisante. Une restriction aux modèles monoagents à transition déterministe sera tout d'abord faite pour montrer la réduction théorique en termes de complexité. La version multiagent sera ensuite présentée avant de discuter de l'extension possible au cas stochastique de la fonction de transition. Rappelons donc tout d'abord les processus de Markov partiellement observables déterministes avant de proposer de nouveaux modèles d'observation.
+
+\section{\pac{pomdp}s quasi-déterministes}\label{sect:qdetpomdp}
+
+Les \pomdps déterministes ont initialement été définis de la manière suivante~\citep{L.96}:
+\begin{definition}\label{def:detpomdp}
+Un Processus Décisionnel de Markov Partiellement Observable Déterministe (\detpomdp) est un tuple $\la \Sta,$ $\Act,$ $\Omega,$ $\Tra,$ $\Obs,$ $\Rew,$ $\gamma,$ $\bel^0 \ra$, où:%\\
+\begin{itemize}
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$;
+\item $\Act$ est un ensemble fini d'\emph{actions} $a \in \Act$;
+\item$\Tra(s,a,s'): \Sta \times \Act \times \Sta \mapsto \{0,1\}$ est la \emph{fonction déterministe de transition} du système de l'état $s$ vers l'état $s'$ après l'execution de l'action $a$;
+\item $\Rew(s,a): \Sta \times \Act \mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action $a$ est exécutée dans l'état $s$,
+\item $\Omega$ est un ensemble fini d'observations $o \in \Omega$,
+\item $\Obs(s,a,o,s'): \Sta \times \Act \times \Omega \times\Sta \mapsto \{0,1\}$ est la \emph{fonction déterministe} qui indique si l'observation $o$ survient ou non lors de la transition du système de l'état $s$ vers l'état $s'$ sous l'effet de l'action $a$.
+\item $\gamma$ est le facteur d'escompte;
+\item $\bel^0$ est la connaissance \emph{a priori} sur l'état, i.e. l'état de croyance initial, supposé non-déterministe.
+\end{itemize}
+\end{definition}
+
+Remarquons que l'état de croyance initial $\bel^0$, qui décrit les différente possibilités pour l'état de départ, est crucial. En effet, si l'état de départ est connu, et puisque la transition d'un état vers un autre est déterministe, alors la séquence complète des états suivants est également prévisible, et le problème de \detpomdp se ramène alors au problème déjà très étudié dans la littérature de l'IA de la planification déterministe~\citep{GNT.04}.
+
+\hyphenation{qua-si-d\'e-ter-mi-ni-ste}
+Par comparaison au \pomdps déterministes, l'extension que nous proposons modifie la définition de la fonction d'observation de telle sorte qu'elle soit maintenant stochastique tout en assurant qu'il existe certaines observations qui sont vraiment plus probables que d'autres dans chacun des états. Formellement:
+\begin{definition}\label{def:qdetpomdp}
+Un processus décisionnel de Markov partiellement observable quasi-déterministe (\qdetpomdp) est un tuple $\la \Sta,$ $\Act,$ $\Tra,$ $\Obs,$ $\Rew,$ $\gamma,$ $\bel^0 \ra$, où :
+\begin{itemize}
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$;
+\item $\Act$ est un ensemble fini d'\emph{actions} $a \in \Act$;
+\item$\Tra(s,a,s'): \Sta \times \Act \times \Sta \mapsto \{0,1\}$ est la \emph{fonction déterministe de transition} du système de l'état $s$ vers l'état $s'$ après l'execution de l'action $a$;
+\item $\Rew(s,a): \Sta \times \Act \mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action $a$ est exécutée dans l'état $s$,
+\item $\Obs(z,a,s'): \Omega \times \Act \times \Sta \mapsto [0,1]$ est une \emph{fonction d'observation} qui indique la probabilité d'obtenir l'observation $z$ lorsque le monde arrive dans l'état $s'$ après avoir exécuté l'action $a$;\\
+    De plus, $\forall\,s'\in\Sta,\,a\in\Act,\,\exists\,z\in\Omega,$ s.t. $\Obs(z,a,s') \ge \theta > \frac{1}{2}$, i.e. le monde est minimalement observable et la probabilité d'obtenir une des observations est bornée inférieurement par un demi;
+\item $\gamma$ est le facteur d'escompte;
+\item $\bel^0$ est la connaissance \emph{a priori} sur l'état, i.e. l'état de croyance initial, supposé non-déterministe.
+\end{itemize}
+\end{definition}
+
+En d'autres termes, ce modèle considère les systèmes possédant un transition déterministe mais une observation stochastique où la probabilité d'observer peut-être bornée par un réel $\theta$. Il convient de noter ici que $\theta$ n'est qu'une borne inférieure sur la probabilité d'observer chaque état et que par conséquent celle-ci peut éventuellement être plus grande. Remarquons également que l'horizon de planification n'est pas fixé \emph{a priori}. Ceci est dû au fait -- comme le présente la sous-section \ref{sect:theoResQdet} -- que l'on peut démontrer sous certaines conditions sur l'observation que l'état de croyance converge avec grande probabilité vers une distribution déterministe après un nombre fini d'étapes. Il reste donc à définir dans ce type de modèle quasi-déterministe des fonctions d'observations particulières qui permettront de réduire la complexité en pire cas.
+
+\subsection{Variantes sur l'observabilité}
+
+Comme énoncé à la sous-section précédente, le modèle d'observation influence fortement la caractérisation de la complexité en pire cas. Pour rappel, voici différentes variantes du modèle d'observation:
+\begin{description}
+\item[Modèles inobservables] pour lesquels $|\Omega| = 1$ ou $\forall s,s'\in\Sta,\forall a\in\Act,\forall o\in\Obs, P(o|s,a,s') \sim \mathcal{U}$ et donc aucune information ne peut être obtenu de l'état. cette classe est une sous-classe du problème de planification avec observation nulle à l'exécution (\emph{conformant planning}~\citep{GB.96}).
+\item[Modèles complètement observables] pour lesquels $\Omega = \Sta$ et $\Obs(z,a,s') = 1$ ssi $z = s'$. Cette classe correspond exactement à la classe des processus décisionnels de Markov (\mdps) où seulement l'état initial est inconnu (e.g. Q\textsc{mdp}~\citep{KLC.98}).
+\item[Modèles partiellement observables] pour lesquels $|\Omega| > 1$. Cette classe est exactement le complémentaire de l'ensemble des problèmes inobservables. Parmi ces problèmes, on peut distinguer:
+\begin{description}
+\item[Modèles bijectivement observables] pour lesquels $\Omega = \Sta$. Cette classe regroupe tous les problèmes où la fonction d'observation est linéaire mais bruitée. L'état réel du système peut être perçu avec éventuellement du bruit. Cette classe regroupe typiquement les problèmes de contrôle robotique ou l'état est perçu au travers de capteurs bruités.
+\item[Modèles bijectivement observables factorisés] pour lesquels $|\Omega| = \cup_{\cx\in\Xta} |\Dom_\cx|$. Où $\Xta$ est l'ensemble des variables d'états et $\Dom_\cx$ est le domaine de la variable $\cx$. L'espace d'état est alors donnée par $\Sta = \varprod_{\cx \in \Xta} \Dom_\cx$. Cette classe est très similaire de la précédente à la différence que le bruit est maintenant distribué sur les domaines des variables et donc supposément non corrélé au bruit ni au valeurs des autres variables. De plus, les observations sont restreintes selon les ``dimensions'' de l'espace d'état. En effet, l'hypothèse est faite ici que seulement de l'information d'un seul capteur arrive à la fois et qu'ainsi de l'information selon une seule ``dimension'' est perçue à chaque étape. Cette classe peut se ramener à la classe précédente si on considère une seule variable d'état dont le domaine est $\Sta$.
+\end{description}
+\item[Modèle général] qui inclut tous les cas précédents sans aucune hypothèse sur le nombre d'observations ou la fonction d'observation.
+\end{description}
+
+Dans la suite du document, ni le cas général, ni les cas inobservable et totalement observable ne seront décrits ni étudiés puisqu'ils ont déjà fait l'objet de nombreuse publications~\citep{GNT.04,KLC.98}. Nous proposons cependant d'étudier plus en particulier le cas bijectivement observable ainsi que le cas avec observations factorisées. En effet, une majorité des problèmes réels se rapprochent du cas avec observation factorisée ou au moins bijectivement observable. La prochaine section explique comment ces problèmes sont en réalité plus simple que la formulation générale en bornant la mémoire nécessaire qu'un agent doit avoir pour planifier $\varepsilon$-optimalement.
+
+\subsection{Résultats théoriques}\label{sect:theoResQdet}
+
+Comme il a été présenté dans le chapitre~\ref{chap:2}, une façon de représenter de manière compacte la séquence d'observation obtenue est l'état de croyance~\citep{S.71}.  Celui-ci est une distribution de probabilité sur l'espace d'état qui représente la probabilité que l'agent soit dans chacun des états. Il a été défini $\bel^t(s) = \Pr(s|z^t,a^t,\bel^{t-1})$ la probabilité d'être dans l'état $s$ à l'étape $t$ sachant que l'observation $z^t$ venait d'être obtenue après avoir effectué l'action $a$ dans l'état de croyance $\bel^{t-1}$. Cette mise à jour de l'état de croyance s'effectuait de la manière suivante:
+\begin{equation}\label{beliefstate}
+\bel^t(s) = \frac{\Obs(z^t,a^t,s) \sum_{s'\in\Sta} \Tra(s',a^t,s) \bel^{t-1}(s')}{\sum_{s''\in\Sta}\Obs(z^t,a^t,s'') \sum_{s'\in\Sta} \Tra(s',a^t,s'') \bel^{t-1}(s')}
+\end{equation}
+
+En utilisant une représentation matricielle des différentes fonctions, cette équation~\eqref{beliefstate} peut être réécrite de la manière suivante:
+\begin{equation}\label{beliefstateM}
+\bel^k(s) = \frac{D_k T_{a^k}\cdots D_1 T_{a^1} \bel^0}{\mathds{1}^\top D_k  T_{a^k}\cdots D_1 T_{a^1} \bel^0}
+\end{equation}
+Où $\bel^0$ est l'état de croyance initial, $T_{a^t}$ sont les matrices de transitions selon les action $a^t$ choisies, $D_i$ sont des matrices diagonales dont chaque terme représente la probabilité d'observer $z_i$ sachant chaque état, et $\mathds{1}$ est un vecteur de 1 de dimension $|\Sta|$.
+
+Intuitivement, la convergence de l'état de croyance vers une distribution déterministe dépends du nombre $n$ d'observations réussies parmi les $k$ étapes dans un contexte non-inobservable. Néanmoins, le critère de partiellement observable n'est pas suffisant pour garantir la convergence. C'est pourquoi nous avons suggéré les deux sous-classes d'observabilité que nous nous proposons maintenant d'étudier.
+
+\subsubsection{Modèles bijectivement observables}
+
+Un modèle bijectivement observable garantit qu'il n'existe qu'une seule observation la plus probable (\textsc{mlo} pour \emph{Most Likely Observation}) dans chaque état et que chaque \textsc{mlo} d'un état n'est la \textsc{mlo} d'aucun autre état. Plus formellement:
+\begin{definition}\label{def:enough-obs}
+Un \qdetpomdp bijectivement observable est un \qdetpomdp où l'hypothèse suivante est faite:
+\begin{eqnarray*}
+&&\exists o_1\in\Omega,\,\forall a\in\Act,\,\forall s\in\Sta^{o_1},\\
+&&\mbox{with }\Sta^{o_1} = \{s\in\Sta|\exists o_1\in\Omega, P(o_1|s,a)>P(o|s,a),\forall o\ne o_1\},\\
+&&\mbox{then }|\Omega|=|\Sta|\mbox{ and }|\Sta^{o_1}| = 1
+\end{eqnarray*}
+\end{definition}
+En d'autres mots, $\Sta^{o_1}$ est l'ensemble des états ou $o_1$ est la \textsc{mlo}.
+
+Considérant cette définition, il est maintenant possible d'énoncer le théorème suivant:
+\begin{theorem}\label{th-enough}
+Sous l'hypothèse d'observation bijective, $\bel^k(s) \ge 1-\varepsilon$ ssi
+\begin{equation}\label{eq:boundN2}
+    n \ge  \frac{1}{2\ln \frac{\nu \theta}{(1-\theta)}} \ln \left[\frac{1-\varepsilon}{\varepsilon} \left(1+\nu^{1-\frac{k}{2}}\right)\right] + \frac{k}{2}
+\end{equation}
+Où $\nu = \max_{s,a} \sum_{z\in\Omega} I (\theta>\Obs(z,a,s)>0) < |\Omega|$ est le nombre d'observations autre que la \textsc{mlo} qui peuvent être perçues dans un état.
+\end{theorem}
+\begin{proof}
+En pire cas, la probabilité d'observer l'observation la plus probable (soit l'état sous-jacent du système) est toujours minimale et égale à $\theta$ à chaque étape. De plus, si à chaque fois que l'observation ``échoue'' (i.e. que l'observation obtenue n'est pas la plus probable), celle-ci sous-tend toujours le deuxième état le plus probable, cela résulte en une augmentation de la probabilité de ce dernier dans l'état de croyance. Étant donné l'équation~\eqref{beliefstateM} et sachant que les transitions sont déterministes, induisant des matrices de permutations pour les matrices de transition, on peut montrer que:
+\begin{equation}\label{eq:proofThBound1}
+\frac{\theta^n \frac{(1-\theta)^p}{\nu^p}}{\theta^n \frac{(1-\theta)^p}{\nu^p} + \theta^p \frac{(1-\theta)^{n}}{\nu^n} + (\nu-1)\frac{(1-\theta)^k}{\nu^k}} \ge 1-\varepsilon
+\end{equation}
+Où $n$ est le nombre d'observations ``réussies'' (i.e. où l'observation obtenue était la plus probable dans l'état caché sous-jacent) et $p = k-n$ est le nombre d'observation échouées. Le numérateur est donc le résultat de l'obtention de $n$ ``bonnes'' observations et de $p$ ``mauvaises'' pendant l'exécution. Le dénominateur somme sur l'ensemble des états pour la même séquence d'observations. Le premier terme correspond à l'état le plus probable, le second terme au second état le plus probable (soutenu par les $p$ ``mauvaises'' observations) et le troisième terme correspond aux autres états selon le nombre $\nu$ d'états où on aurait pu percevoir les ``mauvaises'' observations. L'hypothèse est faite dans cette preuve que la probabilité d'obtenir une ``mauvaise'' observation est uniforme sur l'ensemble des observations qui ne sont pas la \textsc{mlo}. Cette hypothèse n'induit pas une perte de généralité\footnote{Et poser $\nu = 1$ ramène au pire cas où l'observation est soit ``bonne'' soit ``mauvaise''.} et est justifiée par le \emph{principe d'entropie maximale} qui veut que, selon notre connaissance \emph{a priori}, la distribution d'entropie maximale -- la loi uniforme dans notre cas -- soit la distribution la plus appropriée. La résolution de l'équation~\eqref{eq:proofThBound1} mène à l'équation ~\eqref{eq:boundN2} de la manière suivante:
+\begin{eqnarray}
+&&\frac{\theta^n \frac{(1-\theta)^p}{\nu^p}}{\theta^n \frac{(1-\theta)^p}{\nu^p} + \theta^p \frac{(1-\theta)^{n}}{\nu^n} + (\nu-1)\frac{(1-\theta)^k}{\nu^k}} \ge 1-\varepsilon \notag\\
+&\Leftrightarrow&\frac{\nu^n \theta^n (1-\theta)^p}{\nu^n \theta^n (1-\theta)^p + \nu^p \theta^p (1-\theta)^{n} + (\nu-1)(1-\theta)^k} \ge 1-\varepsilon \notag\\
+&\Leftrightarrow&\frac{\nu^p \theta^p (1-\theta)^{n}}{\nu^n \theta^n (1-\theta)^p} + \frac{(\nu-1)(1-\theta)^k}{\nu^n \theta^n (1-\theta)^p} \le \frac{1}{1-\varepsilon}-1 \notag\\
+&\Leftrightarrow&\nu^{k-2n} \theta^{k-2n} (1-\theta)^{2n-k} + (\nu-1)\frac{\theta^{-n}\nu^{-n}}{(1-\theta)^{-n}} \le \frac{\varepsilon}{1-\varepsilon} \notag\\
+&\Leftrightarrow&\frac{\nu^{k-2n} \theta^{k-2n}}{(1-\theta)^{k-2n}}\left[ 1 + (\nu-1)\frac{\nu^{-p} \theta^{-p}}{(1-\theta)^{-p}} \right] \le \frac{\varepsilon}{1-\varepsilon} \notag\\
+&\Leftrightarrow&(k-2n) \ln \frac{\nu \theta}{(1-\theta)} + \ln \left[ 1 + (\nu-1)\frac{\nu^{-p} \theta^{-p}}{(1-\theta)^{-p}} \right] \le \ln \frac{\varepsilon}{1-\varepsilon} \notag\\
+&\Leftrightarrow&(k-2n) \ln \frac{\nu \theta}{(1-\theta)} \le \ln \frac{\varepsilon}{1-\varepsilon} - \ln \left[ 1 + (\nu-1)\frac{(1-\theta)^p}{\nu^p \theta^p} \right]  \notag\\
+&\Leftrightarrow&(2n-k) \ln \frac{\nu \theta}{(1-\theta)} \ge \ln \frac{1-\varepsilon}{\varepsilon} + \ln \left[ 1 + (\nu-1)\frac{(1-\theta)^p}{\nu^p \theta^p} \right]  \notag\\
+&\Leftrightarrow&(2n-k) \ge \frac{\ln \frac{1-\varepsilon}{\varepsilon}}{\ln \frac{\nu \theta}{(1-\theta)}} + \frac{1}{\ln \frac{\nu \theta}{(1-\theta)}}\ln \left[ 1 + (\nu-1)\frac{(1-\theta)^p}{\nu^p \theta^p} \right]  \notag\\
+&\Leftrightarrow& n \ge \frac{\ln \frac{1-\varepsilon}{\varepsilon}}{2\ln \frac{\nu \theta}{(1-\theta)}} + \frac{1}{2\ln \frac{\nu \theta}{(1-\theta)}}\ln \left[ 1 + (\nu-1)\frac{(1-\theta)^p}{\nu^p \theta^p} \right] + \frac{k}{2}\label{genBoundN}
+\end{eqnarray}
+mais puisque $1 \le \nu \le |\Sta|-1$, $n>\frac{k}{2}$ et $\frac{1-\theta}{\theta}<1$,
+\begin{eqnarray}
+\ln \left[ 1 + \frac{|\Sta|-2}{\nu^{k-n}}\frac{(1-\theta)^{k-n}}{\theta^{k-n}} \right] &\le& \ln \left[ 1 + \frac{|\Sta|-2}{\nu^{\frac{k}{2}}}\left(\frac{1-\theta}{\theta}\right)^{\frac{k}{2}} \right] \notag\\
+&\le& \ln \left[ 1 + \nu^{1-\frac{k}{2}}\right]\notag
+\end{eqnarray}
+Ainsi, s'assurer de l'inégalité~\eqref{eq:boundN2} assure également l'inégalité~\eqref{genBoundN}.
+\end{proof}
+
+En d'autres termes, $\nu$ représente également la manière dont l'erreur se répartit sur l'espace d'état. Le théorème~\ref{th-enough} déclare que si l'observation est suffisante (avec une large probabilité $\theta$ d'observer l'état réel sous-jacent du système) et si l'erreur se répartit sur un grand nombre d'états (lorsque $\nu$ est grand), alors il suffit que seulement la moitié des observations plus une correspondent à l'état réel du système pour que l'état de croyance converge vers une distribution déterministe, i.e. vers un seul état.
+
+\subsubsection{Modèles factorisés}
+
+D'une manière plus générale et surtout plus structurée que les modèles bijectivement observables, les modèles dit factorisés assurent que chaque valeur de chaque variable est observée un nombre suffisant de fois. Ainsi ils permettent de déterminer également l'état sous-jacent du système en un nombre fini d'étapes:
+\begin{definition}\label{factored-obs}
+Un \qdetpomdp à observations factorisées est un \qdetpomdp où les hypothèses suivantes sont faites:
+\begin{itemize}
+\item l'espace d'état est \emph{factorisé} en $\mu$ variables d'états: $\Sta = \varprod_{\cx \in \Xta} \Dom_\cx$ et les observations possibles sont $\Omega = \bigcup_{\cx \in \Xta} \Dom_\cx$.
+\item La somme des probabilités d'obtenir une des valeurs réelles des variables d'état est bornée inférieurement par $\theta>\frac{1}{2}$.
+\end{itemize}
+\end{definition}
+
+Cette definition implique que, dans le pire cas et pour chaque variable d'état, il existe une probabilité  $\frac{\theta}{\mu}$ d'observer la vraie valeur de cette variable et une probabilité $\frac{1-\theta}{|\Omega|-\mu}$ d'observer une autre valeur. Remarquons également que cette définition est une généralisation de la définition~\ref{def:enough-obs} qui correspond au cas $\mu = 1$. Cette constatation mène au théorème suivant:
+\begin{theorem}\label{th-factored}
+Sous l'hypothèse d'observations factorisées, $\bel^k(s) \ge 1-\varepsilon$ ssi
+\begin{equation}\label{eq:boundN3}
+    n \ge  \frac{1}{2\ln \frac{(|\Omega| - \mu) \theta}{\mu (1-\theta)}} \ln \left[\frac{1-\varepsilon}{\varepsilon} \left(1+|\Sta|-\mu\right)\right] + \frac{k}{2}
+\end{equation}
+\end{theorem}
+\begin{proof}
+La preuve suit les mêmes arguments que la preuve du théorème~\ref{th-enough}.
+\end{proof}
+
+Une fois que le nombre $n$ d'observations les plus probables est borné, trouver la probabilité d'obtenir au moins $n$ ``bonnes'' observations est simplement une application de la loi de la binômiale d'avoir au moins $n$ succès sur $k$ essais:
+
+\begin{corollary}\label{upboundPAC} Dans tout \qdetpomdp satisfaisant les hypothèses d'observabilité bijective, la probabilité que l'état de croyance $\bel^k(s)$ soit $\varepsilon$-déterministe après $k$ étapes est:
+\begin{equation}\label{boundP}
+    \exists s, \Pr(\bel^k(s) \ge 1-\varepsilon) \ge \sum_{i=n}^k \left(\begin{array}{c}k\\i\end{array}\right) \theta^i(1-\theta)^{k-i}
+\end{equation}
+Où $n$ est donné par l'équation~\eqref{eq:boundN2} dans le cas simple et par l'équation~\eqref{eq:boundN3} dans le cas factorisé.
+\end{corollary}
+
+Cette équation indique que pour être certain (à $\delta$ près) d'avoir un état de croyance déterministe (à $\varepsilon$ près), il se peut que l'horizon à explorer soit très grand si $\theta$ est trop proche de~$\frac{1}{2}$.
+
+Voyons maintenant l'impact sur la complexité de ce modèle.
+
+\subsubsection{Analyse de complexité}\label{sss:complexity}
+
+Un implication majeure des théorèmes~\ref{th-enough} et~\ref{th-factored} est la réduction de la complexité par rapport au problèmes généraux représentable par un \pomdp mais où un \qdetpomdp pourrait être utilisé. En fait, \cite{PT.87} ont montré que les \pomdps à horizon fini sont \textsc{pspace}-complets. Ceci repose principalement sur le fait que chaque agent a à choisir une action qui, étant donné n'importe quelle observation, va mener au choix d'une autre action et ainsi de suite, jusqu'à atteindre un horizon $T$. Cependant, ramener cet horizon $T$ à une constante descend artificiellement la complexité dans la hiérarchie polynômiale~\cite{S.76}. La hiérarchie polynômiale est une classe générale de problèmes inclue dans \textsc{pspace} et qui est basée sur les oracles. \cite{S.76} a tout d'abord défini $\Sigma_2^{\rm P} = \textsc{np}^{\textsc{np}}$ comme étant la classe des problèmes de décision qui peuvent être résolus en temps polynômial par une machine de Turing non-déterministe tout en utilisant un oracle \textsc{np}. Le problème ``canonique'' pour cette classe de complexité (si \textsc{sat} est celle de la classe \textsc{np}) est le problème 2-\textsc{qbf}. Ce problème consiste à déterminer si la formule quantifiée booléenne suivante est vraie: $\exists \vec{a} \forall \vec{b}\,\phi(\vec{a},\vec{b})$. Monter d'un cran dans cette hiérarchie polynômiale (par exemple $\Sigma_3^{\rm P}$) consiste à ajouter un autre quantificateur pour un autre ensemble de variables de la formule booléenne (i.e. verifier si $\exists \vec{a} \forall \vec{b} \exists \vec{c} \,\phi(\vec{a},\vec{b},\vec{c})$ est vraie pour l'exemple précédent), et ainsi de suite. Dans le cas précis d'un \pomdp à horizon \emph{constant}, il est donc possible d'énoncer la proposition suivante:
+\begin{proposition}\label{fixedHorizonPOMDP}
+Trouver une politique pour un \pomdp à horizon $k$ constant, qui obtiendrait une récompense espérée d'au moins $C$, est dans la classe de complexité $\Sigma_{2k-1}^{\rm P}$.
+\end{proposition}
+\begin{proof}
+Pour montrer que le problème est dans $\Sigma_{2k-1}^{\rm P}$, il est possible d'utiliser l'algorithme suivant qui utilise un oracle $\Sigma_{2k-2}^{\rm P}$: Demander à l'oracle une politique pour $k-1$ étapes, verifier que cette politique obtient une récompense espérée d'au moins $C$ en temps polynomial en vérifiant les $|\Omega|^k$ historiques possibles, puisque $k$ est constant.
+\end{proof}
+Puisque les \qdetpomdps sont une sous-classe de \pomdps et puisque choisir $1-\delta$, i.e. la probabilité d'être dans un état de croyance $\varepsilon$-déterministe, induit un horizon constant sous les hypothèses d'observabilité bijective:
+\begin{corollary}\label{fixedHorizonQDETPOMDP}
+Trouver une politique pour un \qdetpomdp à horizon infini, respectant l'hypothèse d'observabilité bijective, et qui permette d'obtenir une récompense escomptée espérée d'au moins $C$ avec probabilité $1-\delta$, est $\Sigma_{2k-1}^{\rm P}$.
+\end{corollary}
+\begin{proof}
+Pour montrer que cette classe de problème est dans $\Sigma_{2k-1}^{\rm P}$, l'algorithme suivant donne une politique $\varepsilon$-optimale en temps polynômial sous l'hypothèse de l'accès à un oracle $\Sigma_{2k-2}^{\rm P}$: Demander à l'oracle de fournir un politique pour $k-1$ étapes et vérifier que cette politique obtient une récompense espérée d'au moins $C$ en calculant la valeur de chacun des états de croyance dans chaque feuille de l'arbre des observations possibles (qui est de taille polynômiale puisque $k$ est constant), puis ajouter la valeur escomptée espérée du \mdp sous-jacent puisque l'état de croyance est $\varepsilon$-déterministe dans $100(1-\delta)$\% des feuilles de l'arbre.
+\end{proof}
+
+En pratique, trouver une politique probablement approximativement correctement $\varepsilon$-optimale pour un \qdetpomdp qui respecte une des hypothèse sur l'observabilité implique de calculer un politique optimale pour les $k$ premières étapes puis ensuite d'utiliser la politique optimale du \mdp sous-jacent pour l'infinité du temps restant. Ainsi, il suffit de borner la probabilité voulue d'être dans un état de croyance $\varepsilon$-déterministe pour borner supérieurement l'horizon de planification et garantir que la politique du \mdp sous jacent va bien se comporter par la suite.
+
+\subsection{Résultats expérimentaux : application au dirigeable}
+
+Un autre application pratique de ce théorème réside dans l'estimation de l'information disponible à l'agent à chaque instant. En effet, en pratique la dynamique des systèmes complexes est plus souvent stochastique et donc le résultat précédemment proposé peut avoir une autre interprétation correspondant à la quantité d'information que fournit la fonction d'observation au cours du temps.
+
+Pour l'illustration prenons un exemple de contrôle de ballon dirigeable dans un espace à une dimension (la hauteur)~\citep{DBRC.09}. L'objectif de l'agent contrôleur serait d'apprendre à maintenir l'altitude du ballon à une certaine hauteur sans connaissance à priori de la dynamique sous-jacente du ballon mais en ayant connaissance toutefois de l'incertitude associée à son altimètre. Le théorème~\ref{th-enough} permet alors de prévoir pour différente valeurs de précision de l'altimètre (donnée par $\theta$ et $\nu$), différentes valeurs de l'horizon nécessaire à partir duquel plus aucune information ne sera extractible du processus de filtrage de l'état. Des exemples numériques sont donnés dans la table~\ref{tab:theoResqdet} pour la cas général bijectif et dans la table~\ref{tab:theoRes2qdet} pour le cas factorisé.
+
+\begin{table}[tb]
+%  \begin{minipage}{.49\textwidth}\centering
+\begin{center}
+  \begin{tabular}{| c | c | c | c | c |}%c|}
+    \hline
+    $\;\;\theta\;\;$ & $\;\;\nu\;\;$ & $\;\;k\;\;$ & $\;\;n\ge\;\;$ \\%& $\Pr(\bel^K(s)\ge1-\varepsilon)$ \\
+    \hline
+    0.6 & 3 & 75 & 40 \\%& 0.9019 \\
+    0.6 & 10 & 59 & 31 \\%& 0.9028 \\
+    0.6 & 100 & 50 & 26 \\%& 0.9022 \\
+    \hline
+    0.7 & 3 & 22 & 13 \\%& 0.9084 \\
+    0.7 & 10 & 19 & 11 \\%& 0.9161 \\
+    0.7 & 100 & 14 & 8 \\%& 0.9067 \\
+    \hline
+    0.8 & 3 & 9 & 6 \\%& 0.9144 \\
+    0.8 & 10 & 6 & 4 \\%& 0.9011 \\
+    0.8 & 100 & 6 & 4 \\%& 0.9011 \\
+    \hline
+  \end{tabular}
+\end{center}
+  \caption[Horizon requis pour un modèle bijectivement observable.]{Modèle bijectivement observable. $\Pr(\bel^K(s) \ge 1-\varepsilon) \ge 1-\delta$. $\varepsilon = 10^{-3}$ et $\delta = 10^{-1}$.}\label{tab:theoResqdet}% $\Pr(\bel^K(s) \ge 1-\varepsilon) \ge 1-\delta$. $\varepsilon = 10^{-3}$ et $\delta = 10^{-1}$.
+%  \end{minipage}
+\end{table}
+
+Comme l'on pouvait s'y attendre, les horizons de planification nécessaires pour la convergence sont plus grand dans le cas factorisé que dans le cas bijectif classique pour des tailles d'espace d'états et d'observations similaires. En effet, l'agent reçoit à chaque étape de temps seulement de l'information sur une partie de l'état. De fait, les observations ne permettent que de discriminer une partie de l'espace d'état à chaque étape plutôt que l'état lui-même comme dans le cas classique. Cependant, vu que le nombre d'observation est exponentiellement moins grand que dans le cas classique, certains algorithmes pourraient avoir moins de difficulté à résoudre ce type de problèmes. Une évaluation empirique pour les deux modèles est donnée dans le cas multiagent à la section~\ref{sect:res:incendie}.
+
+\begin{table}[tb]
+%  \begin{minipage}{.49\textwidth}\centering
+\begin{center}
+  \begin{tabular}{| c | c | c | c | c | c | c |}%c|}
+    \hline
+    $\;\;\theta\;\;$ & $\;\;\mu\;\;$ & $\;\;|\Dom|\;\;$ & $\;\;|\Sta|\;\;$ & $\;\;k\;\;$ & $\;\;n\ge\;\;$ \\%& $\Pr(\bel^K(s)\ge1-\varepsilon)$ \\
+    \hline
+    0.6 & 2 & 10 & 100 & 84 & 44 \\%& 0.9049 \\
+    0.6 & 3 & 5 & 125 & 98 & 52 \\%& 0.9023 \\
+    0.6 & 10 & 6 & 10$^6$ & 112 & 60 \\%& 0.9012 \\
+    \hline
+    0.7 & 2 & 10 & 100 & 30 & 17 \\%& 0.9155 \\
+    0.7 & 3 & 5 & 125 & 33 & 19 \\%& 0.9116 \\
+    0.7 & 10 & 6 & 10$^6$ & 39 & 23 \\%& 0.9056 \\
+    \hline
+    0.8 & 2 & 10 & 100 & 13 & 8 \\%& 0.9008 \\
+    0.8 & 3 & 5 & 125 & 16 & 10 \\%& 0.9183 \\
+    0.8 & 10 & 6 & 10$^6$ & 20 & 13 \\%& 0.9133 \\
+    \hline
+  \end{tabular}
+\end{center}
+  \caption[Horizon requis pour un modèle observable factorisé.]{Modèle factorisé. $\Pr(\bel^K(s) \ge 1-\varepsilon) \ge 1-\delta$. $\varepsilon = 10^{-3}$ et $\delta = 10^{-1}$.}\label{tab:theoRes2qdet}
+%  \end{minipage}
+\end{table}
+
+Sachant la probabilité minimale de l'observation la plus probable pour tous les états et la variance du modèle d'observation, il est possible de prédire à partir de quel moment l'agent sera localisé avec une précision désirée. Ainsi, il est possible de trouver une politique non-stationnaire pour cet horizon fixé à l'aide de l'algorithme \pomdp de son choix, puis de se référer à la politique du \mdp sous-jacent ensuite. Il est également possible dans le cadre de l'apprentissage, et selon la connaissance actuelle de la fonction de transition et d'observation, de déterminer la longueur optimale des trajectoires à effectuer dans l'environnement. Cet aspect n'a pas été exploité pour le moment mais serait envisageable dans des travaux futurs pour améliorer l'efficacité d'algorithmes d'apprentissage à base d'épisodes.
+
+Il est également intéressant de remarquer que dès que la probabilité d'observer l'état réel sous-jacent est au-dessus de 80\% dans le cas bijectif classique, il est alors suffisant de calculer la politique optimale seulement pour les 4 premières étapes pour avoir un état de croyance quasiment déterministe (à $\varepsilon$ près) avec une probabilité supérieure à 90\%.
+
+Il peut cependant arriver que l'observabilité soit très faible dans certaines situations causant une convergence lente de l'état de croyance. La figure~\ref{fig:probaLin} indique la probabilité d'être dans un état de croyance déterministe en fonction du nombre d'étapes effectuées dans l'environnement et de la probabilité minimale $\theta$. À mesure que le nombre d'étapes avance, de l'information est accumulée à propos de l'état sous-jacent pour être presque capable de le déterminer de manière certaine. Comme l'on pouvait s'y attendre, plus $\theta$ est faible plus la convergence est lente.
+
+\begin{figure}[h!tb]
+\begin{center}
+        \includegraphics[width=.6\textwidth]{proba}
+\end{center}
+\caption[Probabilité d'être dans un état de croyance déterministe selon le nombre d'étapes.]{\label{fig:probaLin}Probabilité d'être dans un état de croyance déterministe selon le nombre d'étapes pour différentes probabilités d'observation. $\nu = 100$ et $\varepsilon = 10^{-3}$}
+\end{figure}
+
+Si l'on regarde en particulier l'information contenue dans l'état de croyance en mesurant l'\emph{entropie} (cf. annexe~\ref{anx:it}) de celui-ci, on peut voir qu'elle converge \emph{en moyenne} vers zero. Néanmoins, lorsque les transitions ne sont pas déterministes, i.e. que de l'incertitude réapparaît à chaque action effectuée, une \emph{entropie résiduelle moyenne} reste comme démontré par les figures~\ref{fig:entropy:3} à~\ref{fig:entropy:97}. Ces figures montre l'évolution moyenne de l'entropie sur 10000 séquences d'états de croyance lorsque les transitions sont à peine stochastiques et pour différentes valeurs de $\theta$ la probabilité minimale d'observation.
+
+\begin{figure}[!htb]
+\begin{center}
+\subfigure[\label{fig:entropy:3}]{\includegraphics[width=.48\textwidth]{3}}~
+\subfigure[\label{fig:entropy:5}]{\includegraphics[width=.48\textwidth]{5}}\\
+\subfigure[\label{fig:entropy:6}]{\includegraphics[width=.48\textwidth]{6}}~
+\subfigure[\label{fig:entropy:7}]{\includegraphics[width=.48\textwidth]{7}}\\
+\subfigure[\label{fig:entropy:92}]{\includegraphics[width=.48\textwidth]{92}}~
+\subfigure[\label{fig:entropy:97}]{\includegraphics[width=.48\textwidth]{97}}
+\end{center}
+\caption[Entropie de l'état de croyance avec transitions stochastiques.]{\label{fig:entropy} Évolution de l'entropie de l'état de croyance au cours du temps pour différentes valeurs de $\theta$ et en presence d'incertitude sur les transitions.}
+\end{figure}
+
+Voyons maintenant l'extension de ce modèle aux problèmes multiagents.
+
+\section{\pac{qDet-pomdp}s multiagents}
+
+L'extension du cas monoagent au cas multiagent se fait de manière directe en considérant un ensemble d'agents $\alpha$ où chaque agent $i$ possède maintenant son ensemble propre d'actions $\Act_i$ et d'observations $\Omega_i$ et où l'ensemble des actions jointes $\JAct$ et le produit cartésien des ensembles des actions de tous les agents. Les fonctions de transitions sont ainsi définies sur l'ensemble des actions jointes et les conditions requises d'observation minimale sont maintenant définies pour toutes les actions jointes $\ba$ dans $\JAct$:
+
+\begin{definition}\label{def:qdetdecpomdp}
+Un Processus Décisionnel de Markov Partiellement Observable Décentralisé Quasi-Déterministe (\qdetdecpomdp) est un tuple $\la \Sta,$ $\{\Act_i\}_{i\in\alpha},$ $\Omega,$ $\Tra,$ $\Obs,$ $\Rew,$ $\gamma,$ $\bel^0 \ra$, où:%\\
+\begin{itemize}
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$;
+\item $\Act_i$ est un ensemble fini d'\emph{actions} $a \in \Act_i$ pour chaque agent $i\in\alpha$ et $\ba \in\JAct$ denote une action jointe de tous les agents;
+\item$\Tra(s,\ba,s'): \Sta \times \JAct \times \Sta \mapsto \{0,1\}$ est la \emph{fonction déterministe de transition} du système de l'état $s$ vers l'état $s'$ après l'execution de l'action jointe $\ba$;
+\item $\Rew(s,\ba): \Sta \times \JAct \mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action jointe $\ba$ est exécutée dans l'état $s$,
+\item $\Omega_i$ est un ensemble fini d'observations $o \in \Omega_i$ pour chaque agent $i$ et $\bo \in \JObs$ denote une observation jointe de tousles agents,
+\item $\Obs(\bz,\ba,s'): \JObs \times \JAct \times \Sta \mapsto [0,1]$ est une \emph{fonction d'observation} qui indique la probabilité d'obtenir l'observation jointe $\bz$ lorsque le monde arrive dans l'état $s'$ après avoir exécuté l'action jointe $\ba$;\\
+    De plus, $\forall\,s'\in\Sta,\,\ba\in\JAct,\,\exists\,\bz\in\JObs,$ s.t. $\Obs(\bz,\ba,s') \ge \theta > \frac{1}{2}$, i.e. le monde est minimalement observable et la probabilité d'obtenir une des observations jointe est bornée inférieurement par un demi;
+\item $\gamma$ est le facteur d'escompte;
+\item $\bel^0$ est la connaissance \emph{a priori} sur l'état, i.e. l'état de croyance initial, supposé non-déterministe.
+\end{itemize}
+\end{definition}
+
+On peut également étendre la condition d'observation bijective à plusieurs agents:
+\begin{definition}\label{def:decenough-obs}
+Un \qdetdecpomdp bijectivement observable est un \qdetdecpomdp où l'hypothèse suivante est faite:
+\begin{eqnarray*}
+&&\forall i\in\alpha, \exists o_1\in\Omega_i,\,\forall \ba\in\JAct,\,\forall s\in\Sta^{o_1},\\
+&&\mbox{with }\Sta^{o_1} = \{s\in\Sta|\exists o_1\in\Omega_i, P(o_1|s,\ba)>P(o|s,\ba),\forall o\ne o_1\},\\
+&&\mbox{then }|\Omega_i|=|\Sta|\mbox{ and }|\Sta^{o_1}| = 1
+\end{eqnarray*}
+\end{definition}
+En d'autres termes, chacun des agents possède une observation bijective de l'état \emph{complet} du système. Les agents perçoivent ainsi le même état même si ce n'est pas nécessairement la même observation qui est reçue à chaque étape par tous les agents. Cette hypothèse est relativement plus forte que dans le cas monoagent pour deux raisons principales:
+\begin{itemize}
+\item Les agents peuvent n'avoir qu'une vue locale de leur environnement et donc ne pas percevoir ce que perçoivent d'autres agents vis a vis de l'état du système;
+\item Les agents peuvent avoir un état \emph{interne} qui  leur est propre et que personne d'autre qu'eux ne peut observer mais qui fait nécessairement partie de l'état global pour une prise de décision optimale.
+\end{itemize}
+En regard de ces deux points, il n'est pas interdit de regarder vers la communication pour résoudre ces deux problèmes. La communication permet aux agents de fusionner l'information qu'ils ont sur le monde et de partager leur état interne. Bien qu'elle ne soit pas parfaite, on peut néanmoins assumer qu'elle l'est quasiment au regard des techniques actuelles de corrections d'erreur. On peut également faire l'hypothèse que dans la majorité des problèmes, la communication est beaucoup plus rapide que la fréquence des instants de décision. Ces points seront bien entendu plus amplement discutés dans la section \ref{c4:s:dtc}.
+
+\subsection{Résultats théoriques}
+
+De cette manière, les résultats théoriques valides dans le cas monoagent, s'étendent aisément au cas multiagent et permettent, dans ce contexte, des gains en complexité en pire cas encore plus intéressant. En effet, la où un gain relatif en espace se faisait par la limitation de l'historique à maintenir pour être certain de l'état sous-jacent du système, il est maintenant possible non seulement de borner son propre historique à mémoriser mais également l'historique de tous les autres agents du système.
+
+Pour rappel, les \decpomdps sont réputés pour être particulièrement difficiles à résoudre optimalement dans le cas à horizon fini (\textsc{nexp}-complet~\citep{BZI.00}) et même à approximer~\citep{RGR.03}. En restreignant la modélisation aux problèmes quasi-déterministes avec observabilité bijective, il possible de réduire de beaucoup cette complexité en pire cas:
+
+\begin{corollary}\label{fixedHorizonQDETDECPOMDP}
+Trouver une politique pour un \qdetdecpomdp à horizon infini, sous l'hypothèse d'observabilité bijective, qui produit une récompense escomptée espérée d'au moins $C$ avec probabilité $1-\delta$, est \textsc{pspace}.
+\end{corollary}
+\begin{proof}
+Pour montrer que ce problème est \textsc{pspace}, l'algorithme suivant donne la politique $\varepsilon$-optimale en espace polynômial: Construire l'arbre de tous les historiques possibles à horizon $k$ (possible en espace $\Obs((|\JAct||\JObs|)^k)$), et calculer ensuite pour chaque feuille de l'arbre construit la valeur espérée escomptée de l'état de croyance quasi-déterministe atteint en utilisant la valeur de la politique optimale du \mmdp sous-jacent. Rétro-propager finalement la valeur jusqu'à la racine pour vérifier que la récompense $C$ est effectivement obtenue.
+\end{proof}
+En d'autre termes, trouver une politique optimale pour un \qdetdecpomdp à horizon infini est aussi complexe en pire cas que de résoudre un \pomdp à horizon fini.
+
+Voyons maintenant un exemple permettant d'illustrer l'utilisation de ce modèle avant de discuter plus avant les hypothèses et les applications d'un tel modèle.
+
+\subsection{Résultats expérimentaux : application à la lutte contre l'incendie}\label{sect:res:incendie}
+
+Comme le suggère la preuve des corollaires~\ref{fixedHorizonQDETPOMDP} et~\ref{fixedHorizonQDETDECPOMDP}, un algorithme pour résoudre $\varepsilon$-optimalement un problème \qdetdecpomdp à horizon infini sous l'hypothèse d'observabilité bijective consiste à calculer une politique escomptée classique pour le problème à horizon fini à $k$ étapes et à utiliser ensuite le \mmdp sous-jacent pour terminer l'exécution de la tâche. Un tel algorithme serait la Programmation Dynamique~\citep{HBZ.04} vue au chapitre~\ref{chap:2} par exemple. En pratique cependant, résoudre un \decpomdp à horizon $k$ -- même quasi-déterministe -- dès lors que $k>2$ devient extrêmement complexe et une approximation doit alors être utilisée. Les résultats présentés ci-après sont donc réalisés à partir d'un algorithme d'approximation sur un problème de chaîne de seaux d'eau (cf figure~\ref{fig:fire}).
+
+\begin{figure}[h!tb]
+    \centering
+    \includegraphics[width=.65\textwidth]{firefight}
+  \caption{Le problème de la chaîne de seaux.}\label{fig:fire}
+\end{figure}
+
+La version générale du problème s'établit comme suit: deux agents sont situés sur une grille linéaire et portent chacun un seau. Ils peuvent aller à \emph{droite} ou à \emph{gauche}, ou encore \emph{jeter de l'eau}, chaque action infligeant une petite pénalité de retard ($-0.1$ par agent). Dès qu'un agent se trouve sur la case la plus à droite, le seau se remplit automatiquement avec un probabilité~$\varphi$. Chaque action de déplacement a également une probabilité $\varphi$ de réussir, l'action consistant à jeter de l'eau réussissant systématiquement. Les agents peuvent s'échanger leurs seaux au travers de la même action de jet d'eau. À chaque fois qu'un seau est vidé dans la case la plus à gauche par le biais d'un jet d'eau, une récompense est obtenue ($1$ par agent). Les agents sont initialement positionnés aléatoirement sans eau. Les agents sont supposés avoir une observation bruitée de leur position, i.e. ils ont une probabilité $\theta$ d'observer leur position réelle et une probabilité $\frac{1-\theta}{2}$ d'observer une des cases adjacentes. Ils reçoivent également une communication bruitée de la position de l'autre agent et de l'état de son seau. Puisque le problème peut-être une problème à horizon infini, un facteur d'escompte $\gamma = 0.95$ a été utilisé. Dans les expérimentations présentées ci après, une valeur de $\varphi = 1$ a été aussi utilisée pour l'hypothèse de transition déterministe. Lorsque $\varphi = 1$ le nombre d'états accessibles est de 49 (7 pour chaque agent) et donc 49 observations peuvent être obtenues. Dans le cas bijectif factorisé, le nombre d'observations est seulement de 10 puisque chaque agent a 4 positions plus l'état du seau de l'autre agent.
+
+Pour l'algorithme, nous avons utilisé une version adaptée de \textsc{imbdp}~\citep{SZ.07b} présentée à la section~\ref{sect:mbdp} de telle sorte qu'il utilise la valeur optimale du \mmdp sous-jacent et inclut également le facteur d'escompte. Cet algorithme est dénoté par \textsc{imbdp}$^i$ dans les figures.
+
+Plusieurs simulations ont été réalisées utilisant différents paramètres. La figure~\ref{fig:res_1} montre la valeur espérée escomptée de \textsc{imbdp}$^i$ sur le problème bijectif classique pour plusieurs valeurs de $\theta$ allant de $0.6$ à $0.95$. Les meilleurs paramètres trouvés par validation croisée de \textsc{imbdp}$^i$ sont $maxTree = 5$ et $maxObs = 1$. Augmenter ces paramètres n'améliore pas significativement la valeur espérée escomptée mais détériore significativement les performances spatiales et temporelles de l'algorithme. Comme l'on pouvait le prévoir, à mesure que $\theta$ approche de un, l'horizon de planification nécessaire diminue jusqu'à deux et la valeur de la politique à horizon infini s'approche de la valeur de la politique optimale du \mmdp sous-jacent.
+
+\begin{figure}[h!tb]
+    \centering
+    \includegraphics[width=.65\textwidth]{detdec_2}
+  \caption{Valeur espérée escomptée et horizon espéré pour différentes valeur de $\theta$.}\label{fig:res_1}
+\end{figure}
+
+La figure~\ref{fig:res_2} montre les valeurs espérées escomptées pour $\theta = 0.8$ sur plusieurs valeurs de l'horizons allant de 3 à 101 montrant que l'algorithme tend vers la valeur à horizon infinie trouvée précédemment. L'algorithme \textsc{imbdp} standard a été utilisé avec les même paramètres que ci-dessus ($maxTree = 5$ et $maxObs = 1$).
+
+\begin{figure}[h!tb]
+    \centering
+    \includegraphics[width=.65\textwidth]{detdec22}
+  \caption{Valeur espérée escomptée à horizon fini pour différentes valeurs d'horizons.}\label{fig:res_2}
+\end{figure}
+%\begin{figure*}[h!tb]
+%\centering
+%  \begin{minipage}{.48\textwidth}\centering
+%    \centering
+%    \includegraphics[width=\textwidth]{detdec_2}
+%  \caption{Valeur espérée escomptée et horizon espéré pour différentes valeur de $\theta$.}\label{fig:res_1}
+%  \end{minipage}
+%  ~
+%  \begin{minipage}{.48\textwidth}\centering
+%    \centering
+%    \includegraphics[width=\textwidth]{detdec22}
+%  \caption{Valeur espérée escomptée à horizon fini pour différentes valeurs d'horizons.}\label{fig:res_2}
+%  \end{minipage}
+%\end{figure*}
+
+La figure~\ref{fig:res_3} montre le temps de calcul nécessaire à l'approximation de la politique à horizon infini en utilisant les même paramètres pour l'algorithme. Comme espéré, le temps diminue rapidement à mesure que $\theta$ croît puisque l'horizon nécessaire de planification diminue également.
+
+\begin{figure}[h!tb]
+    \centering
+    \includegraphics[width=.65\textwidth]{detdec3}
+    \caption{Temps de calcul pour différentes valeurs de $\theta$.}\label{fig:res_3}
+\end{figure}
+
+%\begin{figure*}[h!tb]
+%\centering
+%  \begin{minipage}{.48\textwidth}\centering
+%    \centering
+%    \includegraphics[width=\textwidth]{detdec32}
+%    \caption{Temps de calcul pour différentes valeurs de $\theta$.}\label{fig:res_3}
+%  \end{minipage}
+%  ~
+%  \begin{minipage}{.48\textwidth}\centering
+%    \centering
+%    \includegraphics[width=\textwidth]{RewFire2}
+%    \caption{Comparaison en valeur des modèles classique et factorisé.}\label{fig:res_4}
+%  \end{minipage}
+%\end{figure*}
+
+Les figure~\ref{fig:res_4} à~\ref{fig:res_6} comparent respectivement la valeur espérée escomptée obtenue, l'horizon nécessaire de planification et le temps de calcul de l'algorithme \textsc{imbdp}$^i$ entre le cas d'observabilité bijective classique et le cas factorisé. Comme l'on pouvait s'y attendre, le cas factorisé nécessite un horizon de planification supérieur puisque la borne est plus lâche du fait que chaque agent reçoit moins d'information à chaque étape. Cependant, le temps de calcul est lui bien inférieur (d'un ordre de grandeur) pour algorithme \textsc{imbdp}$^i$ puisque le nombre d'observations à considerer est beaucoup plus petit (de $49$ à $10$). Du côté de la valeur les deux modèles étudiés se comportent de manière similaire avec un leger avantage pour le cas classique encore dû au fait que l'information sur l'état est disponible plus rapidement dans ce cas-ci.
+
+
+\begin{figure}[h!tb]
+    \centering
+    \includegraphics[width=.65\textwidth]{RewFire2}
+    \caption{Comparaison en valeur des modèles classique et factorisé.}\label{fig:res_4}
+\end{figure}
+
+\begin{figure}[h!tb]
+    \centering
+    \includegraphics[width=.65\textwidth]{KFire2}
+    \caption{Comparaison en horizon des modèles classique et factorisé.}\label{fig:res_5}
+\end{figure}
+
+\begin{figure}[h!tb]
+    \centering
+    \includegraphics[width=.65\textwidth]{TimeFire2}
+    \caption{Comparaison en temps de calcul des modèles classique et factorisé.}\label{fig:res_6}
+\end{figure}
+
+%\begin{figure*}[h!tb]
+%\centering
+%  \begin{minipage}{.48\textwidth}\centering
+%    \centering
+%    \includegraphics[width=\textwidth]{KFire2}
+%    \caption{Comparaison en horizon des modèles classique et factorisé.}\label{fig:res_5}
+%  \end{minipage}
+%  ~
+%  \begin{minipage}{.48\textwidth}\centering
+%    \centering
+%    \includegraphics[width=\textwidth]{TimeFire2}
+%    \caption{Comparaison en temps de calcul des modèles classique et factorisé.}\label{fig:res_6}
+%  \end{minipage}
+%\end{figure*}
+
+Discutons maintenant l'approche générale, les hypothèses utilisées, les résultats obtenus et les différents travaux futurs avant de conclure.
+
+\section{Discussion et Conclusion}\label{c4:s:dtc}
+
+La première chose qu'il convient de remarquer concerne les hypothèses faites au travers de ce chapitre. Il peut en effet paraître curieux d'étudier les systèmes de Markov à transition déterministe lorsque l'on sait qu'historiquement ces modèles étaient avant tout pour étudier les comportement asymptotiques de systèmes dynamiques stochastiques. Cependant, au vu des récentes avancées algorithmiques pour ces modèles il peut être très intéressant de s'approprier ces algorithmes dans des cas déterministes spécifiques où l'observabilité peut faire défaut. Il convient donc d'équilibrer plusieurs choses:
+\begin{itemize}
+\item Le choix des algorithmes stochastiques pour des problèmes partiellement observables purement déterministes n'est pas le plus approprié selon~\cite{B.09}. L'auteur suggère plutôt d'employer des algorithmes pour les arbres de recherche ET/OU~\citep{MD.09}. En revanche, dans le cas où l'observation est stochastique mais la transition déterministe, les résultats de ce chapitre montrent qu'il n'est nécessaire de considérer que les $K$ dernières observations pour pouvoir utiliser la politique du \mdp sous-jacent comme politique $\varepsilon$-optimale ensuite.
+\item Le choix du modèle d'observation, surtout dans le cas multiagent, influence l'équilibre des performances temps/valeurs espérées de l'algorithme considéré. Il convient donc de savoir si, dans le cas ou l'observation peut être factorisée, il est préférable de ne considérer que certaines parties de l'observation à chaque étape, ou s'il faut considérer l'observation complète. Dans le premier cas, l'algorithme bénéficie d'un avantage certain dans la complexité en temps de calcul mais produit des solutions à valeur moindre, alors que dans le second cas, les temps de calcul peuvent s'avérer prohibitif pour obtenir un gain en valeur possiblement avantageux.
+\end{itemize}
+
+La seconde chose à remarquer concerne l'hypothèse de l'observabilité bijective. Il est possible en effet de trouver cette hypothèse très restrictive dans certains contexte. En robotique toutefois, la factorisation du domaine et des observations est inhérente aux capteurs attachés au robot et cette formulation devient alors naturelle lorsque l'on observe des positions \textsc{gps} (pour \emph{Global Positioning System}) bruitées ou des caractéristiques spécifiques de l'environnement à l'aide de capteurs plus ou moins fiables. Cette étude permet ainsi de sélectionner dans certains cas les capteurs adaptés au robot souhaité maximisant l'équilibre entre la précision voulue des capteurs selon la capacité de calcul du robot, et le prix de ces capteurs, sous l'hypothèse que des capteurs plus fiables coûtent plus cher.
+
+Dans le cas multiagent, cette hypothèse de bijectivité n'est pas aussi restrictive qu'on pourrait le croire. Même si chaque agent perçoit effectivement l'état \emph{complet} du monde avec une certaine probabilité, chaque agent ne reçoit pas nécessairement la même observation que les autres agents et leurs croyances sur l'état réel sous-jacent du système peut-être différente. D'un côté cette hypothèse semble donc plus difficilement applicable dans le cadre décentralisé (\decpomdp) que dans le cadre centralisé (\pomdp) puisque les valeurs de variables internes aux agents ne sont alors plus obligatoirement observables. D'un autre côté, ces variables internes peuvent éventuellement être communiquées sans nécessairement communiquer leur observation complète, et l'incertitude sur cette communication peut être alors incluse dans l'incertitude associée à l'observabilité de ces variables.
+
+Dans la littérature, cette hypothèse d'observabilité bijective s'approche beaucoup des travaux effectués par~\cite{GZ.04} sur les \decmdps où les agents, lorsqu'ils communiquent leurs observations, ont accès à l'état réel sous-jacent du système. La différence avec ces travaux provient du fait que chacun des agents ne perçoit pas sa propre partie de l'état avec certitude, fournissant ainsi à l'ensemble du système l'observabilité complète au travers de la communication. L'observabilité bijective assure uniquement que chaque agent \emph{peut éventuellement} observer l'état réel du système avec probabilité $\theta$. En d'autres termes, un \decmdp avec communication complète est un \decpomdp avec observabilité bijective où $\theta = 1$, qui est aussi un \mmdp.
+
+En termes de travaux futurs, deux voies restent à être explorées. Une première concerne l'extension de ce modèle aux problèmes avec transition quasi-déterministe et le contrôle dans ce domaine. Des travaux non-publiés présentés dans l'annexe~\ref{anx:it} utilisant des notions de théorie de l'information montrent qu'il est impossible de montrer la convergence de l'état de croyance vers une entropie nulle comme l'on laissé entendre les figures~\ref{fig:entropy:3} à~\ref{fig:entropy:97}. Il est toutefois envisageable, comme le montre les travaux de~\cite{HLR.07} sur l'approximabilité des \pomdps, de trouver des classes de fonctions de transitions particulières forçant la convergences des états de croyance vers un ensemble fini d'états de croyance sur lesquels des algorithmes d'itération de valeur seraient applicables par exemple. La seconde avenue consiste à considérer un problème réel permettant de mettre en \oe uvre ce modèle et des travaux ont été commencés en ce sens avec Jean-Samuel Marier sur un système de patrouille d'\textsc{uav}s (pour \emph{Unmanned Aerial Vehicles})~\citep{MBC.09,MBC.10} ou plusieurs agents doivent surveiller un ensemble de positions stratégiques régulièrement et s'adapter en cas de changement des positions ou en cas de dysfonctionnement des \textsc{uav}s.
+
+Dans le chapitre suivant nous allons donc nous concentrer sur les aspects distribués de la planification en ligne et particulièrement sur l'état de croyance lorsque les agents ne communiquent pas nécessairement. 

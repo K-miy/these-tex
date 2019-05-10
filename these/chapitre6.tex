@@ -1,0 +1,178 @@
+\chapter{Conclusions et Perspectives}
+\label{chap:conclusion}
+
+\begin{summary}
+Ce chapitre rappelle tout d'abord le contexte de cette thèse et les contributions apportées aux différents domaines abordés. Les perspectives de recherches offertes par les contributions sont ensuite décrites et certaines sont détaillées au travers de quelques travaux effectués en collaboration avec d'autres collègues. Ce chapitre conclusif se termine par des remarques finales quant à l'application à des problèmes réels des modèles et algorithmes présentés dans cette thèse.
+\end{summary}
+
+La prise de décisions dans les modèles de Markov multiagents est particulièrement complexe et difficile. Elle l'est également dans les modèles monoagents lorsque le nombre d'états et/ou d'actions est particulièrement grand. C'est pourquoi nous nous sommes intéressés à différentes approches permettant de réduire cette difficulté combinatoire dans les modèles de Markov monoagents et multiagents. Dans ce contexte de réduction de la complexité combinatoire, nous avons proposé plusieurs méthodes telles que l'utilisation des contraintes dans les processus décisionnels de Markov, la restriction de la fonction d'observation dans les processus partiellement observables ou encore la résolution approximée en ligne de processus de Markov décentralisés. Dans cette conclusion nous allons donc rappeler les contributions de cette thèse quant à la réduction de la complexité combinatoire des processus de Markov avant de présenter quelques travaux en cours ainsi que des travaux futurs issus de ces recherches.
+
+\section{Résumé des contributions}
+
+Conceptuellement, cette thèse s'est attaquée au problème de la réduction de la complexité combinatoire (c.f. annexe~\ref{anx:cplx}) dans les processus décisionnels de Markov monoagents et multiagents depuis les problèmes les plus simples -- monoagents et complètement observables -- jusqu'aux problèmes les plus complexes -- multiagents et partiellement observables. Dans une première partie (au chapitre~\ref{chap:3}) nous avons réduit la complexité inhérente aux \mdps lorsqu'un grand nombre d'actions sont possibles sous certaines contraintes difficiles à représenter dans le modèle \mdp initial~\citep{BC.07,BPC.07}. Dans une seconde partie (au chapitre~\ref{chap:4}) nous nous sommes attaqués au problème de la représentation de la fonction d'observation trop générale et avons donc proposé une sous-classe d'observabilité permettant de réduire considérablement la complexité en pire cas dans les cas monoagent et multiagent~\citep{BC.09,BC.10,BC.10a}. Enfin, nous avons proposé au chapitre~\ref{chap:5} un algorithme en ligne de planification pour les modèles multiagents partiellement observables lorsqu'aucune communication n'est possible~\citep{BC.08}. Voyons donc rapidement un résumé de ces contributions et les différentes complémentarités entre ces parties.
+
+\begin{description}
+\item[Réduction de l'espace de recherche par des contraintes sur les actions:] Cet-te contribution suggère l'utilisation des représentations à base de contraintes pour la résolution de problèmes d'allocation de ressources sous différents types de contraintes. L'idée consiste à utiliser un algorithme permettant de dissocier la résolution des contraintes des allocations aux ressources et la résolution du problème séquentiel de planification dans un modèle unifié. Un algorithme en ligne adapté à cette dissociation a également été proposé offrant ainsi des gains en performance significatifs sur un problème de défense navale.
+\item[Réduction de l'incertitude par des contraintes sur les observations:] C'est en commençant par l'extension du modèle déterministe partiellement observable que nous avons proposé une nouvelle classe spécifique d'observabilité assurant la convergence en probabilité de l'état de croyance vers un état spécifique. Cette contribution s'aligne également dans la direction de la réduction combinatoire des problèmes de Markov, mais dans le cas partiellement observable. Elle permet notamment de comprendre plus précisément quel est l'effet de l'observabilité dans la complexité des modèles partiellement observables tout en ouvrant la porte à d'autres chercheurs en vue d'induire une heuristique admissible.
+\item[Résolution en ligne de problèmes décentralisés:] Un algorithme de résolution en ligne de \decpomdps ne faisant aucune hypothèse sur la communication ou l'interaction des agents \emph{a priori} a été proposé dans ce cadre. Nous avons vu qu'un tel algorithme est difficilement applicable sans communication et que de mauvaises décisions locales peuvent éventuellement conduire à des résultats globaux catastrophiques. Il convient toutefois de modérer ces propos dans la mesure ou peu de problèmes réels sont aussi couplés que le sont les problèmes ``jouets'' sur lesquels sont effectuées la majorité des expérimentations. Des travaux en ce sens seront présentés dans la section suivante.
+\end{description}
+
+En résumé, cette thèse vise à contribuer à la réduction combinatoire des modèles de Markov et à l'étude de l'observabilité dans de tels modèles. Une certaine complémentarité ressort des contributions de cette thèse puisque chacune de ces contributions s'attaque à un problème distinct des modèles de Markov. On peut ainsi imaginer regrouper ces contributions dans un modèle multiagent unique et unifié associant les contraintes sur les actions, l'observabilité bijective et autorisant la communication implicite à des fins de synchronisation. Voyons donc maintenant le cadre des perspectives de recherche découlant des contributions de cette thèse.
+
+\section{Perspectives de recherche}
+
+Cette thèse peut être étendue dans diverses directions.  Dans ce contexte, cette section décrit brièvement les perspectives de recherches associées à chaque approche développée dans ce manuscrit avant de présenter une application du modèle rassemblant toutes les contributions ci-avant.
+
+\subsection{Multiagent \pac{m}a\pac{csp}}
+
+Brièvement discutée dans la conclusion du chapitre~\ref{chap:3}, l'extension au cas multiagent des problèmes de Markov de satisfaction de contraintes permettrait éventuellement une plus grande expressivité du modèle tout en assurant une réduction combinatoire encore plus grande que le modèle monoagent proposé. En effet, on peut supposer qu'un tel modèle permettrait de modéliser certains types d'interactions spécifiques existant entre les agents tels que les interactions négatives par exemple. Il est possible que des agents se trouvent dans l'impossibilité de réaliser une action de par la présence d'un autre agent ou de par l'action d'un autre agent à une étape précédente. Ce type d'interactions se représente très bien à l'aide de contraintes et permettrait ainsi également de réduire l'espace des actions jointes disponibles lors de la recherche d'une solution. Les contraintes sont donc un bon moyen de représenter certaines interactions entre les agents en vue de réduire la complexité d'algorithmes déjà existants.
+
+\subsection{Étude des modèles à observabilité bijective et transition stochastique}
+
+Nous nous sommes limités, dans le chapitre~\ref{chap:4}, à l'étude des modèles à transition déterministes même si des travaux préliminaires concernant les fonctions de transitions stochastiques sont rapportés dans l'annexe~\ref{anx:it}. Poursuivre ces travaux en étudiant à la fois la structure de la fonction de transition et le bruit généré par celle-ci est également une perspective de recherche intéressante. Il serait ainsi possible de relier les travaux proposés à ceux de~\cite{HLR.07} puisque ces auteurs ont étudié certaines fonctions de transitions permettant l'approximation de \pomdps. Les auteurs ont en effet réussi à montrer qu'il existe des classes de problèmes dont le nombre d'états de croyance accessible depuis un état de croyance donné est fini. Ainsi, il suffit de faire une itération de valeur sur cet ensemble fini d'états de croyance pour trouver une politique optimale pour le \pomdp à horizon infini.
+
+Il est également possible d'étendre nos travaux sur la bijectivité des observations aux \pomdps continus où la fonction d'observation est une fonction bijective exacte sur laquelle un bruit gaussien est ajouté. Il serait ainsi possible de définir une bijectivité de la transition aussi appelée réversibilité de la matrice de transition dans les modèles usuels de Markov en mathématiques~\citep{AF.02}. Ces aspects seront abordés dans la section~\ref{sect:gppomdp} de ce chapitre qui décrit des travaux entrepris en collaboration avec Patrick Dallaire sur les \pomdps a espaces continus~\citep{DBRC.09}.
+
+\subsection{Utilisation de la communication pour la synchronisation des états de croyance}
+
+Une autre avenue de recherche intéressante apportée par l'observabilité bijective concerne la communication dans les systèmes multiagents. Dans l'exemple multiagent de chaîne de seaux d'eau traité dans le chapitre~\ref{chap:4}, pour que les agents aient accès à l'état complet du système, nous avons fait l'hypothèse que les agents pouvaient communiquer, comme bon leur semblait, la partie de l'état non visible par un autre agent. Nous n'avons cependant fait aucune hypothèse quant à la qualité de cette communication qui peut ainsi être bruitée. Ce type de communication partielle, en dehors des schémas classiques de communication dans les travaux actuels dans le domaine des \decpomdps, devrait être comparé aux algorithmes faisant l'hypothèse que la communication sert à synchroniser l'état de croyance des agents en communiquant l'historique des actions et observations, tels que présentés au chapitre~\ref{chap:5}. On pourrait alors imaginer une forme de communication efficace et sémantiquement non redondante dans des espaces factorisés et structurés et ainsi réduire les coûts associés à la communication.
+
+\section{Un modèle unifié appliqué à la patrouille d'un espace représenté sous forme de graphe}
+
+C'est dans le cadre de la maîtrise de Jean-Samuel Marier que nous avons essayé de mettre en pratique les approches proposées dans cette thèse~\citep{MBC.09,MBC.10}. Un modèle multiagent pour le problème de patrouille d'agents autonomes a donc été proposé sur la base des principes suivants:
+\begin{itemize}
+\item Les agents sont contraints dans leurs actions par un graphe de localisations à surveiller aussi souvent que possible;
+\item Les agents observent avec certitude leur position et communiquent celle-ci aux autre agents;
+\item Les agents peuvent communiquer leur état local et leur politique locale inaccessible aux autres agents avec une fréquence suffisamment élevée telle que les délais ou la fiabilité du réseau de communication ne puissent pas être mise en cause;
+\item Les agents n'ont pas accès à l'information qu'ils surveillent, ils n'ont qu'une représentation probabiliste (un état de croyance) de l'état de fraîcheur de l'information qu'ils cherchent à surveiller. Ainsi, dans le cadre de la surveillance de forêts pour la détection d'incendie par exemple, les agents pourraient être munis de capteurs infrarouges détectant avec une certaine probabilité un feu à une position donnée, mais il n'auront aucune confirmation de la part de ce capteur si quelque chose a été découvert ou pas. Cela permet un niveau d'abstraction supplémentaire et ainsi de découpler la tâche de surveillance avec l'objet à surveiller. On peut ainsi supposer avoir le modèle des capteurs spécifiques à utiliser sans savoir exactement quels sont ces capteurs ou à quoi ils servent.
+\end{itemize}
+
+Il a donc été proposé un modèle~\citep{MBC.09} pour ce problème basé sur un mélange de processus de Markov multiagents partiellement observables et de processus semimarkoviens généralisés~\citep{Y.04} incluant la prise en compte du temps continu et la gestion d'événements concurrents. Nous le détaillerons rapidement dans cette section. Le lecteur intéressé par sa résolution est invité à se référer à la maîtrise de~\cite{M.10}.
+
+\subsection{Formalisation du problème de patrouille}
+\newcommand\noeud{n\oe ud\xspace}
+\newcommand\noeuds{n\oe uds\xspace}
+
+Comme nous l'avons énoncé plus haut, le problème de patrouille est contraint et structuré par un graphe. Ainsi, les agents ne peuvent se rendre d'une position à une autre que si une arête du graphe existe entre ces deux n\oe uds. Appelons $V$ l'ensemble des \noeuds et $E$ l'ensemble des arêtes. Soit $L$ une matrice de taille $|V| \times |V|$, dans laquelle $L_{ij}$ est un nombre réel \emph{non-négatif} qui représente le temps requis pour aller d'un \noeud $i$ à un \noeud $j$ si l'arête $[i,j]$ appartient à $E$; $L_{ij}$ est infini sinon. Dans un cas plus général, $L_{ij}$ est une distribution de probabilité sur le temps. Chaque \noeud a un poids d'importance $w_i$. On dénotera par $\mathbf{w}$ le vecteur de tous les poids. Lorsque l'on suppose que toutes les positions sont accessibles depuis n'importe laquelle position, alors le graphe est complet.
+
+La mesure de performance habituellement utilisée dans la littérature sur le problème de patrouille est l'\emph{oisiveté}. L'oisiveté d'un sommet $i$, notée $\tau_i$ représente le temps écoulé depuis la dernière visite d'un agent à ce sommet. L'oisiveté est 0 lorsqu'un agent est sur le sommet et \mbox{$\tau_i^{t+\Delta t} = \tau_i^t + \Delta t$} si le sommet n'a pas eu de visite dans l'intervalle de temps $(t, t+\Delta t)$. Parce que l'oisiveté est une quantité non bornée, nous avons décidé d'utiliser ce que nous avons appelé la \emph{fraîcheur} d'un sommet. La fraîcheur d'un sommet $i$ est donné par $k_i^t = b^{\tau_i^t}$, avec $0 < b < 1$. Ainsi, $k_i^t$ est toujours compris entre 0 et 1 et peut être vue comme la valeur espérée d'un variable aléatoire de Bernoulli qui vaut 1 lorsque le sommet $i$ est correctement observé par l'argent en patrouille et 0 sinon. De fait, $k_i^t$ est la probabilité que cette variable soit 1 au temps $t$. L'idée d'observer ``correctement'' reste générale comme expliquée au quatrième point de l'introduction de cette section. Ainsi, au temps $t$, $k_i^t$ est la probabilité que l'agent ait réussi à observer ce qu'il avait à observer à la position $i$. La mesure de performance $k_i^t$ est ensuite calculée en faisant la somme pondérée par la valeur des sommets $\mathbf{w}$ du vecteur $\mathbf{k}^t$.
+
+Cette probabilité évolue de la manière suivante : $k_i^{t+\Delta t} = k_i^t b^{\Delta t}$ si aucune visite n'a eu lieu dans l'intervalle de temps  $(t, t + \Delta t)$. Si un agent avec des observations bruitées visite le sommet $i$ au temps $t$, l'oisiveté devient alors 0 avec probabilité $(1-a)$, où $a$ satisfait $b < (1-a) \leq 1$. Si $n$ agents visitent le sommet simultanément au temps $t+\Delta t$ et qu'il n'y eu aucune visite depuis le temps $t$, alors on peut écrire:
+\begin{equation}
+\label{eq:update-k}
+k_i^{t+\Delta t} = k_i^t a^n b^{\Delta t} + 1 - a^n.
+\end{equation}
+
+En résumé, une instance du problème de patrouille est un tuple \mbox{$\langle L, \mathbf{w}, a, b \rangle$} constitué de $(i)$ la matrice $L$ des longueurs des arêtes, $(ii)$ du vecteur $\mathbf{w}$ des poids des sommets, et $(iii)$ des paramètres $a$ et $b$ représentant respectivement la probabilité que l'oisiveté ne soit pas remise à 0 lorsqu'un agent passe par un sommet et le taux de décroissance de $k_i$ au cours du temps, ou encore la rapidité de l'obsolescence de l'information au sommet $i$. Il convient ici de remarque que $b$ peut être différent d'un sommet à l'autre et que $a$ peut être différent pour chaque pair d'agent/sommet. Nous n'utiliserons toutefois qu'un seul paramètre $a$ et $b$ pour des raisons de clarté.
+
+\subsection{Représentation par un \pac{mmdp} en temps discret}
+
+En utilisant les capacités de communication évoquées précédemment, il est possible de représenter ce problème sous la forme d'un \mmdp (c.f. chapitre~\ref{chap:2}) où l'état des agents est complètement observable, mais hybride. Tous les agents ont effectivement la même information complète quant à la position des autres agents et l'état (incertain et continu) des sommets du graphe, pour pouvoir prendre une décision coordonnée. Du fait que les actions peuvent avoir des durées différentes et ainsi désynchroniser les agents, il est nécessaire d'étendre ce modèle au temps continu avec la gestion événementielle d'actions concurrentes. Cette gestion se fait très bien dans les processus décisionnels semi-markoviens généralisés (\textsc{gsmdp}~\citep{Y.04}) que nous ne détaillerons pas ici.
+
+L'état se décompose alors en plusieurs variables, certaines décrivant les positions de chacun des agents, d'autres modélisant la fraîcheur de chacun des sommets. Ainsi, si $N$ agents sont dans l'environnement, le nombre d'états possible est de
+\begin{equation}
+\mathcal{S} = V^N \times \left[0, 1\right]^{|V|} \label{eq:state-space}.
+\end{equation}
+Étant donné un état \mbox{$s = \left(\mathbf{v}, \mathbf{k}\right)\in \mathcal{S}$}, $v_i$ est la position de l'agent $i$ et $k_i$ est l'oisiveté du sommet $i$. Nous utilisons \mbox{$s^t = \left(\mathbf{v}^t, \mathbf{k}^t\right)$} pour l'état et ses composantes à l'instant $t$.
+
+A certains instants, appelés étapes de décision, les agents doivent choisir une action. Tous les agents doivent être en train d'effectuer une action à chaque instant et ne peuvent changer d'action que lorsqu'ils sont à une étape de décision. Les actions sont contraintes par la structure du graphe et sa position: si un agent est dans un sommet $v$, il ne peut choisir son action que parmi \mbox{$\mathcal{A}_v = \left\{ u : [v, u] \in E \right\}$}. Si un agent choisit l'action $u$ depuis le sommet $v$ au temps $t^i$, la prochaine étape de décision surviendra au temps \mbox{$t^{i+1} = t^i + L_{vu}$}, et $v^t = v$ tant que $t \in [t^i, t^{i+1})$ et $v^t = u$ dès que $t = t^{i+1}$. En d'autres mots, l'agent est considéré comme étant à son sommet de départ pendant tout le trajet, et ce, jusqu'à ce qu'il arrive. Si $L_{vu}$ est une distribution de probabilité sur le temps d'arrivée, alors $t^{i+1}$ en est une aussi étant donné $t^i$.
+
+Du fait que les agents n'agissent plus nécessairement de manière synchronisée, les actions deviennent alors concurrentes et peuvent s'entremêler arbitrairement puisque chaque composante $k_i$ de $\mathbf{k}$ évolue indépendamment des autres. On peut alors réécrire l'équation~\eqref{eq:update-k} de telle sorte à prendre en compte cette concurrence des actions en temps discret. Soit $\{ t^j \}_j$ une séquence d'étapes de décisions et $n_i^j$ le nombre d'agents arrivant au sommet $i$ au temps $t^j$. Si l'on dénote $\Delta t^j = t^{j+1} - t^j$, on peut réécrire l'équation~\eqref{eq:update-k}:
+\[
+k_i^{t^{j+1}} = k_i^{t^j} a^{n_i^{j+1}} b^{\Delta t^j} + 1 - a^{n_i^{j+1}}.
+\]
+
+Les récompenses $R$ sont alors calculées en fonction du vecteur $\mathbf{k}$. Plus spécifiquement, le gain en récompense est donné par la somme pondérée des $k_i$ par les $w_i$ et la fonction de valeur du \textsc{gsmdp} est alors calculée de la manière suivante:
+\begin{equation}
+V^\pi(s)
+	\underset{(a)}{=}
+		\Esp{ \int_0^\infty \gamma^t  \mathbf{w}^\top\mathbf{k}^t \, dt. }
+	\underset{(b)}{=}
+		\Esp{
+			\sum_{j=0}^\infty \gamma^{t^j} \mathbf{w}^\top\mathbf{k}^{t^j}
+				\frac{(b\gamma)^{\Delta t^j} - 1}{\ln(b\gamma)}
+		}
+\label{eq:value}
+\end{equation}
+Où $\gamma \in (0, 1]$ est le facteur d'escompte.
+
+Il convient de préciser que l'égalité $(a)$ est donnée par la définition d'une fonction de valeur à temps continu, et $(b)$ est obtenue par l'intégration par morceaux entre les différentes étapes de décisions. En outre, l'espérance est prise ici sur la durée stochastique des actions. La séquence d'états rencontrés dépend des actions choisies par les agents représentées par leur politique $\pi$. Le problème étant de trouver la politique maximisant cette valeur. Plusieurs algorithmes ont été proposés par~\cite{M.10}. Des exemples de graphes sont donnés par les figures~\ref{fig:instances} et~\ref{fig:random-instances}.
+
+\begin{figure}
+\centering
+\subfigure[Wheel]{\resizebox{.3\textwidth}{!}{\input{wheel-8-unit.tikz}}}
+\;
+\subfigure[Cloverleaf]{\resizebox{.3\textwidth}{!}{\input{clover-11.tikz}}}
+\;
+\subfigure[Cuboctahedron]{\resizebox{.3\textwidth}{!}{\input{cuboctahedron.tikz}}}
+\\
+\subfigure[Map-A]{\resizebox{.45\textwidth}{!}{\input{mapA.tikz}}}
+\;
+\subfigure[Map-B]{\resizebox{.45\textwidth}{!}{\input{mapB.tikz}}}
+\caption[Instances de patrouille.]{Instances de patrouille. Le n\oe ud de départ est rempli, les arêtes ont une longueur unitaire et les n\oe uds un poids unitaire à moins que cela ne soit précisé.}
+\label{fig:instances}
+\end{figure}
+
+\begin{figure}
+\centering
+\subfigure[]{\input{random0.tikz}}
+%\subfigure[]{\input{random4.tikz}}
+\subfigure[]{\input{random6.tikz}}
+%\subfigure[]{\input{random7.tikz}}
+\subfigure[]{\input{random9.tikz}}
+\caption[Instances aléatoires de patrouille.]{Instances aléatoires de patrouille. Le n\oe ud de départ est rempli, les arêtes ont une longueur unitaire et les n\oe uds un poids proportionnel à la taille de l'affichage.}
+\label{fig:random-instances}
+\end{figure}
+
+\subsection{Discussion}
+
+Nous avons présenté dans cette section un modèle découlant directement des travaux formulés dans cette thèse alliant contraintes sur les actions au travers d'un graphe, et communication à haute fréquence de sous-parties de l'état observables uniquement par certains agents du système. Beaucoup de ces hypothèses restent discutables comme la communication gratuite, fiable, sécuritaire et à haute fréquence. Nous avons effectivement choisi ces hypothèses sciemment dans un contexte civil de surveillance de sites sensibles. Il pourrait évidemment en être autrement dans un domaine militaire par exemple et certaines hypothèses devraient alors être reconsidérées. Néanmoins, dans le contexte choisi ces hypothèses sont tout a fait justifiées et permettent une simplification efficace du problème dont il serait inconsidéré de se priver.
+
+Quelques travaux futurs propres à ces recherches peuvent également être trouvés dans le mémoire de~\cite{M.10}.
+
+\section{Un modèle de \pac{pomdp} à espaces continus}\label{sect:gppomdp}
+
+Une autre avenue de recherche de l'observabilité bijective que nous avons commencé à explorer concerne l'apprentissage d'une sous-classe de \pomdps continus à l'aide de processus gaussiens (c.f. annexe~\ref{anx:gp}). Ce travail réalisé dans le cadre de la maîtrise de Patrick Dallaire~\citep{DBRC.09,DBC.09,DBC.10} concerne l'apprentissage d'une fonction d'observation bijective et d'une fonction de transition également représentable à l'aide d'une fonction déterministe adjointe d'un bruit gaussien.
+
+\subsection{Formalisation du modèle}
+
+Pour ces recherches, nous avons considéré le problème où le \pomdp possède un espace d'états continu (tel qu'un plan en robotique par exemple), un espace d'action continu (tel que le contrôle d'une vitesse en robotique), et dont les fonctions de transition, d'observation et de récompenses se trouvent elles aussi à être continues. Placés dans un contexte d'apprentissage, nous cherchons à déterminer la fonction d'observation et la fonction d'observation tout en assurant un contrôle optimal vis-à-vis de la fonction de récompense supposée connue. Pour ce faire, nous avons supposé que le modèle est composé de fonctions déterministes adjointes d'un bruit de la manière suivante:
+\begin{equation}
+\begin{array}{rcl}
+\mathbf{s}_t & = & T'(\mathbf{s}_{t-1},\mathbf{a}_{t-1}) + \epsilon_T\\
+\mathbf{z}_t & = & O'(\mathbf{s}_t, \mathbf{a}_{t-1}) + \epsilon_O\\
+r_t & = & R'(\mathbf{s}_{t}, \mathbf{a}_{t-1}) + \epsilon_R\\
+\end{array}
+\end{equation}
+Où $\epsilon_T$, $\epsilon_O$ and $\epsilon_R$ sont des bruits gaussiens de moyenne nulle et les fonctions $T'$ et $O'$ sont respectivement les fonctions déterministes et inconnues de transition et d'observation.
+
+Bien que discutable, cette hypothèse de fonction déterministe adjointe d'un bruit blanc est largement utilisée en robotique et dans de nombreux autres domaines tels que la théorie de l'information, la sociologie ou encore la physique.
+
+Plus de détails sur ces recherches sont disponibles dans les résultats de~\cite{DBRC.09}.
+
+\subsection{Apprentissage à partir de données bruitées}
+
+Si l'on ajoute l'hypothèse que l'on connaît maintenant le bruit de la fonction d'observation (i.e. le bruit associé au capteur), les résultats du chapitre~\ref{chap:4} permettraient éventuellement de démontrer qu'avant un nombre fini de transitions, il ne sera pas possible d'apprendre quoi que ce soit sur la fonction de transition puisque l'incertitude associée à l'état de croyance empêche de corréler efficacement une récompense ou une observation à un état donné.
+
+Les premiers travaux réalisés dans ce sens ont concerné l'apprentissage par régression d'une fonction de transition à partir de données d'entrées bruitées (un état de croyance à l'tape $t$) dont le niveau d'incertitude est connu, et vers des données de sorties bruitées (un autre état de croyance à l'étape $t+1$) dont le niveau d'incertitude est connu également. Plus de détails sont disponibles dans les résultats de~\cite{DBC.09} et de~\cite{DBC.10}.
+
+
+\section{Remarques finales}
+
+La dernière décennie a vu l'avènement des modèles de Markov pour le multiagent là ou il n'y avait que croyances, engagements et intentions. La possibilité de représenter sous formes de probabilités les connaissances du monde a permis l'avancée de beaucoup de domaines et notamment en robotique. Néanmoins, de plus en plus de modèles restreints et spécifiques font chaque année leur apparition dans les conférences du domaine de la prise de décision séquentielle multiagent. En particulier récemment, ces nouveaux modèles s'attaquent à la structure de tels problèmes où les interactions entre les agents sont supposées connues et peu nombreuses~\citep{WD.10}.
+
+Il ressort de la communauté multiagent encore jeune un grand désir d'essayer de modéliser tous les problèmes possibles à l'aide de modèles de Markov, qu'ils soient observables ou pas, stochastiques ou pas, possible à résoudre ou pas. Il conviendrait de faire une taxonomie de tous les modèles existants sur plusieurs dimensions:
+\begin{itemize}
+\item Comment un modèle représente-t'il les transitions entre les états?
+\item Comment un modèle représente-t'il les observations des agents?
+\item Comment un modèle représente-t'il les récompenses des agents?
+\item Comment un modèle représente-t'il les interactions entre les agents?
+\item Comment un modèle représente-t'il la communication entre les agents?
+\item Comment un modèle représente-t'il les contraintes sur l'état, les actions, les interactions, etc?
+\item Quels types d'algorithmes sont disponibles pour ce modèle?
+\end{itemize}
+Une étude d'une telle taxonomie aiderait grandement le novice dans ce domaine à trouver la voie qui lui convient le mieux et les applications possibles des ces modèles.
+
+D'autre part, il convient également de remarquer que les \decpomdps ne sont clairement pas adaptés aux problèmes actuels de par leurs hypothèses restrictives telles que le synchronisme des agents où la disponibilité de la fonction de transition complète du monde environnant. De gros efforts doivent être investis dans la représentation de modèles structurés, interactifs, faiblement couplés, asynchrones, etc. Dans l'état actuel des modèles de Markov multiagents, peu de résultats ne sauraient être mis en application sans un énorme travail préalable de modélisation et de nombreuses adaptations à l'exécution.
+
+Dans cette thèse nous nous sommes attachés à explorer ces caractéristiques que ce modèle idéal multiagent devrait avoir pour être utilisable, mais énormément de travail reste encore à faire dans ce domaine. 

@@ -1,0 +1,747 @@
+\chapter{Contraintes et processus de Markov}
+
+\label{chap:3}
+
+% \emph{«En essayant continuellement on finit par réussir. Donc : plus ça rate, plus on a de chance que ça marche.»}
+% \begin{flushright}Les Shadoks -- Jacques Rouxel\end{flushright}
+% \bigskip
+
+ \emph{«L'histoire de l'humanité est une statistique de la contrainte.»}
+ \begin{flushright}Testament Phonographique -- Léo Ferré\end{flushright}
+ \bigskip
+
+\begin{summary}
+Ce chapitre introduit tout d'abord le problème d'allocation de ressources à des tâches dont la réalisation peut être incertaine puis fait un survol de la littérature à ce sujet. Les bases de la satisfaction de contraintes sont ensuite introduites avant de détailler le modèle proposé qui combine processus décisionnels de Markov et satisfaction de contraintes en vue de résoudre le problème d'allocation de ressources. Des résultats théoriques pour ce modèle sont présentés ainsi que des résultats expérimentaux pour un algorithme spécialement adapté.
+\end{summary}
+
+\section{Introduction}
+
+Nous avons vu dans le chapitre précédent qu'un des problèmes majeurs des processus décisionnels de Markov réside dans l'explosion combinatoire du temps de calcul lors de l'augmentation exponentielle de la taille des données d'entrées tels l'espace des états ou encore l'espace des actions. Cette augmentation exponentielle de la taille des données d'entrées est d'autant plus fréquente que les problèmes à résoudre sont complexes et structurés.
+
+Prenons par exemple un problème d'allocations séquentielles de $n$ ressources à $m$ tâches dont chaque réalisation peut être incertaine. S'il existe potentiellement C$_m^n$ allocations possibles des ressources aux tâches, à chaque étape de décision, il faut alors vérifier chacune de ces allocations possibles et estimer leur valeur espérée à long terme. Ce travail de calcul machine peut éventuellement être optimisé si l'information sur la structure de l'espace d'état est utilisée lors de la résolution du problème.
+
+Dans ce contexte, nous proposons d'utiliser certaines formes de structuration de l'espace d'état basées sur les contraintes entre les états pour améliorer l'efficacité des algorithmes issus des \mdps. Cette structuration permet en effet d'induire une factorisation de la fonction de transition et de réduire le facteur de branchement dans la recherche de politiques d'allocations de ressources optimales. Le problème formel d'allocation dynamique et stochastique de ressources à des tâches est donc tout d'abord présenté ainsi que les solutions auparavant proposées de la littérature à ce sujet. Les bases formelles des problèmes de satisfaction de contraintes statiques et dynamiques sont ensuite exposées avant de présenter l'adaptation de ceux-ci au contexte markovien. L'application de ces méthodes à base de contraintes sur un problème non trivial de défense en milieu marin démontre l'efficacité de l'approche même si l'analyse théorique en pire cas pourrait laisser croire le contraire.
+
+\section{Problème statique d'allocation de ressources}
+
+Un des problèmes fondamentaux de la recherche opérationnelle est le problème d'assignation d'armes à des cibles (ou \emph{Weapon-Target Assignment ou} \textsc{wta}). Ce problème, étudié plus largement depuis la fin des années cinquante suite à sa formulation par \cite{M.58}, a été montré comme NP-complet par \cite{LW.86}. Il consiste à assigner de manière optimale des armes de sorte à minimiser l'espérance totale de survie des cibles à la fin des engagements.
+
+Plus formellement, \cite{LW.86} ont défini le problème \textsc{wta} de la manière suivante:
+Soit un ensemble $\mathcal{W}$ de $w$ armes et un ensemble $\mathcal{M}$ de $m$ cibles. Soit $V_i$ la valeur de la cible $i,\,(1\le i\le m)$ et $\alpha_{ij}$ la décision d'affecter l'arme $j,\,(1\le j\le w)$ à la cible $i$. Si un tir de l'arme $j$ sur la cible $i$ est décidé alors il existe une probabilité $p_{ij}$ que la cible soit détruite, indépendamment des autres tirs. Une solution au problème \textsc{wta} statique est donc la matrice $\mathcal{A}$ des $m\times w$ variables de décision $\alpha_{ij}$ définies comme suit:
+\[\alpha_{ij} = \left\{
+          \begin{array}{ll}
+             1 & \, $si\,l'arme$\,j\,$est\,affecté\,à\,la\,cible$\,i\\
+             0 & \, \mathrm{sinon} \\
+          \end{array}
+        \right.\]
+avec comme contrainte qu'une arme ne peut être assignée qu'a une seule cible:
+\[\sum_{i=1}^m \alpha_{ij} = 1, \forall j \in \{1, \ldots, w\}\]
+Ainsi, la probabilité que la cible $i$ survive après la résolution de l'engagement est donnée par:
+\[\prod_{j=1}^w (1 - \alpha_{ij}p_{ij})\]
+Donc, au terme d'un engagement, la valeur espérée $R$ peut être évaluée comme la somme des valeurs des cibles $V_i$ détruites à la fin d'un engagement moins le coût $C_{ij}$ induit par cet engagement et peut être traduit par:
+\begin{equation}
+    \label{eq:swta}
+    R =\underbrace{\sum_{i=1}^m V_i \left[ 1 - \prod_{j=1}^w (1 - \alpha_{ij}p_{ij}) \right]}_{(a)} - \underbrace{\sum_{i=1}^m \sum_{j=1}^w C_{ij}\alpha_{ij}}_{(b)}
+\end{equation}
+L'objectif étant de \textbf{maximiser} $R$.
+
+Nous remarquerons ici une sorte de ``déséquilibre'' dans la fonction de valeur au niveau du coût (partie $(b)$) par rapport à la valeur espérée (partie $(a)$). Cela est partiellement dû au fait que le coût, dont la définition n'a pas été donnée, est intimement lié aux probabilités $p_{ij}$. Une définition plus complète sera donnée dans les sections suivantes car le coût est supposé nul dans le reste de cette section.
+
+A noter également que dans le contexte de la formulation~\ref{eq:swta}, il est également supposé que chaque arme ne possède qu'une seule munition ; toutefois, plusieurs armes de même type peuvent exister. Ceci permet, sans perte de généralité, de s'affranchir d'une non-linéarité supplémentaire qui apparaîtrait sous la forme d'une puissance dans le produit des probabilités:
+\[R =\sum_{i=1}^m V_i \left[ 1 - \prod_{j=1}^w (1 - p_{ij})^{\alpha_{ij}} \right] - \sum_{i=1}^m \sum_{j=1}^w C_{ij}\alpha_{ij}\]
+
+Voyons maintenant quelques cas particuliers pour lesquels un algorithme optimal a déjà été proposé.
+
+\subsubsection{Armes identiques}
+
+Dans le cas particulier ou toutes les armes sont supposées identiques, alors la probabilité de détruire une cible est la même quelque soit l'arme et $p_{ij} = p_i$. Cette hypothèse peut être valide dans le cas où le défenseur ne possède qu'un seul type d'arme et qu'elles sont toutes localisées au même endroit si bien que les temps et probabilités d'interception sont identiques. Le problème peut alors être simplifié et réécrit de la manière suivante:
+\[R =\sum_{i=1}^m V_i(1 - p_{i})^{x_j}\]
+avec
+\[x_j = \sum_{j=1}^w \alpha_{i}\]
+L'objectif étant cette fois-ci de \textbf{minimiser} $R$.
+
+Un algorithme en temps en $\mathcal{O}(m+w \log w)$ a été proposé par~\cite{BEE.59} pour résoudre ce problème de manière optimale généralement référencé sous le nom de \textit{Maximum Marginal Return} (\textsc{mmr}) dans la littérature~\citep{H.89}. Cet algorithme consiste à assigner les armes une par une à la cible de plus grande valeur. Dans le cas particulier des armes identiques, il est possible alors de montrer que cette stratégie gloutonne est optimale. \textsc{mmr} est donné par l'algorithme~\ref{alg:MMR}.
+
+\begin{algorithm}[htb]
+\caption{\label{alg:MMR} \textit{Maximum Marginal Return} \citep{BEE.59}}
+\begin{algorithmic}[1]
+\State{\textbf{Inputs :} $\mathcal{M}$ l'ensemble des cibles et leurs valeurs}
+\State{\textbf{\phantom{Inputs :}} $\mathcal{W}$ l'ensemble des armes toutes identiques}
+\ForAll{$i \in \mathcal{M}$}
+    \State{Soit $x_i = 0$}
+    \State{Soit $S_i = q_i^{x_i}$ la probabilité que la cible $i$ soit détruite par $x_i$ missiles}
+\EndFor
+\State{$j \leftarrow 1$}
+\Statex
+\While{$j \le w$}
+    \State{Trouver la cible $i_{max}$ pour laquelle une munition a le plus d'impact sur la valeur espérée $R$:
+    \[i_{max} = \arg\max_i \{ V_i S_i (1-q_i) \}\]}
+    \State{Assigner la munition $j$ à la cible $i_{max}$: \[x_{i_{max}} = x_{i_{max}}+1\quad \mathrm{et} \quad S_{i_{max}} = S_{i_{max}}q_{i_{max}}\]}
+    \State{$j \leftarrow j+1$}
+\EndWhile
+
+\end{algorithmic}
+\end{algorithm}
+
+A noter que si toutes les menaces sont aussi identiques, alors $q_i$ est remplacé par $q$ et les $V_i$ deviennent égaux à 1. \cite{LW.86} ont montré que dans ce cas encore plus particulier il suffit de répartir le plus uniformément possible les armes sur les cibles pour avoir une solution optimale.
+
+L'algorithme \textsc{mmr} est extrêmement simple autant que rapide. Il s'initialise en temps $\mathcal{O}(|\mathcal{W}|)$ et après chaque itération,  la mise à jour se fait en temps $\mathcal{O}(\log |\mathcal{W}|)$. Puisque le nombre d'itérations est de $|\mathcal{M}|$, la complexité en temps de l'algorithme \textsc{mmr} est en $\mathcal{O}(|\mathcal{W}| + |\mathcal{M}|\log |\mathcal{W}|)$. On peut se référer à \cite{K.86} pour une implémentation de \textsc{mmr} et quelques résultats numériques.
+
+\cite{H.89} a également développé un algorithme de recherche locale basé sur \textsc{mmr} qui trouve une solution optimale à partir de n'importe quelle allocation de départ. Ainsi, on remarquera que la simple hypothèse des armes identiques rend la fonction à optimiser convexe et donc triviale à explorer.
+
+\subsubsection{Autres cas particuliers}
+
+Deux autres cas particuliers ont été résolus de manière optimale en temps polynomial. Les cas ou le défenseur possède moins d'armes que l'assaillant, ou encore le cas ou l'on ne peut assigner au plus qu'une arme à chaque cible.
+
+Ainsi, dans le cas où le nombre de munitions est inférieur ou égal au nombre de cibles, la solution optimale consiste à allouer les armes disponibles maximisant le produit valeur/efficacité le plus uniformément possible~\citep{LW.86}. De la même manière, dans le cas où l'on ne peut assigner qu'au plus une arme à chaque cible, le problème est alors un cas tout aussi particulier et strictement équivalent au cas précédent où le nombre de munitions serait égal au nombre de cibles ($|\mathcal{W}| = |\mathcal{M}|$). La solution optimale est du coup identique et consiste à assigner les armes le plus uniformément possible~\citep{LW.86}.
+
+Évidemment, puisque ces cas particuliers sont résolus de manière optimale, il sera supposé dans la suite de ce chapitre que, dans le cas général, les armes ont une efficacité différente, que le nombre d'armes est supérieur à celui des cibles et qu'il est possible de tirer avec plusieurs armes sur la même cible: \[\forall j,\,k \in \{1,\ldots,m\},\,j\neq k \wedge p_{ij} \neq p_{ik} \quad \mbox{et que}\quad m>n.\]
+
+\subsection{Cas général statique}
+
+Les différentes approches proposées pour résoudre le cas général couvrent un large éventail des méthodes existantes utilisées en Intelligence Artificielle: programmation dynamique, programmation linéaire, processus décisionnels de Markov (partiellement observables ou non), etc. Les buts de ce bref état de l'art sont de montrer un large panel des techniques déjà utilisées et d'en extraire les avantages et les faiblesses. Ainsi, on verra que plusieurs formulations du problème existent s'attachant à résoudre des aspects plus spécifiques, mais en posant des hypothèses parfois contraignantes.
+
+Depuis l'expression du cadre général par~\cite{M.58}, \cite{M.70} a produit une revue de littérature couvrant la période 1958--1970 et dans laquelle de nombreuses références sont classées par le modèle qui est pris en considération. Une deuxième revue de la littérature de ces années là a également été proposée par~\cite{EB.72}. \cite{M.70} pour sa part a présenté le problème sous sa forme offensive, \cite{EB.72} l'ont, quant à eux, présenté sous la forme défensive tout en donnant plusieurs modèles mathématiques ainsi qu'une analyse de ces modèles. Le lecteur est invité à se référer aux Tables I et II de \citep{M.70} pour savoir quelles méthodes ont été employées et sur quels modèles sur la période précédant les années 70.
+
+\subsection{Approches récentes employées}
+
+Parmi les approches plus récentes, de nombreuses techniques ont été employées. Parmi ces approches, il convient de retenir plus particulièrement les travaux de~\cite{AKJ.03}. Ces auteurs ont investigué les performances des algorithmes de type \emph{Branch \& Bound} et de recherche locale, mais également plusieurs autres approches pour calculer des bornes inférieures et les injecter dans le \emph{Branch \& Bound}. Une première borne est calculée en résolvant le problème de programmation linéaire en nombres entiers relaxé aux réels, une deuxième borne est calculée par programmation linéaire mixte, une troisième par la formulation du problème sous forme de minimisation de coût de réseaux de flux (\emph{min cost flow}) et une dernière utilisant l'algorithme \textsc{mmr} en supposant qu'à chaque cible est assignée la meilleure arme possible. Toutes ces bornes sont ensuite utilisées dans un \emph{Branch \& Bound} classique et ont été comparées par \cite{AKJ.03}. Cependant, même si cette approche est très efficace lorsque le nombre de cibles n'excède pas de beaucoup le nombre d'armes, elle devient inefficace lorsque le nombre d'armes approche du double du nombre de cibles. Les auteurs de l'approche ont alors proposé une méthode employant une recherche locale à très grand voisinage (\textsc{vlsn} pour \emph{very large-scale neighborhood}) et une autre basée sur une recherche heuristique utilisant la formulation \emph{min cost flow}. Ces deux dernières approches présentent des résultats optimaux ou proches de l'optimal avec des temps de calcul très prometteurs sur des instances de grande taille. Les auteurs suggèrent également d'utiliser ces approches comme sous-routine pour la formulation du problème dynamique développé au chapitre suivant.
+
+D'autres travaux ont bien sur été réalisés employant des techniques telles que les algorithmes génétiques \citep{LSL.03}, les réseaux de neurones \citep{W.89.wta} ou encore certaines approches considérant des environnements multiplateformes \citep{RSPYWB.05}. Cependant, elles restent moins efficaces sur le papier que celle proposée par \cite{AKJ.03}.
+
+De plus, toutes ces approches se limitent strictement à la formulation statique du problème. En effet, la version dynamique du problème d'assignation d'armes à des cibles a été formulée pour la première fois par \cite{HAW.88}. Elle consiste à résoudre la version statique du problème sur plusieurs étapes de temps en considérant le résultat de l'étape précédente d'assignation pour l'étape courante. Évidemment, certains des algorithmes présentés ci-avant pourront être utilisés comme sous-routines pour la formulation dynamique comme suggéré par \cite{AKJ.03}, mais nécessiteront une adaptation pour pouvoir prendre en compte les informations supplémentaires inhérentes à ce problème plus général.
+
+\section{Problème dynamique d'allocation de ressources}
+
+Dans la version statique du problème d'allocation d'armes, l'allocation est effectuée à un instant donné. Maintenant, supposons que les allocations peuvent être décidées à n'importe quel instant $t$ parmi $T$ intervalles discrets de temps. Selon \cite{M.00}, il existe deux formulations fondamentales du problème dynamique d'allocation d'armes à des cibles. Le premier, et le plus étudié, est le cas ou toutes les cibles sont connues a priori (leur nombre et leurs positions). Dans ce cas-ci, puisque le résultat de l'engagement de chaque étape d'assignation est stochastique, la survie d'une cible est dépendante du nombre d'armes assignées dessus et va influencer les allocations des étapes suivantes. Ce type de problème est connu sous le nom de \textit{shoot-look-shoot} puisqu'une observation (\textit{look}) de la première allocation est nécessaire avant de faire une nouvelle allocation.
+
+Le deuxième cas, un peu moins étudié dans ce contexte, mais largement étudié dans le problème de routage de transport (\textit{Vehicle Routing} e.g. \citep{VBU.05}), est le cas ou les cibles ne sont pas observables (dans le sens ou leur nombre et leurs positions ne sont pas connues), mais ou le résultat de l'engagement est essentiellement déterministe. En d'autres mots, à chaque étape, un sous-ensemble de cibles est connu avec certitude alors que le reste des cibles est soit inconnu soit partiellement connu. La difficulté résidant dans la capacité de prédiction de l'apparition aléatoire de nouvelles cibles (problème de \emph{Stochastic Demand}) au cours de l'engagement.
+
+Bien entendu, l'idée directrice de ce chapitre est de considérer les deux cas pris ensemble. Ce chapitre va donc commencer par présenter le problème du \textit{shoot-look-shoot} puis celui de \emph{stochastic demand} avant de présenter une formulation générale du problème dynamique.
+
+\subsection{Shoot-Look-Shoot}
+
+Dans les problèmes de type \textit{shoot-look-shoot}, l'assignation des armes aux cibles est effectuée sur un certain nombre d'intervalles discrets de temps. De plus, la supposition est faite qu'après chaque intervalle, une observation parfaite du résultat de l'engagement en résulte. \cite{HA.90} ont formulé le problème de la manière suivante:
+
+L'état de la cible $i$ ($\mu_i$) est une fonction du temps et de l'assignation à l'étape précédente. À chaque étape $t$, l'état est simplement:
+\[\mu_i^t =
+        \left\{
+          \begin{array}{ll}
+             1 & $si $i$ a survécu à l'étape $t-1\\
+             0 & \, $sinon$ \\
+          \end{array}
+        \right. \]
+Ainsi, puisque la survie de la cible $i$ dépend de l'assignation $\alpha_{ij}^{t-1}$ et de $p_{ij}^{t-1}$, l'état de la cible évolue de manière stochastique de la manière suivante:
+\begin{equation}\label{eq:targetSP}
+P(\mu_i^t = k) = k  \underbrace{\prod_{j=1}^w (1 - p_{ij}^{t-1})^{\alpha_{ij}^{t-1}}}_{(a)} + (1-k) \underbrace{\left( 1-  \prod_{j=1}^w (1 - p_{ij}^{t-1})^{\alpha_{ij}^{t-1}} \right)}_{(b)}
+\end{equation}
+En d'autres termes, si $k=1$, la probabilité que l'état $\mu_i$ de la cible $i$ à l'étape $t$ est donnée par la partie $(a)$ de l'équation~\ref{eq:targetSP} qui indique la probabilité que la cible aie survécu à l'engagement. Dans le cas inverse ($k=0$) la partie $(b)$ de l'équation~\ref{eq:targetSP} est appliquée.
+
+De la même manière, l'état de l'arme $j$ est défini par:
+\[\omega_j^t =
+        \left\{
+          \begin{array}{ll}
+             1 & $si $j$ n'a pas été utilisée à l'étape $t-1\\
+             0 & \, $sinon$ \\
+          \end{array}
+        \right. \]
+et évolue suivant:
+\[ \omega_j^t = 1 - \sum_{i=1}^m \alpha_{ij}^{t-1}\]
+qui décris que l'arme est disponible à l'étape $t$ si elle n'a pas été utilisée à l'étape $t-1$ ainsi qu'à toutes les étapes précédentes.
+
+\cite{HA.90} ont ensuite défini le coût $F_1(\boldsymbol{\mu},\boldsymbol{\omega})$ de l'étape $1$, le coût à l'étape $2$ étant $F_2(\boldsymbol{\mu},\boldsymbol{\omega})$, et ainsi de suite pour chaque étape de temps $t$. Le problème est enfin formulé comme le programme linéaire en nombre entier suivant:
+\begin{eqnarray*}
+\min F_1 & = & \min_{\alpha_{ij}} \sum_{\mathbf{k} \in \{0,1\}^m} P[\boldsymbol{\mu} = \mathbf{k}] F_2^*(\mathbf{k},\boldsymbol{\omega}) \\
+ \mathrm{ sous\,\,contraintes } & : & \alpha_{ij} \in \{0,1\} \\
+i& = & 1, 2, \ldots, m\\
+j& = & 1, 2, \ldots, w\\
+\omega_j & = & 1 - \sum_{i=1}^m \alpha_{ij}.
+\end{eqnarray*}
+Où la solution optimale de l'étape $2$, notée $F_2^*(\mathbf{k},\boldsymbol{\omega})$, est obtenue par la résolution de l'étape $3$ définie par $F_3^*(\mathbf{k},\boldsymbol{\omega})$, et ainsi de suite pour chaque étape de temps $t$. Le coût optimal de l'étape finale $T+1$ étant la somme des valeurs des cibles ayant survécu à la fin:
+\[F_{T+1}^*(\boldsymbol{\mu},\boldsymbol{\omega}) = \sum_{i=1}^m V_i \mu_i\]
+
+Cette formulation est clairement adaptable à la programmation dynamique. Malheureusement, même pour $T=2$, le nombre de calculs requis par la programmation dynamique est incroyablement grand. Il existe en effet $2^w$ sous-ensembles d'armes qui peuvent être choisis à l'étape 1. Et si $w_1$ armes sont utilisées à l'étape 1, le nombre d'allocations possibles à vérifier est $m^{w_1}$. À cela s'ajoute en plus l'étape 2, où si $\overline{m}$ cibles ont survécu à l'engagement précédent et qu'il reste $w_2$ armes disponibles, alors il faudra vérifier les $\overline{m}^{w_2}$ assignations possibles.
+
+Néanmoins, \cite{H.89} a trouvé quelques éléments de solution pour un cas plus simple où les probabilités $p_{ij}$ ne dépendent plus des armes et des cibles, mais seulement de l'étape à laquelle est faite l'allocation. Avec cette hypothèse, la décision à chaque étape est alors juste de la forme $w^t$, le nombre d'armes à assigner à l'étape $t$. L'auteur a ainsi montré que dans ce cas précis il existe une stratégie optimale:
+\begin{proposition}~\citep{H.89}
+Pour $t = 1,2, \ldots, T$, les $w^t$ armes utilisées à l'étape $t$ doivent être réparties équitablement sur l'ensemble des cibles.
+\end{proposition}
+
+Évidemment, il reste à déterminer les valeurs optimales de $w^t$ pour tout $t$. \cite{H.89} présente 3 cas particuliers:
+\begin{description}
+\item[Cas 1.] Si $w \le m $, i.e. que le nombre d'armes est inférieur au nombre de menaces, alors  il faut assigner toutes les armes dans l'étape où elles ont la plus grande efficacité.
+\item[Cas 2.] Si $w \ge m$ et $p^t > p^{t+1}$ avec $t = 1, 2, \ldots, T-1$, i.e. lorsque le nombre d'armes est plus grand que le nombre de menaces, mais que leur efficacité diminue avec le temps, alors la solution optimale est d'allouer toutes les armes le plus vite possible.
+\item[Cas 3.] Si $T > 1 + \frac{w-m}{2}$ pour $w > m$ et $p^t = p$, $\forall t$, i.e. lorsque l'horizon de planification est suffisamment grand et que les armes sont identiques, alors la première étape optimale est d'allouer exactement autant d'armes qu'il y'a de cibles pour ne pas gaspiller de munitions.
+\end{description}
+
+\cite{AH.90} ont également développé une limite sur $F_1$ lorsque le nombre de cible tends vers l'infini.
+
+\subsection{Apparition stochastique de cibles}
+
+Considérons maintenant un problème d'allocation où, à un certain instant $t$, seulement une partie de l'ensemble des cibles est connu. Si on note le nombre de cibles connues à l'instant $t$, $m^t$ alors on a $m^t \le |\mathcal{M}|,\,\, \forall t$. À mesure que le temps avance, certaines cibles sont découvertes, ainsi $m^t$ ne décroît pas au cours du temps. Mais puisque $|\mathcal{M}| = m^T$ est inconnu, l'allocation des armes ne peut être effectuée que sur les $m^t$ cibles connues ou réservée pour les cibles encore inconnues. Ce type de problème dynamique d'assignation d'armes à des cibles à apparition stochastique à été introduit en premier par \cite{M.99}, mais se rapproche également des problèmes de demandes stochastiques comme on peut le trouver dans la littérature sous la forme de routage de véhicules par exemple \citep{VBU.05}. La formulation pour le \textsc{wta} a toutefois été donnée par \cite{M.99}: Considérant que les cibles sont ordonnées suivant leur valeur, alors il est possible qu'au temps $t$, seulement les cibles ayant une valeur basse aient été découvertes. Dans ce cas, il est préférable d'attendre avant d'effectuer une allocation. Si, après avoir attendu un temps $\tau$, toutes les cibles sont connues (i.e. $m^{\tau} = m^T$), il en résulte un problème statique \textsc{wta}. Supposons néanmoins qu'un coût $C^t$ est associé à l'action d'attendre. Ce coût peut être justifié par le fait que plus le temps passe et plus la cible s'approche de nous dans un cas d'auto-défense par exemple.
+
+Appelons $D_i$ la limite de temps à partir de laquelle on ne peut plus engager une cible $i$. La résolution du problème d'apparition stochastique de cibles consiste donc à trouver l'ensemble des vecteurs d'assignation $\boldsymbol{\alpha}_i^t$ qui maximisent les valeurs des cibles détruites sur l'ensemble des instants $t \in [0,D_i],\,D_i \le T$ en considérant une fonction de coût d'attente qui augmente de manière monotone avec le temps, et qui comme dans le cas statique du \textsc{wta} est pondéré par les valeurs $V_i$ des cibles. Dans sa formulation, \cite{M.99} considère que les valeurs $V_i$ des menaces restent constantes au cours du temps.
+
+Enfin, \cite{M.99} formule le problème de la manière suivante:
+\begin{eqnarray*}
+\mathrm{minimiser} &  & \sum_{t=1}^T C^t \left[ \sum_{i=1}^{m^t} V_i \left( \prod_{j=1}^w (1 - p_{ij})^{\alpha_{ij}^t} \right) \right]\\
+\mathrm{sous\,\,contraintes} & : & \\
+\sum_{t=1}^T \sum_{i=1}^{m^t} \alpha_{ij}^t = 1 &  & i = 1, 2, \ldots, m^T\\
+V_i \in \mathbb{R}_+&  & j = 1, 2, \ldots, w\\
+\alpha^t \in \{0,1\}^{m^t} &  & t = 1, 2, \ldots, T .
+\end{eqnarray*}
+
+\subsection{Généralisation du problème}
+
+Nous avons vu dans les sections précédentes que le problème dynamique relatif au \textsc{wta} pouvait se décliner sous plusieurs formulations différentes. Le premier travail consiste donc à unifier les deux modèles présentés ci-avant pour présenter un modèle dynamique où les observations sont permises et incertaines et où la totalité des cibles n'est pas connue initialement.
+
+Formellement, le problème se définit à la manière de la version statique du chapitre précédent sur plusieurs étapes temporelles:
+Soit un ensemble $\mathcal{W}$ de $w$ armes et un ensemble $\mathcal{M}$ de $m$ cibles. Soit $V_i^t$ la valeur de la cible $i,\,(1\le i\le m)$ à l'étape $t, t \in \{1, \ldots, T\}$ et $\alpha_{ij}^t$ la décision d'affecter l'arme $j,\,(1\le j\le w)$ à la cible $i$ à l'étape $t$. Si un tir de l'arme $j$ sur la cible $i$ est décidé alors il existe une probabilité $p_{ij}^t$ que la cible soit détruite, indépendamment des autres tirs à la même étape. Une solution au problème \textsc{wta} dynamique est donc l'ensemble $\mathcal{A}^t$ des $m\times w \times T$ variables de décision $\alpha_{ij}^t$ définies de la même manière que dans la version statique. Dans ce cadre, nous pouvons évaluer la valeur espérée d'une solution au cours du temps, soit:
+\begin{equation}\label{eq:dynawta}
+R = \sum_t R^t = \sum_{t=1}^T \sum_{i=1}^m \left[ V_i^t \left( 1 - \prod_{j=1}^w (1 - \alpha_{ij}^t p_{ij}^t) \right)
+    - \sum_{j=1}^w C_{ij}^t\alpha_{ij}^t \right]
+\end{equation}
+
+Le but étant de \textbf{maximiser} une telle valeur espérée $R$.
+
+Il convient cependant de préciser que le coût $C_{ij}$ tel qu'inclut dans l'équation~\ref{eq:dynawta} peut inclure de nombreuses données comme la date limite avant laquelle une cible doit être engagée (équation \ref{eqn:deadline}), les pertes d'efficacité des armes au cours du temps, les interactions positives/négatives entre les armes si l'assignation est effectuée au même instant (équation \ref{eqn:inter}), etc. Par exemple,
+\[C_{ij}^t = C_{i,t_0}^{deadline} + C_{ij}^{interactions} + \cdots\]
+avec
+\begin{eqnarray}
+C_{i,D_i}^{deadline} & = &
+        \left\{
+          \begin{array}{ll}
+             V_i^t & $si $t \ge D_i$ avec $D_i$ la limite$\\
+             0 & \, \mathrm{sinon} \\
+          \end{array}
+        \right. \label{eqn:deadline}\\
+C_{ij}^{interactions} & = & V_i^t \sum_{k=1}^w \alpha_{ik}^t p_{ijk}\label{eqn:inter}
+\end{eqnarray}
+Où $p_{ijk}$ est l'efficacité gagnée (resp. perdue) par l'interaction positive (resp. négative) entre l'arme $j$ et l'arme $k$.
+
+Pour les mêmes raisons que la version statique, la supposition est faite que chaque arme ne possède qu'une seule munition, mais qu'il est possible de posséder plusieurs armes de même type. Cela permet de s'affranchir à nouveau d'une non-linéarité qui apparaîtrait sous la forme d'une puissance dans le produit des probabilités soit $\prod_{j=1}^w (1 - p_{ij}^t)^{\alpha_{ij}^t}$ en lieu et place de $\prod_{j=1}^w (1 - \alpha_{ij}^t p_{ij}^t)$. Dès lors, $R$ se réduirait à:
+\[R = \sum_t R^t =\sum_{t=1}^T \sum_{i=1}^m \left[ V_i^t \left( 1 - \prod_{j=1}^w (1 - p_{ij}^t)^{\alpha_{ij}^t} \right)
+- \sum_{j=1}^w C_{ij}^t\alpha_{ij}^t \right]\]
+Malheureusement, cela induit une perte en modélisation: alors que dans la modélisation statique nous n'avions qu'un seul engagement à faire, dans la version dynamique il est possible qu'une arme ne puisse engager deux cibles à la fois et dès lors le plan est ralongé d'autant. Ce problème est pris en compte par notre modèles présenté à la section~\ref{sect:macsp}.
+
+On a vu dans la littérature sur le problème \textsc{wta} que la version statique avait été largement étudiée et que de nombreuses solutions efficaces quoique sous-optimales avaient été trouvées. Néanmoins, la littérature sur le problème dynamique est significativement moins fournie en partie dû au fait de sa complexité \citep{HAW.88}. Toutefois, certaines approches approximatives existent pour le cas général, notamment celle de \cite{YW.00} basée sur la composition de la programmation linéaire et des Processus de Markov Partiellement Observables (\pomdps) pour maintenir l'état de croyance sur la survie des cibles. Casta\~{n}on et ses collègues ont également proposé plusieurs approches pour le cas dynamique en s'intéressant principalement à la maintenance des contraintes de ressources \citep{CW.02,CW.04}.
+
+Plus récemment, \cite{GW.04} ont proposé une revue de la littérature du \textit{shoot-look-shoot} dans laquelle ils identifient plusieurs cas selon les contraintes sur les armes, l'information disponible pour la validation de la destruction d'une menace et de l'horizon de planification disponible. Par exemple, le cas contraint\footnoteremember{cst}{Où il ne faut pas dépasser un nombre maximum d'armes.} avec information complète\footnoteremember{cplt}{Ou la validation de la destruction de la cible est immédiate.} et à horizon infini\footnoteremember{inf}{Où les tirs peuvent être faits un par un.} est un cas de programmation dynamique typique qui devient insurmontable dès que les nombres de cibles et d'armes dépassent la demi-douzaine. Le cas contraint\footnoterecall{cst} avec information complète\footnoterecall{cplt} mais à horizon fini est également présenté sous l'hypothèse que les cibles et les armes sont toutes identiques. Ces auteurs présentent également les travaux de~\cite{MK.97} portant sur le cas ou l'information perçue est incomplète ou incertaine. Dans ce cas précis, \cite{MK.97} ont montré qu'une stratégie gloutonne (\emph{greedy}) suivant l'efficacité des armes sur certaines cibles était optimale. \cite{GW.04} ont pour leur part, fait état du cas non contraint où la limite de ressources est remplacée par un coût à chaque utilisation d'armes avec un horizon infini. L'objectif étant de minimiser ce coût tout en maximisant la probabilité de destruction des cibles. Ces auteurs utilisent ici une représentation markovienne partiellement observable (\pomdp) de l'environnement combiné à de la programmation dynamique stochastique. Dans le cas de l'horizon fini et où le nombre de types de cible est réduit, ils suggèrent d'utiliser l'approche fournie par \cite{YW.00} qui permet de résoudre le problème donné en séparant chaque type de cible.
+
+Dans la suite de ce chapitre, le problème dynamique d'allocation d'armes à des cibles est considéré, en supposant un cas contraint et une information complète à horizon fini, mais où d'autres types de contraintes peuvent s'ajouter sur les armes que le nombre limité de munitions. Ces contraintes peuvent par exemple impliquer d'utiliser un radar pour le guidage de missile ou des limites de portée pour les armes. Pour pouvoir prendre en compte ce type de contraintes non linéaires, un formalisme de satisfaction de contraintes plus général que la programmation linéaire est présenté à la section suivante.
+
+\section{Problèmes de satisfaction de contraintes (\pac{csp})}
+
+Un \textsc{csp} (Constraint Satisfaction Problem) est défini par un ensemble de variables, chacune pouvant prendre une valeur dans un domaine associé à la variable. Des contraintes portant sur des sous-ensembles de variables restreignent les choix possibles. Chaque contrainte est définie par une relation précisant quelles combinaisons de valeurs sont autorisées. Les variables sur lesquelles porte une contrainte sont dites liées (par cette contrainte). Plus formellement,
+
+\begin{definition}(\textsc{csp})
+Un Problème de Satisfaction de Contraintes est défini par le triplet $P = \la \Xta,\Dom,\Cons \ra$, où:
+\begin{itemize}
+\item $\Xta = \{\cx_1 , \cx_2 , \ldots, \cx_i ,\ldots, \cx_n\}$ est l'ensemble des $n$ variables du problème ;
+\item $\Dom = \{\Dom_{\cx_i} | \cx_i \in \Xta\}$ est l'ensemble des $n$ domaines finis associés aux variables (i.e., leurs valeurs possibles);
+\item $\Cons = \{c_1 , \ldots , c_j , \ldots, c_m\}$ est l'ensemble des $m$ contraintes, spécifiant les combinaisons de valeurs mutuellement
+compatibles, avec $c_j = \la\chi_{c_j},\rho_{c_j} \ra$:
+\begin{itemize}
+    \item $\chi_{c_j} = \{\cx_{j_1} , \ldots, \cx_{j_k} \} \subseteq \Xta$ est l'ensemble des $k$ variables liées par $c_j$ ; on appelle
+    $\chi_{c_j}$ le \emph{cadre} de $c_j$ et $k$ est appelé arité de $c_j$;
+    \item $\rho_{c_j} \subseteq \Dom_{\cx_{j_1}} \times \cdots \times \Dom_{\cx_{j_k}}$ est la \emph{relation} associée à la contrainte
+    $c_j$ ; elle représente les n-uplets autorisés par cette contrainte.
+\end{itemize}
+\end{itemize}
+\end{definition}
+
+Nous noterons $\mathds{S}(P) \subset \varprod_{i=1}^n\Dom_{\cx_i}$ l'ensemble des assignations des variables qui satisfont l'ensemble des contraintes $\Cons$ de $P$. Résoudre un \textsc{csp} équivaut à assigner une valeur à chaque variable en respectant toutes les contraintes du problème et donc à trouver un élément $\sigma \in \mathds{S}(P)$. En trouver un est un problème \textsc{np}-complet \citep{HDRM.78}.
+
+À noter ici que cette représentation à base de variables rappelle le principe de la factorisation et pourrait donc probablement permettre d'identifier les indépendances entre les variables (et éventuellement les agents dans un cadre multiagent) la où il n'y a pas de contraintes.
+
+\subsection{\pac{csp} dynamique (\pac{dcsp})}
+
+Lorsque les \textsc{csp}s se suivent et se ressemblent, \cite{VJ.05} définissent un \textsc{csp} dynamique (\textsc{dcsp}) $\Psi$ comme une suite finie de \textsc{csp} ``statiques'' $P_0,$ $\ldots,$ $P_i,$ $P_{i+1},\,\ldots,P_{\eta}$, chacun résultant du précédent par l'ajout ou le retrait d'un ensemble de contraintes (ces opérations sont respectivement appelées restriction et relaxation) et/ou d'un ensemble variable. Par conséquent si on note $P_i= \langle \Xta_i, \Dom_i, \Cons_i \rangle$, on a:
+\begin{eqnarray}
+P_{i+1} & =& \la \Xta_{i+1}, \Dom_{i+1}, \Cons_{i+1} \ra \\
+~ & = & \la \Xta_i \cup \{\cx_{n+1},\ldots,\cx_{n+p}\}, \Dom_i \cup \{\Dom_{\cx_{n+1}},\ldots,\Dom_{\cx_{n+p}}\}, \Cons_i \cup
+\{c_{m+1},\ldots,c_{m+q}\}\ra \notag
+\end{eqnarray} %%
+Cependant, il n'existe ici aucun modèle du futur permettant de garantir la robustesse de la solution au cours du temps même si ce modèle
+permet de s'intéresser à la dynamique des \textsc{csp}.
+
+Résoudre un \textsc{dcsp} $\Psi$ consiste à trouver une solution $\sigma_i \in \mathds{S}(P_i)$ pour chaque $i$, $1 \le i \le \eta$. La plupart des recherches effectuées sur ce modèle ont consisté à trouver une solution $\sigma_{i+1}$ basée sur $\sigma_i$ qui minimise le nombre de changements. Par exemple, la réutilisation de solution ou de raisonnement \citep{VJ.05} sont deux approches qui bénéficient des solutions calculées aux étapes précédentes pour calculer celle aux étapes futures.
+
+Malheureusement, les \textsc{csp}s et \textsc{dcsp}s supposent un monde déterministe ou chacune des variables est contrôlable et prend une valeur parmi l'ensemble de son domaine. Or, comme nous l'avons vu précédemment, la notion de variable incontrôlable et/ou partiellement observable peut être nécessaire dans la représentation de problèmes.
+
+\subsection{\pac{csp} stochastique (\pac{scsp})}
+
+Puisque les \textsc{csp}s et \textsc{dcsp}s sont déterministes, mais qu'il est souvent important de pouvoir modéliser des notions d'incertitudes sur certaines variables, \cite{W.02} a défini les \textsc{csp}s stochastiques (\textsc{scsp}) qui intègrent des variables aléatoires dans l'ensemble des variables. Walsh définit pour cela une distribution de probabilités sur le domaine de chacune de ces variables. Plus formellement:
+\begin{definition}(\textsc{scsp})
+Un Problème de Satisfaction de Contraintes Stochastique est défini par le tuple $S = \la \Xta, \Sta,\Tra,\Dom,\Cons,\theta \ra$, où:
+\begin{itemize}
+\item $\Xta = \{\cx_1 , \cx_2 , \ldots ,\cx_i , \ldots, \cx_n\}$ est l'ensemble des $n$ variables du problème ;
+\item $\Sta \subset \Xta$ est l'ensemble des variables stochastiques du problème;
+\item $\Dom = \{\Dom_{\cx_i} | \cx_i \in \Xta\}$ est l'ensemble des $n$ domaines finis associés aux variables (i.e., leurs valeurs possibles) ;
+\item $\Tra: \Sta \mapsto \Delta_{\cx\in\Sta} (\Dom_\cx)$ est un fonction qui associe à chaque variable une distribution de probabilité sur leur domaine;
+\item $\Cons = \{c_1 , \ldots, c_j ,\ldots, c_m\}$ est l'ensemble des $m$ contraintes, spécifiant les combinaisons de valeurs mutuellement compatibles.
+\end{itemize}
+\end{definition}
+
+Résoudre un \textsc{scsp} consiste à trouver une solution $\sigma \in \mathds{S}(S)$ telle que la probabilité que le \textsc{scsp} soit satisfait sachant l'assignation $\sigma$ et les distributions $\Tra$, soit supérieure à $\theta$. Il est à noter qu'un \textsc{scsp} peut être répété plusieurs fois, et que dès lors une notion de résolution en séquence est nécessaire. Dans ce contexte, il a été montré par \cite{W.02} que trouver une solution à un \textsc{scsp} à plusieurs étapes est un problème \textsc{Pspace}-complet.
+
+Plus récemment, \cite{PVS.06} ont proposé un cadre algébrique appelé \textsc{pfu} (pour Plausibilité, Faisabilité, Utilité) qui généralise tous les modèles ci-dessus ainsi que les réseaux bayésiens et les diagrammes d'influence. Ils ont également proposé un algorithme à base d'élimination de variable \citep[chap. 13.3.3]{D.03} pour résoudre n'importe quel type de problème modélisable à l'aide de ce cadre algébrique. Dans la section ci-après, nous verrons comment nous l'avons adapté pour mieux coller aux besoins réels de notre domaine  d'application en termes de modélisation.
+
+\section{Problèmes de satisfaction de contraintes markoviens}\label{sect:macsp}
+
+C'est donc en ayant en tête l'idée de représenter un \mdp factorisé contraint que nous avons proposé ce que nous avons appelé un \textsc{csp} markovien:
+\begin{definition}\emph{\textsc{(Markovian \textsc{csp})}} un \textsc{csp} markovien (\macsp) est défini par le tuple
+$\Phi = \la \Sta, \Act_i, \Psi, \Tra, \Rew\ra$ où:
+\begin{itemize}
+\item $\Sta =  \{s_i\}$ où $s_i = \la \cx_1,..., \cx_m\ra$ est un état factorisé avec $\cx_k \in \Xta_{s_i}$;
+\item $\Act = \{a_i\}$ où $a_i = \la \ca_1,..., \ca_n\ra$ est une action factorisée avec $\ca_k \in \Xta_{s_i}$. On dénote par $\mathds{S}_i = \{\sigma_{s_i} = \{\ca_1,..., \ca_\varsigma\} : \ca_k,\ca \in \Dom_{s_i}, \sigma_{s_i} \in \mathds{S}(P_{s_i})\}$
+l'ensemble des assignations des variables de décisions consistantes avec $\Cons_{s_i}$ ;
+\item $\Psi = \{P_{s_i}\}$ est un \textsc{dcsp} avec $P_{s_i} = \la \Xta_{s_i}, \Dom_{s_i}, \Cons_{s_i} \ra$ basé sur les variables de l'état
+$s_i$ et sur les variables de décisions $\sigma_{s_i}$;
+\item $\Tra_{s_is_{i+1}}^\sigma = Pr(s_{i+1}|s_i,\sigma)$ est la probabilité que l'assignation $\sigma$ provoque la transition de l'état
+$s_i$ vers l'état $s_{i+1}$;
+\item $\Rew_{s}^\sigma$ est une fonction de récompense pour chaque assignation $\sigma$ satisfaisante dans $s$.
+\end{itemize}
+\end{definition}
+
+En d'autres mots, $\Sta$ modélise un espace d'état factorisé $\la \cx_1,..., \cx_m\ra$ où des contraintes $\mathcal{C}_{s_i}$ peuvent exister
+entre les variables $\cx$ et les variables $\ca$ de $\Act$ dans chaque état $s_i$. Les variables sont partitionnées en deux types: les
+variables de décision $\ca$ de $\Act$ (par exemple l'assignation d'une tâche à une ressource) et les variables d'état $\cx$ de $\Sta$ (par
+exemple l'état d'une tâche). $\mathds{S}_i$ est le sous-ensemble de toutes les combinaisons d'assignations possibles des variables de
+décision qui est consistent avec $\Cons_{s_i}$. La fonction de transition $\mathcal{T}_{s_is_{i+1}}^\sigma$ représente l'évolution de toutes
+les variables d'état du système selon l'assignation des variables de décision. Incidemment, si certaines contraintes de $\Cons_{s_i}$
+dépendent de variables d'états, alors, ces contraintes peuvent évoluer au cours du temps (changer, apparaître, ou disparaître). La fonction
+de récompense $\mathcal{R}_{s}^\sigma$ qui attribue une valeur à chaque assignation de variable de décision, peut être vue comme un ordre de
+préférence sur les tâches ou comme la récompense d'avoir terminé certaines tâches. Par conséquent, un \textsc{dcsp} est un cas particulier de
+\textsc{m}a\textsc{csp} où le modèle de transition $\mathcal{T}_{s_is_{i+1}}^\sigma$ est déterministe et possiblement inconnu et où il n'y a
+que des variables de décision.
+
+\begin{figure}[!hbt]
+\begin{center}
+        \begin{tikzpicture}[scale=.7]%
+            \node[draw,circle,double,inner sep=0pt] (st) at (0,0)  {
+                    \begin{tikzpicture}[scale=.7]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s0)--(s3); %%
+                        \draw[blue] (s1)--(s2); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s2)--(s3); %%
+                        \draw[blue] (s2)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                        \draw[stealth reversed-stealth,ultra thick] (0,-.3)--(0,-1.2) node[inner sep=0pt,below=-15pt]{Solutions};%%
+                    \end{tikzpicture}%
+            }; %%
+            \node[draw,circle,inner sep=0pt] (st1) at (-5,-6)  {
+                    \begin{tikzpicture}[scale=.5]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s0)--(s3); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s2)--(s3); %%
+                        \draw[blue] (s2)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                    \end{tikzpicture}%
+            }; %%
+            \node[draw,circle,inner sep=0pt] (st2) at (0,-6)  {
+                    \begin{tikzpicture}[scale=.5]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s0)--(s3); %%
+                        \draw[blue] (s1)--(s2); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                    \end{tikzpicture}%
+            }; %%
+            \node[draw,circle,inner sep=0pt] (st3) at (5,-6)  {
+                    \begin{tikzpicture}[scale=.5]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s1)--(s2); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s2)--(s3); %%
+                        \draw[blue] (s2)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                    \end{tikzpicture}%
+            }; %%
+            \node[left,font=\LARGE] at (st1.north west) {$s_{t+1}$};%%
+            \node[left,font=\LARGE] at (st2.north west) {$s_{t+1}$};%%
+            \node[left,font=\LARGE] at (st3.north west) {$s_{t+1}$};%%
+            \node[below,font=\large] at (st1.south) {\textsc{csp}$_{t+1}$};%%
+            \node[below,font=\large] at (st2.south) {\textsc{csp}$_{t+1}$};%%
+            \node[below,font=\large] at (st3.south) {\textsc{csp}$_{t+1}$};%%
+            \node[left,font=\LARGE] at (st.west) {$s_t$};%%
+            \node[left,font=\large] at (st.east) {\textsc{csp}$_{t}$};%%
+            \draw[->,-latex,very thick] (st)--(st1) node[midway,above,left,font=\LARGE]{$a_0$} node[midway,below,right=8pt,font=\LARGE]{...}; %%
+            \draw[->,-latex,very thick] (st)--(st2) node[midway,left,font=\LARGE]{$a_i$} node[midway,below,right=12pt,font=\LARGE]{...}; ;%%
+            \draw[->,-latex,very thick] (st)--(st3) node[midway,above,right,font=\LARGE]{$a_\sigma$};%%
+        \end{tikzpicture}%
+    \caption{\label{fig:macsp} \textsc{csp} dynamique Markovien.}
+\end{center}
+\end{figure}
+La figure \ref{fig:macsp} illustre comment se fait le calcul des transitions d'un état $s_t$ à un état $s_{t+1}$. L'ensemble $\{a_0, ..., a_i, a_\sigma\}$ représente les solutions du \textsc{csp}$_t$ qui sont les actions consistantes dans l'état $s_t$. Ces actions n'étant pas déterministes, elles peuvent conduire à des états $s_{t+1}$ différents. Voyons maintenant un exemple illustratif de \macsp.
+
+\subsection{Exemple illustratif}
+
+Considérons un problème d'allocation de ressources non fiables renouvelables, 3 robots jardiniers par exemple ($R_i, i = 1,2,3$), et un ensemble de tâches à réaliser (par exemple planter un cerisier ($T_{pc}$), tondre la pelouse ($T_{tp}$), éliminer les parasites ($T_{ep}$) et planter des tomates ($T_{pt}$)). Ces robots étant chacun spécifique, leur capacité pour réaliser chaque tâche n'est pas la même. On représentera cette capacité sous la forme d'une probabilité de réaliser ou non cette tâche.
+
+\begin{table}[!htb]
+    \begin{center}
+        \begin{tabular}{|c|c|c|c|c|}
+        \hline
+        ~ & $T_{pc}$ & $T_{tp}$ & $T_{ep}$ & $T_{pt}$ \\
+        \hline\hline
+        $R_1$ & 0.9 & 0.2 & 0.5 & 0.7 \\
+        \hline
+        $R_2$ & 0.1 & 0.9 & 0.7 & 0.1  \\
+        \hline
+        $R_3$ & 0.3 & 0.5 & 0.5 & 0.6  \\
+        \hline
+        \end{tabular}
+    \caption{Probabilités $p_{ij}$ que le Robot $R_j$ réalise la tâche $T_i$ \label{tab:ex}}
+    \end{center}
+\end{table}
+
+Si on ajoute à cela le fait que deux robots risquent d'avoir des problèmes s'ils s'attellent à la même tâche au même moment, il est possible de représenter le problème sous forme de \mdp classique et sous forme de \macsp.
+
+Formellement le \mdp pourrait être représenté comme suit:$\langle\mathcal{S},\{\mathcal{A}\},\mathcal{P},\mathcal{R},s_0\rangle$
+\begin{itemize}
+    \item $\mathcal{S} = 2^{\{ T_i\}}$ Le produit cartésien de l'état des tâches (réalisées ou non);
+    \item $\mathcal{A} = \{\mathcal{A}_i\}$ Le produit cartésien des actions de chaque robot;
+    \item $\mathcal{P}_{ss'}^a = \mathcal{P}(s,a,s') = \prod_{i,j} (1 - p_{ij}\alpha_{ij})$ suivant la table \ref{tab:ex};
+    \item $\mathcal{R}_{s}^a = \mathcal{R}(s,a) = \sum $ Valeurs des tâches réalisées dans l'état $s$;
+    \item $s_0$ État initial (toutes les tâches sont non réalisées).
+\end{itemize}
+
+Quand aux \macsp, ils pourraient être représentés par:$\langle\mathcal{S},X,D,C,\{\mathcal{A}\},\mathcal{P},\mathcal{R},s_0\rangle$
+\begin{itemize}
+    \item $\mathcal{S} = 2^{\{ T_i\}}$ Le produit cartésien de l'état des tâches (réalisées ou non);
+    \item $X = \{ R_j \}$ L'ensemble des ressources à assigner;
+    \item $D = \{ D_i \} = \{ T_i \}$ L'ensemble des tâches à réaliser sont les actions possibles de chaque robot;
+    \item $C = \{\forall R_i, R_j \in X, R_i \neq R_j\}$ Deux robots ne doivent pas être assignés à la même tâche;
+    \item $\mathcal{A} = \{ X^D \slash_C \}$ Le produit cartésien des actions de chaque robot \emph{consistantes avec $C$};
+    \item $\mathcal{P}_{ss'}^a = \mathcal{P}(s,a,s') = \prod_{i,j} (1 - p_{ij}\alpha_{ij})$ suivant la table \ref{tab:ex};
+    \item $\mathcal{R}_{s}^a = \mathcal{R}(s,a) = \sum $ Valeurs des tâches réalisées dans l'état $s$;
+    \item $s_0$ État initial (toutes les tâches sont non réalisées).
+\end{itemize}
+
+Une première estimation permet d'évaluer le nombre d'états à $2^4 = 16$ et le nombre d'actions à $|T|^{|X|} = 4^3 = 64$ dans le \mdp classique. Comme on peut le constater, le nombre d'actions est exponentiel par rapport au nombre de tâches. Ainsi, en ajoutant le filtrage des contraintes sur l'espace des actions, on passe de 64 actions possibles à seulement tous les arrangements possibles des ressources aux tâches: $A_{|T|}^{|X|} = 4! = 24$.
+
+Plus formellement, le gain dans le cas d'un problème de ressources où les assignations doivent être toutes différentes:
+\begin{proposition} Dans un problème d'allocation de ressources à des tâches, le gain en facteur de branchement de l'utilisation de la contrainte \emph{allDiff} qui impose que toutes les ressources soient appliquées à des tâches différentes est égal à:
+\[ Gain = \frac{|T|^{|X|}}{C_{|T|}^{|X|}}\]
+Quand les nombres de tâches et de ressources tendent vers l'infini ce gain est alors de:
+\[ Gain_\infty = \lim_{|T| \rightarrow \infty, |X| \rightarrow |T|} \frac{|T|^{|X|}}{C_{|T|}^{|X|}} = \lim_{|T| \rightarrow \infty} \frac{|T|^{|T|}}{|T| !} = \infty\]
+\end{proposition}
+
+À noter tout de même que ceci est un cas particulier de contraintes, il est également possible d'avoir tout autre type de contraintes tant le pouvoir expressif des \textsc{csp}s est grand. Ce résultat est extrêmement dépendant du nombre de contraintes du problème. Plus le problème sera contraint et plus l'espace d'actions sera réduit ainsi que le facteur de branchement qui va avec. Voyons maintenant un algorithme qui pourrait traiter notre \textsc{m}a\textsc{csp}.
+
+\subsection{Algorithme en ligne de résolution de \pac{m}a\pac{csp}s}
+
+Du fait que le \textsc{m}a\textsc{csp} mixe deux approches pour lesquelles de nombreux algorithmes ont été proposés, nous avons commencé directement par élaborer un algorithme (Algorithme \ref{alg:FRTDP}) en ligne exploitant les différentes avancées déjà effectuées dans les domaines des \mdps et des \textsc{csp}s. Plus précisément, nous avons choisi d'utiliser les techniques temps réel de programmation dynamique (\textsc{rtdp}) pour l'aspect markovien du modèle proposé. Ces approches sont, à ce jour, considérées comme les approches optimales les plus efficaces. Nous avons trouvé dans la littérature plusieurs versions dérivées de l'algorithme \textsc{rtdp} original \citep{BG.03,MLG.05}. Nous  avons choisi l'un des plus récents, Focused \textsc{rtdp} (\textsc{frtdp}), développé par \cite{SS.06} et qui est présentement, selon les auteurs, le plus efficace. Cet algorithme se base sur deux bornes, une borne supérieure $\mathcal{H}_U$ et une borne inférieure $\mathcal{H}_L$. L'utilisation de la borne inférieure offre une garantie en termes de fonction de valeur alors que la borne supérieure est utilisée pour guider la recherche.
+
+\begin{algorithm}[!htb]\caption{Focused \textsc{rtdp} \label{alg:FRTDP} pour \textsc{m}a\textsc{csp}s}
+\begin{minipage}[t]{.48\textwidth}
+% \begin{small}
+%\algrenewcommand\alglinenumber{\tiny}
+   \begin{algorithmic}[1]
+    %\Function{initNode}{$s$}:\\
+    \State{}\Comment{Initialisation de tous les états $s$}
+    \State{$(s.L,s.U) \leftarrow (\mathcal{H}_L,\mathcal{H}_U)$}
+    \State{$s.prio \leftarrow \Delta(s)$}
+   %\EndFunction
+\vspace{5pt}
+    \Function{frtdp}{$s_0$, $\varepsilon$,$\mathcal{H}_L$,$\mathcal{H}_U$}
+    \State{$D \leftarrow D_0$}
+    \While{$s_0.U - s_0.L > \varepsilon$ }
+        \State{$(q_p,n_p,q_c,n_c) \leftarrow (0,0,0,0)$}
+        \State{\Call{trialRec}{$s_0$,$W$=1,$d$=0}}
+        \State{\textbf{si} $(q_c\slash n_c) \geq (q_p \slash n_p)$}
+        \State{~~\textbf{alors} $D \leftarrow k_D D$}
+    \EndWhile
+   \EndFunction
+\vspace{5pt}
+   \Function{trialRec}{$s$, $W$, $d$}
+    \State{$(a^*,s^*,\delta) \leftarrow $ backup($s$)}
+    \State{\Call{trackUpdQual}{$\delta W, d$}}
+    \State{\textbf{si} $\Delta(s) \leq 0$ \textbf{or} $d \geq D$ \label{depth}}
+    \State{~~\textbf{alors retourner} }
+    \State{\Call{trialRec}{$s^*$,$\gamma T^{a^*}_{s,s^*}W$,$d+1$} \label{trials}}
+    \State{backup($s$) \label{backup}}
+   \EndFunction
+\vspace{5pt}
+   \Function{trackUpdQual}{$q, d$}
+    \State{\textbf{si} $d > D\slash k_D$ \textbf{alors}\\~~~ $(q_c,n_c) \leftarrow (q_c+q,n_c+1)$ \label{depth2}}
+    \State{\textbf{sinon} $(q_p,n_p) \leftarrow (q_p+q,n_p+1)$}
+   \EndFunction
+    \algstore{2break}
+    \end{algorithmic}
+%    \end{small}
+
+\end{minipage}
+\hfill
+\begin{minipage}[t]{.49\textwidth}
+
+%    \begin{small}
+    %\algrenewcommand\alglinenumber{\tiny}
+    \begin{algorithmic}[1]
+    \algrestore{2break}
+    \Function{backup}{$s_i$}
+    \State{$\mathcal{A}_i \leftarrow \Call{varElimination}{s_i}$ \label{li:FC}}
+    \State{$s_i.L \leftarrow \max\limits_{a\in \mathcal{A}_i}$ \Call{QL}{$s_i,a$}}\label{alg:ql}
+    %\State{$(u,a^*) \leftarrow \max, \sup_{a\in \mathcal{A}_i}$QU$(s_i,a)$}
+    \State{$u \leftarrow \max\limits_{a\in \mathcal{A}_i}$ \Call{QU}{$s_i,a$}}\label{alg:qu}
+    \State{$a^* \leftarrow \sup\limits_{a\in \mathcal{A}_i}$ \Call{QU}{$s_i,a$}}
+    %\State{$\delta \leftarrow |s_i.U - u|$ ; $s_i.U \leftarrow u $}
+    \State{$\delta \leftarrow |s_i.U - u|$} \label{alg:delta}
+    \State{$s_i.U \leftarrow u $}
+    %\State{$(p,s^*) \leftarrow \max, \sup_{s_{i+1} \in \mathcal{S}} \gamma T^{a^*}_{s_i,s_{i+1}} s_{i+1}.prio$}
+    \State{$p \leftarrow \max\limits_{s_{i+1} \in \mathcal{S}} \gamma T^{a^*}_{s_i,s_{i+1}} s_{i+1}.prio$} \label{alg:prio}
+    \State{$s^* \leftarrow \sup\limits_{s_{i+1} \in \mathcal{S}} \gamma T^{a^*}_{s,s_{i+1}} s_{i+1}.prio$} \label{alg:sstar}
+    \State{$s_i.prio \leftarrow \min(\Delta(s_i),p)$} \label{alg:prio3}
+    \State{\Return{$(a^*,s^*,\delta)$}}
+   \EndFunction
+\vspace{5pt}
+    \Function{$\Delta$}{$s$}
+    \State{\Return{$|s.U - s.L| - \varepsilon \slash 2$}}
+   \EndFunction
+\vspace{5pt}
+    \Function{QL}{$s,a$}:
+    \State{\Return{$R(s,a) + \gamma \sum\limits_{s' \in \mathcal{S}} \gamma T^a_{s,s'} s'.L$}}
+    \EndFunction
+\vspace{5pt}
+    \Function{QU}{$s,a$}
+    \State{\Return{$R(s,a) + \gamma \sum\limits_{s' \in \mathcal{S}} \gamma T^a_{s,s'} s'.U$}}
+    \EndFunction
+ \end{algorithmic}
+%    \end{small}
+\end{minipage}
+ \end{algorithm}
+
+En ce qui concerne l'aspect contraint du modèle, l'approche adoptée consiste à utiliser l'élimination de variables (ligne \ref{li:FC} de l'algorithme~\ref{alg:FRTDP}) \citep[chap. 13.3.3]{D.03} qui permet de calculer toutes les solutions d'un \textsc{csp} assez efficacement et donc de réduire le facteur de branchement du \mdp en ne sélectionnant que les actions exécutables dans l'état courant. L'élimination de variable consiste essentiellement à propager les contraintes d'une variable que l'on cherche à éliminer sur les autres variables concernées par ces contraintes pour pouvoir l'enlever du \textsc{csp}. Dès lors, une fois que toutes les variables sauf une ont été éliminées, une propagation inverse donne l'ensemble des solutions.
+
+\paragraph{Description de l'algorithme \ref{alg:FRTDP}:} Comme tous les algorithmes de type \textsc{rtdp}, l'exécution de \textsc{frtdp} consiste à réaliser des trajectoires (\emph{trials }en anglais, ligne \ref{trials}) qui commencent toutes dans l'état initial $s_0$ donné et explore ensuite les états accessibles à partir de $s_0$ en utilisant la borne supérieure $\mathcal{H}_U$ pour choisir l'action à effectuer et un système de priorité pour sélectionner l'état suivant parmi les états accessibles avec l'action choisie. Une fois qu'un état final est atteint, l'algorithme effectue des \emph{backups} sur la trajectoire suivie. Ces \emph{backups} consistent essentiellement en des mises à jour de Bellman \citep{B.57} qui sont appliquées sur chaque borne (lignes \ref{alg:ql}, \ref{alg:qu}), sur la priorité de l'état suivant (ligne \ref{alg:prio}) et sur la qualité de la trajectoire: plus grande est la mise à jour sur la borne supérieure, meilleure est la qualité (ligne \ref{alg:delta}). La fonction \textsc{backup} retourne l'action optimale courante basée sur $\mathcal{H}_U$, le prochain état à explorer basé sur sa priorité et la qualité du \emph{backup}.
+
+Comme il a été précédemment évoqué, \textsc{frtdp} maintient aussi une borne inférieure $\mathcal{H}_L$ et utilise un critère de priorité (ligne \ref{alg:prio}) pour choisir l'état suivant une fois l'action sélectionnée. La borne inférieure $\mathcal{H}_L$ est utilisée à la terminaison de l'algorithme puisque la politique retournée se base sur la meilleure action selon $\mathcal{H}_L$. Cette borne contribue également au calcul de la priorité des états à explorer (ligne \ref{alg:prio3}). La détection de la fin d'une trajectoire est également légèrement différente dans \textsc{frtdp}: elle a été améliorée par l'ajout d'une profondeur de recherche $D$ adaptative dans le but d'éviter de faire de trop longues trajectoires peu informatives trop tôt. Cette profondeur de recherche est augmentée (ligne \ref{depth2}) à chaque fois que la trajectoire précédente n'a pas été assez contributive à l'utilité. Cette utilité est représentée par $\delta W$ où $\delta$ mesure la valeur de la mise à jour sur la borne supérieure de l'état $s$ et $W$ la probabilité que, selon la politique courante, on va passer par l'état $s$ à partir de $s_0$. Le lecteur est invité à se référer au pseudo-code de l'algorithme \ref{alg:FRTDP} et à l'article de \cite{SS.06} pour plus de détails sur l'algorithme \textsc{ftrdp}.
+
+Détaillons maintenant la complexité en pire cas du modèle proposé avant de faire une analyse empirique de l'algorithme proposé pour ce modèle.
+
+\section{Résultats théoriques}
+
+Le problème majeur de l'utilisation de \macsp réside dans la complexité en pire cas. En effet, dans le pire des scénarios, il est possible de construire des exemples où toutes les solutions du \textsc{csp} d'un état donné soient vraiment plus complexes à trouver que le calcul de la politique du \mdp. En effet, la complexité en pire cas de trouver toutes les solutions d'un \textsc{csp} est \#\textsc{p}-complète~\citep{D.03}. Résoudre un \textsc{m}a\textsc{csp} consiste donc à résoudre complètement un nombre polynômial de \textsc{csp}s si le nombre d'états est polynômialement borné, puis à trouver la politique optimale pour le \mdp correspondant:
+\begin{proposition}
+Trouver une politique pour un \textsc{m}a\textsc{csp}, qui obtiendrait une récompense espérée d'au moins $C$, est \#\textsc{p}.
+\end{proposition}
+\begin{proof}
+En supposant que les données d'entrées sont de taille polynômiale, i.e. que l'on a un nombre polynômial d'états, d'actions et que les fonctions de transition et de récompense peuvent être encodées à l'aide d'un nombre polynômial de bits, on peut en déduire que le nombre de variables dans le système est logarithmique en la taille de ces données d'entrées: $|\Xta| = \Obs(\log |\Sta|)$. De fait, avant de trouver la politique dans le \mdp qui rapporte une récompense espérée d'au moins $C$, qui est un problème \textsc{p}-complet~\citep{PT.87}, il faut trouver pour chacun des états l'ensemble des actions possibles dans cet état. Ce dernier problème consiste à énumérer toutes les solutions possibles du \textsc{csp} de l'état correspondant qui aurait $\Obs(\log|\Act|)$ variables. Sachant que l'énumération de toutes les solutions d'un \textsc{csp} ayant un nombre polynômial de variables est \#\textsc{p}-complet~\citep{D.03}, alors une borne supérieure pour la résolution d'un \textsc{m}a\textsc{csp} est également \#\textsc{p} puisqu'il s'agit de résoudre complètement un nombre polynômial de \textsc{csp}s avant de calculer la récompense espérée.
+\end{proof}
+
+\#\textsc{p}~\citep{D.03} est la classe de complexité qui englobe le problème de trouver le nombre de solutions à un problème \textsc{np}-complet ce qui par conséquent nécessite d'énumérer lesdites solutions. Comparativement à la \textsc{p}-complétude des \mdps, cette classe de complexité parait totalement irréalisable. Cependant, il faut garder à l'esprit que les données d'entrées des deux problèmes considérés diffèrent complètement. Pour les \textsc{csp}s, c'est le nombre de variables et la taille de leurs domaines qui sont considérés comme données d'entrées. Alors que pour le \mdp, il s'agit des tailles de l'espace d'état et de l'espace des actions. En supposant que la taille de l'espace d'état croît seulement polynômialement, et en considérant que le nombre de variables croît logarithmiquement en fonction de la taille de l'espace d'état et de l'espace des actions, la complexité en pire cas reste ``acceptable''.
+
+En d'autres termes, on pourrait avoir à résoudre par exemple quelques milliers de \textsc{csp}s similaires comprenant seulement une dizaine de variables et donc quasiment instantanés à résoudre. Nous allons voir dans la section suivante qu'en pratique, il est préférable d'utiliser les contraintes théoriquement plus complexes à résoudre que de modéliser ces contraintes directement dans le \mdp.
+
+De plus, l'étude de l'utilité des contraintes dans la représentation que l'agent se fait du monde est également applicable aux systèmes multiagents où le gain sera d'autant plus grand que la complexité de ces systèmes est de loin supérieure à la classe \#\textsc{p}.
+
+\section{Résultats expérimentaux}
+
+\definecolor{stir}{rgb}{0.996,1,0.627}
+\definecolor{ciws}{rgb}{0.941,0.22,0.231}
+\definecolor{gun}{rgb}{0.322,0.753,0.945}
+
+L'exemple sur lequel nous avons réalisé nos expérimentations est le problème d'allocation dynamique d'armes à des menaces (\textsc{dwta} en anglais pour \textsc{d}ynamic \textsc{w}eapon \textsc{t}arget \textsc{a}llocation) présenté au début de ce chapitre. Considérons une plate-forme militaire possédant un arsenal de $w$ armes attaquée par $m$ menaces.
+
+Sur cette plate-forme nous avons plusieurs types d'armes: deux lanceurs de missiles (ML), une mitrailleuse lourde (Gun) et un CIWS (pour Close-In Weapon System). Ces armes ont leur utilisation contrainte comme expliqué dans la table \ref{tab:constraints}. A cela s'ajoute des angles morts donnés par la table \ref{tab:blind}, des portées limitées et des probabilités de réussite données par la table \ref{tab:pk} et un nombre fini de munitions. La plate-forme possède également deux STIRs (Spot \& Track Illumination Radars) qui permettent de ``voir'' et suivre l'état des menaces.
+
+\begin{table}[!htb]
+\renewcommand\arraystretch{1.15}% (1.0 is for standard spacing)
+    \begin{tabular}{|p{.03\textwidth}p{.87\textwidth}|}
+    \hline
+       $C_1$: & L'arme doit ``voir'' la cible (cf. tables \ref{tab:blind} et \ref{tab:pk})\\
+       $C_2$: & Un ML doit être guidé par un STIR du tir jusqu'à l'interception,\\
+        ~    & Un Gun doit utiliser un STIR pour tirer,\\
+       $C_3$: & Deux STIRs ne peuvent cibler la même menace.\\
+    \hline
+    \end{tabular}
+\centering \caption[NEREUS: Exemples de contraintes]{\label{tab:constraints}Contraintes: La première contrainte spécifie que la menace allouée à une arme doit être à portée et ne pas être dans un angle mort (cf. table~\ref{tab:blind}). La seconde spécifie qu'une arme doit nécessairement être accompagnée d'un STIR tout au long de son allocation pour pouvoir être guidé. La dernière spécifie que deux STIRs ne peuvent être alloués à la même menace à cause d'interférences qu'ils pourraient provoquer les uns envers les autres.}
+\end{table}
+
+\begin{table}[!htb]
+\renewcommand\arraystretch{1.5}% (1.0 is for standard spacing)
+\setlength{\unitlength}{.1\textwidth} %%
+\setlength\arrayrulewidth{2pt}
+\newcommand\squareciws{\tikz \fill[ciws,draw=black,line width=2pt] (0,0) rectangle (7.1,.68);}
+\newcommand\squaregun{\tikz \fill[gun,draw=black,line width=2pt] (0,0) rectangle (7.1,.68);}
+\newcommand\squarestir{\tikz \fill[stir,draw=black,line width=2pt] (0,0) rectangle (7.1,.68);}
+        \begin{picture}(12,6)
+        \put(0,0){\includegraphics[width=.6\textwidth]{zones}}
+%        \put(5.05,1.7){\squareciws}
+%        \put(5.05,1.3){\squaregun}
+%        \put(5.05,0.9){\squarestir}
+        \put(6,3){
+                \begin{tabular}{|p{.32\textwidth}|l}
+                    \cline{1-1}
+                \centering \textbf{État de Base} \\ 1 STIR, 1 Gun,\\ 1 CIWS, 2 MLs & ~\\
+                    \cline{1-1}
+                \cellcolor[rgb]{0.941,0.22,0.231}\centering \textbf{Pas de CIWS} & ~\\
+                    \cline{1-1}
+                \cellcolor[rgb]{0.322,0.753,0.945}\centering  \textbf{Pas de Gun} & ~\\
+                    \cline{1-1}
+                \cellcolor[rgb]{0.996,1,0.627}\centering  \textbf{Un STIR additionnel} & ~ \\
+                    \cline{1-1}
+                \end{tabular}
+        }
+        \end{picture}
+\centering \caption[NEREUS: Exemples d'angles morts]{\label{tab:blind}Angles morts: Le Gun et le \textsc{ciws} étant placé respectivement à l'avant et à l'arrière du navire, il ne peuvent pas tirer au travers de celui-ci. Les deux stirs sont eux aussi orienté l'un vers l'avant, l'autre vers l'arrière, permettant ainsi que les deux soient disponibles sur chacun des flancs du bâtiment.}
+\end{table}
+
+\begin{table}[!htb]
+\renewcommand\arraystretch{1.2}% (1.0 is for standard spacing)
+    \begin{tabular}{|l|l|c|}
+            \hline
+        Arme & Portée & Probabilité de succès  \\
+            \hline
+        ML & From 2.2 to 20km &95\% \\
+            \hline
+        Gun & From 1.5 to 5km  &50\% \\
+            \hline
+        CIWS& From 0.2 to 2km  &30\%  \\
+            \hline
+   \end{tabular}
+   \vspace{5pt}
+\centering \caption[NEREUS: Exemples de résultats des actions]{\label{tab:pk}Résultats des actions: Cette table spécifie la portée des différentes armes et les probabilités que chacune d'elle réussisse à détruire la menace qui lui aurait été allouée.}
+\end{table}
+
+Un problème statique d'allocation d'armes représenté sous forme de \textsc{csp} tel que présenté figure~\ref{fig:wtacsp} peut-être formalisé de la manière suivante:
+\begin{itemize}
+    \item $X = \mathcal{W} $ ensemble des $w$ ressources du problème ;
+    \item $D = \mathcal{M} $ ensemble des $m+1$ tâches associées aux ressources (i.e., leurs allocations possibles à un instant donné) plus la possibilité de ne rien faire ;
+    \item $C = \{c_1 , ... , c_k , ... c_n\}$ ensemble des $n$ contraintes, spécifiant les combinaisons de tâches mutuellement compatibles.
+\end{itemize}
+L'objectif étant de trouver une allocation possible des tâches aux ressources suivant les contraintes entre les ressources.
+
+\begin{figure}[!hbt]
+\begin{center}
+        \begin{tikzpicture}[scale=2]%
+        \begin{scope}
+            \tikzstyle{every node}=[draw,circle,fill=blue!1!white,minimum size=1.2cm];%%
+            \node (w1) at (0,0)  {$\omega_1$}; %%
+            \node (w2) at (-1,1)  {$\omega_2$}; %%
+            \node (w3) at (-.35,2)  {$\omega_3$}; %%
+            \node (wj) at (.8,2.2)  {$\omega_j$}; %%
+            \node (wwm1) at (2,1.2)  {$\omega_{w-1}$}; %%
+            \node (ww) at (1.3,0)  {$\omega_w$}; %%
+        \end{scope}
+        \begin{scope}
+    \tikzstyle{every node}=[draw,fill=blue!20!white,font=\footnotesize];%%
+    \node[left=15pt,below] (d1) at (w1.west)  {\begin{tabular}{c}$\mathcal{D}_1$:\\$T_1$\\$T_2$\\...\\$T_i$\\...\\$T_m$\end{tabular}}; %%
+    \node[left=15pt,below] (d2) at (w2.west)  {\begin{tabular}{c}$\mathcal{D}_2$:\\$T_1$\\$T_2$\\...\\$T_i$\\...\\$T_m$\end{tabular}}; %%
+    \node[left=15pt,above] (d3) at (w3.west)  {\begin{tabular}{c}$\mathcal{D}_3$:\\$T_1$\\$T_2$\\...\\$T_i$\\...\\$T_m$\end{tabular}}; %%
+    \node[right=15pt,above] (dj) at (wj.east)  {\begin{tabular}{c}$\mathcal{D}_j$:\\$T_1$\\$T_2$\\...\\$T_i$\\...\\$T_m$\end{tabular}}; %%
+    \node[right=1pt] (dwm1) at (wwm1.east)  {\begin{tabular}{c}$\mathcal{D}_{w-1}$:\\$T_1$\\$T_2$\\...\\$T_i$\\...\\$T_m$\end{tabular}}; %%
+    \node[right=15pt,below] (dw) at (ww.east)  {\begin{tabular}{c}$\mathcal{D}_w$:\\$T_1$\\$T_2$\\...\\$T_i$\\...\\$T_m$\end{tabular}}; %%
+        \end{scope}
+        \draw (w1)--(w2); %%
+        \draw (w1)--(ww); %%
+        \draw (w2)--(w3); %%
+        \draw (w2)--(wwm1); %%
+        \draw[dashed] (w1)--(wj); %%
+        \draw[dashed] (w3)--(wj); %%
+        \draw[dashed] (wwm1)--(wj); %%
+        \draw[dashed] (ww)--(wj); %%
+        \draw (wwm1)--(ww); %%
+        \end{tikzpicture}%
+    \caption[Modélisation \textsc{csp} du \emph{Weapon-Target Assignment}.]{\label{fig:wtacsp} Modélisation \textsc{csp} du \emph{Weapon-Target Assignment} où les armes sont les variables et les tâches représentent le domaine. Voir le texte pour plus de détails.}
+\end{center}
+\end{figure}
+
+Il est cependant possible d'avoir des contraintes temporelles entre les tâches plutôt que des contraintes entre les ressources. Dans ce cas
+précis, on préférera employer la formulation ci-dessous, duale de celle exprimée précédemment:
+\begin{itemize}
+    \item $X = \mathcal{M} $ ensemble des $m$ tâches du problème ;
+    \item $D = \mathcal{W} $ ensemble des $w$ ressources associés aux tâches (i.e., leurs allocations possibles à un instant donné) ;
+    \item $C = \{c_1 , ... , c_k , ... c_n\}$ ensemble des $n$ contraintes, spécifiant les combinaisons de ressources mutuellement compatibles.
+\end{itemize}
+L'objectif étant de trouver une allocation possible des ressources aux tâches suivant les contraintes entre les tâches.
+
+\subsection{Utilisation des contraintes seules}
+
+Dans notre problème, nous avons choisi d'implémenter l'instance du problème précédemment évoqué en spécifiant le \textsc{m}a\textsc{csp} de la manière suivante: Les variables de décision sont les armes dont les domaines sont les menaces (on doit assigner à chaque arme une menace). Les contraintes et les probabilités de transition sont spécifiées telles qu'indiquées dans les tables \ref{tab:constraints}, \ref{tab:blind} et \ref{tab:pk}. Les menaces apparaissent à des distances distribuées selon une gaussienne autour de 20 km de la plate-forme et selon un azimut distribué uniformément autour de la plate-forme. On suppose que l'état des menaces (distance, azimut) évolue de manière déterministe. Ainsi, on connaît précisément quelle va être l'évolution des contraintes au cours du temps. La Figure \ref{fig:CSP} montre le \textsc{dcsp} à l'état initial et comment il peut évoluer durant un épisode. Il existe des contraintes unaires qui spécifient quelles sont les menaces ``visibles'' par les armes selon leur distance et leur azimut, et des contraintes binaires qui associent des radars à des armes pour pouvoir tirer ou spécifient certaines impossibilités. Dans cet exemple, les contraintes évoluent à chaque changement d'état, ou résolution d'engagement, à savoir si une arme a atteint une cible ou non. Les contraintes sont alors modifiées dynamiquement pour refléter l'utilisation actuelle des radars et des armes.
+
+\begin{figure}[!htb]
+\begin{center}
+        \includegraphics[width=.8\textwidth]{timeline_MaCSP}
+\end{center}
+\caption{\label{fig:CSP}Exemple de plan (en haut) et d'évolution du \textsc{dcsp} associé (en bas) pendant un épisode.}
+\end{figure}
+
+\begin{figure}[!htb]
+\begin{center}
+\subfigure[Time (ms) vs \# Tasks\label{fig:time}]{\includegraphics[width=.48\textwidth]{MaCSPvsMDP_time}}%%
+%\end{center}
+%~\\
+%\begin{center}
+\subfigure[\# Backups vs \# Tasks\label{fig:back}]{\includegraphics[width=.48\textwidth]{MaCSPvsMDP_backups}}
+\end{center}
+\caption{\label{fig:res}Comparaison entre \mdp et \macsp.}
+\end{figure}
+
+Nous avons comparé notre modèle avec un \mdp factorisé sans contrainte, mais en donnant des probabilités nulles de succès lorsqu'une assignation était interdite (par exemple un missile tiré sur une menace trop éloignée a une chance nulle de l'atteindre). Les résultats présentés en Figure \ref{fig:res} sont obtenus en utilisant le \textsc{frtdp} classique pour le \mdp et notre adaptation pour le \textsc{m}a\textsc{csp}. Chaque point est une moyenne sur 300 simulations. Nous avons utilisé pour ces tests les ``pires bornes possibles'': une borne inférieure nulle et une borne supérieure comme si les assignations d'armes faisables étaient toujours un succès. Ces bornes ont été utilisées pour vérifier la réelle efficacité de l'algorithme sans aucun bénéfice tiré des bornes utilisées. Les résultats de la figure \ref{fig:time} représentent le temps de calcul pour la planification optimale tandis que la figure \ref{fig:back} représente le nombre de mises à jour de Bellman (appel à la fonction \textsc{backup} de l'algorithme \ref{alg:FRTDP}) en fonction du nombre de tâches. On pouvait s'attendre à ce genre de résultats pour les \mdps puisque la taille de l'espace d'état croît exponentiellement suivant le nombre de tâches et de ressources. On voit cependant qu'on gagne un ordre de magnitude en restreignant l'espace de recherche par les contraintes.
+
+\subsection{Utilisation des contraintes dans une borne}
+
+Nous avons également adapté les bornes initialement proposées par \cite{PCB.07} pour améliorer les performances de l'algorithme. La borne supérieure n'a pas été modifiée et utilise la même factorisation en tâche pour améliorer le temps d'évaluation de la borne. En revanche, la borne inférieure se base sur la résolution par contraintes et sur un algorithme réactif réalisant la tâche la plus urgente pour obtenir une bien meilleure estimation de la fonction de valeur minimum à un coût de calcul très légèrement supérieur. Ainsi, les gains réalisés en temps de calcul sont plus conséquent dus à un meilleur élagage de l'arbre de recherche. Les résultats sont rapportés dans la figure~\ref{fig:cspBound}
+
+\begin{figure}[!htb]
+\begin{center}
+        \includegraphics[width=.5\textwidth]{results}
+\end{center}
+\caption{\label{fig:cspBound}Comparaison de l'utilisation de borne à base de \textsc{csp} versus les bornes de la littérature.}
+\end{figure}
+
+Pour ces résultats, nous avons comparé l'utilisation des contraintes dans la borne inférieure versus les bornes disponibles dans la littérature. Singh-\textsc{frtdp} représente l'algorithme de base \textsc{frtdp} utilisant les bornes proposées par \cite{SC.98}. Up-\textsc{frtdp} est l'algorithme \textsc{frtdp} utilisant la borne supérieure de \cite{PCB.07} et la borne inférieure de \cite{SC.98}. Low-\textsc{frtdp} utilise la borne supérieure de \cite{SC.98} et la borne inférieure à base de contraintes. R-\textsc{frtdp} utilise la borne supérieure de \cite{PCB.07} et la borne inférieure à base de contraintes.
+
+Les résultats indiquent clairement que les contraintes ne deviennent intéressantes à utiliser que lorsque le nombre de tâches devient important (ici supérieur à 3) mais que le gain s'avère finalement substantiel lorsque le nombre de tâches continue à croître (la figure utilise une échelle logarithmique sur les ordonnées).
+
+\section{Conclusion}
+
+Ce chapitre a, tout d'abord, fait état du problème d'allocation d'armes à des cibles tel que présenté dans la littérature. La version statique de ce problème a premièrement été détaillée avant de présenter la version dynamique et les différentes versions sous incertitudes. Un aperçu des modèles de satisfaction de contraintes a également été introduit comme introduction au modèle de Markov proposé dans ce chapitre. Un analyse théorique a été réalisée montrant que la complexité \emph{en pire cas} n'est pas favorable au développement de tels modèles. Cependant, les expérimentations ont montré que, vu que le nombre de variables d'état est très souvent très inférieur (selon une loi logarithmique) au nombre d'états rencontrés, l'approche proposée permet des réductions substantielles du temps de calcul dans le problème d'allocation de ressources.
+
+Parmi les travaux futurs envisagés à la suite de ce projet, plusieurs avenues de recherche ont attiré notre attention. Premièrement, l'hypothèse est faite que les perceptions de l'agent sont parfaites et donc que l'état du système est entièrement observé à chaque instant de décision. De fait, dans la réalité, les radars de navires sont rarement parfaits et un certaine incertitude est présente sur la position de menaces, sur les temps de vol des missiles et sur les observations de réussites (ou non) des contre-mesures. Il était donc naturel de regarder du côté des processus de Markov partiellement observables pour continuer nos travaux. D'autre part, nous avons considéré dans ce chapitre qu'un seul bâtiment avait à faire face à une attaque ennemie. En pratique, aucun navire ne circule seul et c'est souvent une flottille qui est sous l'effet d'une attaque ennemie.  Il a donc été envisagé d'étudier les comportements d'un ensemble de navires sous les conditions précédemment évoquées.
+
+Malheureusement, comme nous le verrons au chapitre suivant, la complexité des modèles de Markov multiagents partiellement observables est telle qu'aucun modèle actuel n'est en mesure de proposer une solution efficace pour le problème considéré. Nous allons donc vous détailler dans les chapitres suivants comment nous pensons qu'il est nécessaire de modéliser ce type de problème pour le rendre resolvable, et ce, même lorsque plusieurs agents doivent agir dans un environnement hostile et incertain.
+
+%\begin{note}
+%Mettre les algorithmes de résolution de \textsc{csp} par Forward Checking et par élimination de variable ?
+%\end{note}

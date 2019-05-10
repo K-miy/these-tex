@@ -1,0 +1,408 @@
+\chapter{Observabilité et communication dans les processus de Markov décentralisés}
+
+% \emph{«Ce qui est important c'est l'esprit d'équipe. Les mecs, y sont une équipe, y'a un esprit, alors forcement, il faut qu'ils partagent.»}
+% \begin{flushright} Coluche \end{flushright}
+% \bigskip
+
+\emph{«Coopérer, c'est résoudre à deux des problèmes qu'on n'aurait jamais eus tout seul.»}
+\begin{flushright} adapté de Sacha Guitry \end{flushright}
+\bigskip
+
+\label{chap:5}
+
+\begin{summary}
+Ce chapitre introduit tout d'abord la résolution en ligne de processus décisionnels de Markov décentralisés (\decpomdps) puis présente un algorithme approximatif et à utilisation de mémoire constante dans le cas où aucune communication n'est autorisée. L'algorithme est ensuite évalué empiriquement sur différents problèmes de la littérature et ses résultats sont comparés à des adaptations en ligne des meilleurs algorithmes disponibles. Une discussion de ces résultats est également effectuée ainsi que les différentes extensions possibles autour de la communication.
+\end{summary}
+
+\section{Introduction à la résolution en ligne de \pac{dec-pomdp}s}
+
+Comme l'a souligné le chapitre précédent, l'observabilité est un facteur clé de la complexité d'un problème de planification multiagent. Dès lors que l'observabilité n'est plus bijective en regard de l'état, le problème devient alors extrêmement complexe (\textsc{nexp}-complet) et l'on doit alors faire appel à des algorithmes d'approximation dépourvus de garanties, l'approximabilité de ce type de problème ayant été montrée au moins tout aussi complexe (\textsc{nexp}-difficile)~\citep{RGR.03}.
+
+Parmi ces algorithmes d'approximation, plusieurs ont été présentés au chapitre~\ref{chap:2} de cette thèse, et ils s'avèrent être tous une résolution \emph{hors ligne} du problème de planification markovienne multiagent décentralisé. Le \emph{hors ligne} signifie précisément que toute la planification est réalisée \emph{avant} l'exécution et qu'aucune planification n'est effectuée une fois que l'exécution a commencé. Par opposition, \emph{en ligne} signifie que l'agent peut planifier entre deux exécutions d'actions dans l'environnement et peut donc utiliser l'information récoltée pendant l'exécution pour améliorer sa planification. Les avantages de la planification en ligne sont doubles: il n'est pas nécessaire de planifier pour l'ensemble des états de croyance possible (soit le simplexe au complet), et l'intégration de la connaissance acquise au cours du temps se fait naturellement à chaque re-planification à partir de l'état de croyance courant. Très répandus dans le contexte monoagent \pomdp (avec \textsc{rtbss}~\citep{PTC.06}, \textsc{aems}~\citep{RC.07,RPCP.08}), le problème de la planification en ligne en multiagent et dans le cas partiellement observable provient de la connaissance décentralisée de l'état et du fait que les agents ne partagent justement pas la même croyance sur l'état courant selon leurs observations respectives.
+
+Ce chapitre présente donc un algorithme décentralisé de planification en ligne pour les \decpomdps. Dans un premier temps, l'algorithme dont s'inspire notre propre algorithme sera présenté. Il s'agit de l'algorithme de \emph{Rollout} de~\cite{BTW.97} qui a été pensé et réalisé pour le cas monoagent complètement observable (\mdp). L'extension au cas multiagent partiellement observable sera ensuite présentée et évaluée empiriquement avant de conclure. L'algorithme de \emph{Rollout} est maintenant détaillé.
+
+\section{Algorithme à base de ``rollouts''}
+
+Le principe de base de l'algorithme de Rollout, tel que présenté par \cite{BTW.97}, consiste à faire de l'amélioration incrémentale en ligne de politique. Cette méthode nécessite une politique $\pi$ qu'on améliore ensuite successivement à l'aide de trajectoire Monte-Carlo par exemple. Pour cela, à chaque étape de temps, le Rollout considère l'état courant et calcule l'ensemble des états suivants possibles à partir des actions disponibles. Puis, il approxime la valeur espérée de la politique $\pi$ dans chaque état suivant généré à l'aide de simulations Monte-Carlo, et cette évaluation est ensuite utilisée pour sélectionner la meilleure action disponible qui peut éventuellement être différente de celle suggérée initialement par la politique $\pi$. L'action sélectionnée se trouve ainsi être celle ayant la plus grande valeur espérée (toujours selon l'estimation Monte-Carlo) dans l'état courant. Il est en fait possible de montrer, dans le cas monoagent et sous certaines conditions légères, que la politique effectivement exécutée produit une valeur espérée au moins aussi élevée que la politique $\pi$ initiale, à moins que la politique $\pi$ soit optimale, auquel cas, le Rollout se comporte alors aussi optimalement.
+
+Dans ce contexte, \cite{CGC.04} ont proposé une extension de cet algorithme au cas monoagent partiellement observable (\pomdp) en utilisant les états de croyance plutôt que les états directement. Ainsi, dans le cas des \pomdps, le Rollout calcule, à partir de l'état de croyance courant de l'agent, l'ensemble des états de croyance possibles selon les actions disponibles et les observations résultantes possibles. Une estimation de la valeur de ces états de croyance est également évaluée à partir de simulation Monte-Carlo non plus d'une seule politique initiale $\pi$ mais d'un ensemble de politiques de base $\Pi$. La meilleure action -- correspondant à la meilleure valeur espérée -- est ensuite retournée. L'algorithme~\ref{alg:rollout} donne le pseudo-code du cas partiellement observable.
+
+\begin{algorithm}[htb]\caption{Rollout pour \pomdp \label{alg:rollout}}
+\algrenewcommand\alglinenumber{\tiny}
+   \begin{algorithmic}[1]
+   \Require{Un ensemble d'heuristiques $\Pi = \la \pi_1,\ldots,\pi_m\ra$, un état de croyance $\bel^0$ et un horizon $T$.}
+   \Ensure{Une action que l'agent doit exécuter dans l'état de croyance $\bel^0$.}
+    \vspace{5pt}
+    \Function{Rollout}{$\Pi$,$\bel^0$,$T$}
+        \ForAll{$a\in\Act$, $o\in\Obs$}
+            \State{$\{\bel^1\}_{a,o} \gets$ \textsc{Update}($\bel^0,a,o$)}\Comment{Mise à jour de l'état de croyance (Eq. \ref{BeliefUpd})}
+            \ForAll{$\bel^1 \in \{\bel^1\}_{a,o}$}
+                \State{$\Upsilon \gets$ \textsc{smce}($\Pi, \bel^1, T$)\label{alg:roll:smce}}\Comment{Valeur estimée des simulations Monte-Carlo}
+            \EndFor
+        \EndFor
+        \State{$a^\star \gets \arg\max\limits_{a\in\Act} \sum\limits_{o \in \Obs} \Pr(o|\bel^0, a) \max\limits_{\pi \in \Pi} \Upsilon[\pi]$}
+    \State{\Return{$a^\star$}}
+    \EndFunction
+   \end{algorithmic}
+\end{algorithm}
+L'estimation de la valeur des politiques par simulation Monte-Carlo (à la ligne~\ref{alg:roll:smce} de l'algorithme~\ref{alg:rollout}) notée \textsc{smce}$(\Pi, \bel^1, T)$ sera plus amplement expliquée à la section~\ref{sect:smce}. Voyons maintenant l'extension au cas multiagent.
+
+\section{Rollout décentralisé (dRollout)}
+
+L'approche proposée dans ce chapitre est similaire à celle de \cite{BTW.97} et de \cite{CGC.04} dans l'utilisation et l'amélioration d'heuristiques. Une estimée de la valeur espérée de chaque politique donnée est calculée pour chaque action que peut réaliser un agent en se basant sur des méthodes Monte-Carlo séquentielles. L'approche utilise ainsi une quantité fixe de temps et de mémoire à chaque itération d'amélioration. Plus formellement, étant donné un ensemble d'heuristiques multiagent $\Pi$ selon un état de croyance multiagent, la politique associée au Rollout sélectionne l'action selon l'équation suivante:
+\[\ba = \arg\max_{\ba\in\JAct} \max_{\pi \in \Pi} \Esp\left[\sum_{t=0}^T \Rew(\bel^t, \pi(\bel^t))\right]\]
+Où $\Rew(\bel^t,\ba)$ est la récompense espérée selon l'état de croyance $\bel^t$:
+\[\Rew(\bel^t,\ba) = \Esp_{s\in\Sta}\left[ \Rew(s,\ba) \right] = \sum_{s\in\Sta} \bel^t(s) \Rew(s,\ba)\]
+
+Un des problèmes de l'algorithme de Rollout provient de sa nécessité d'avoir des \emph{bornes inférieures} sur la fonction de valeur optimale pour garantir que le choix de l'action sera bien meilleur. De fait, toute politique sous-optimale permettra de diriger la recherche de l'algorithme Rollout de manière correcte. C'est pour cela, qu'en sus des bornes disponibles dans la littérature, rappelées à la section~\ref{sect:dp} du chapitre~\ref{chap:2}, nous avons choisi aussi d'utiliser l'algorithme \mbdp et ses dérivés de la section~\ref{sect:mbdp} du chapitre~\ref{chap:2} et une version en ligne de la programmation dynamique (section~\ref{sect:dp} du chapitre~\ref{chap:2}) -- qui utilise un horizon ``mobile'' de 2 pour sélectionner la meilleure action --  comme borne inférieure sur la valeur optimale. Voyons maintenant comment évaluer ces heuristiques à l'Aide de simulation Mont-Carlo.
+
+\subsection{Simulations Monte-Carlo}\label{sect:smce}
+
+Les simulations Monte-Carlo (cf. annexe~\ref{anx:pf}), bien qu'efficaces, sont surtout reconnues pour consommer beaucoup de temps de calcul. Cependant, de récents travaux ont considérablement réduit les temps de simulation. Ces techniques, appelées \emph{filtres à particules}, permettent la simulation en parallèle de plusieurs essais Monte-Carlo séquentiels tout en utilisant une taille fixe de la mémoire et offrant des garanties de performance sur l'estimation de la distribution de probabilité postérieure.
+
+\cite{T.99} a appliqué la technique des filtres à particules avec succès aux \pomdps. Il estimait l'état de croyance à chaque étape de temps à l'aide de filtres à particules puis sélectionnait ensuite la meilleure action à exécuter en utilisant une procédure mixant programmation dynamique et l'algorithme des \emph{k-plus-proches-voisins} pour la généralisation. Les filtres à particules étaient utilisés comme variante à base d'échantillons des filtres de Bayes pour récursivement estimer la densité postérieure, ou l'état de croyance $\bel$, sur un état $s$, du système dynamique~\citep{FTBD.01}:
+\[\bel^{t+1}(s') \propto \Obs(\bo|\ba,s') \int \Tra(s'|s,\ba) \bel^t(s)\,\mathrm{d}s\]
+Où, comme défini précédemment, $\bo$ est l'observation jointe reçue et $\ba$ l'action jointe effectuée.
+
+Le filtre à particules représente l'état de croyance par un ensemble $S$ de $N$ particules pondérées $\la s^{(i)}, w^{(i)}\ra$. Chaque $s_{(i)}$ est un échantillon représentant un état, et les $w^{(i)}$ sont des réels non négatifs, appelés \emph{poids d'importance}, qui somment à un. Dans sa forme basique, le filtre à particule réalise un filtrage bayésien récursif selon une procédure d'échantillonnage souvent référée par l'\emph{échantillonnage séquentiel par importance avec rééchantillonnage} (\textsc{sisr}):
+\begin{enumerate}
+\item[1.] \emph{Échantillonnage}: Utilise l'état courant $s$ et l'action jointe\footnote{Il est également possible d'utiliser une distribution sur les actions plutôt que l'action seule.} $\ba$ pour échantillonner l'état suivant $s'$ selon la fonction de transition $\Tra(s'|s,\ba)$, qui décrit la dynamique du système selon l'interaction de l'agent;
+\item[2.] \emph{Pondération des échantillons}: Pondère l'échantillon $s'$ par la vraisemblance de l'observation $w' = \Obs(\bo|s,\ba,s')$. Cette vraisemblance est extraite de la fonction d'observation de l'agent (e.g. du modèle de ses capteurs et de l'environnement) .
+\item[3.] \emph{Rééchantillonnage}: Tire avec remplacement un nouvel échantillon -- un état -- $s$ de l'ensemble $S$ (représentant l'état de croyance courant $\bel(s)$) selon la distribution discrète définie par la pondération $w^{(i)}$ appliquée à l'étape précédente.
+\end{enumerate}
+
+Dans certains cas, toutefois, les filtres à particules peuvent prendre du temps à faire cette mise à jour de l'état de croyance, quand le nombre de particules est beaucoup trop grand par exemple. Dans ces cas ci, des améliorations existent dans la littérature. Parmi ceux-ci, un des plus intéressants est le filtre adaptatif et temps-réel de~\cite{KFM.03}. Il permet de déterminer dynamiquement le nombre de particules à utiliser à chaque instant pour garantir une borne sur l'erreur faite sur l'approximation de l'état de croyance selon la divergence de Kullback-Leibler (\textsc{kl} divergence).
+
+Si l'on suppose que la distribution discrète estimée est répartie dans $k$ ``boîtes'' (e.g. l'état de croyance est réparti sur $k$ états), alors, pour des bornes sur l'erreur fixes $\varepsilon$ et $\delta$, l'équation~\eqref{eq:pfkld} donne le nombre d'échantillons $N$ minimal en fonction de $k$~\citep{F.01} tel que, avec probabilité $1-\delta$, la \textsc{kl} divergence entre l'estimée du maximum de vraisemblance basée sur les échantillons et la vraie distribution \emph{a posteriori} n'excède pas un certain seuil $\varepsilon$:
+\begin{equation}
+N = \frac{k-1}{2\varepsilon}\left[ 1 - \frac{2}{9(k-1)} + \sqrt{\frac{2}{9(k-1)}} z_{1-\delta} \right]^3 \label{eq:pfkld}
+\end{equation}
+
+Où $z_{1-\delta}$ est le $1-\delta$-quantile supérieur d'une distribution normale $\mathcal{N}(0,1)$. Le nombre requis de particules est donc proportionnel à l'inverse de l'erreur voulue et linéaire en fonction du nombre $k$ de ``boîtes'' sur lesquelles est la distribution. L'échantillonnage \textsc{kld} estime $k$ par le nombre d'états qui sont représentés par au moins une particule.
+
+Pour intégrer l'échantillonnage \textsc{kld} dans un algorithme de filtre à particule standard, une grille fixe est initialement utilisée pour approximer la distribution sur les états (e.g. les états eux-mêmes). Puis, pendant la phase de prédiction du filtrage (l'étape 1 dans la procédure \textsc{sisr}), l'algorithme détermine si un des états suivants générés tombe dans une case vide de la grille ou non (la grille est remise à zéro après chaque mise à jour). Si la case de la grille est vide, alors le nombre de ``boîtes'' $k$ est incrémenté et la case est marquée comme non vide. Après chaque échantillonnage, le nombre requis d'échantillons est mis à jour en utilisant l'équation~\eqref{eq:pfkld}. L'échantillonnage s'arrête dès lors qu'aucune nouvelle ``boîte'' ne se remplit et que $N$ converge.
+
+Ainsi, l'échantillonnage \textsc{kld} utilise initialement un grand nombre de particules lorsque rien n'est connu sur l'état courant et donc que la distribution est uniforme. Ce même nombre de particules diminue ensuite rapidement à mesure que de l'information sur l'état arrive. Pour plus de détails sur les filtres temps-réels adaptatifs, le lecteur intéressé est invité à se référer aux travaux de~\cite{F.01} sur le sujet. Voyons maintenant comment nous avons utilisé ces filtres dans le contexte d'un Rollout multiagent.
+
+\subsection{Rollout décentralisé}
+
+Les entrées de l'algorithme décentralisé de Rollout sont les suivantes: un état de croyance joint initial $\bel^0$ qui est l'information commune partagée par tous les agents, et un ensemble d'heuristiques (ou de politiques sous-optimales) $\Pi = \la \pi_1, \ldots, \pi_m\ra$. On suppose que cet ensemble d'heuristiques est ordonné initialement par la valeur espérée de chaque heuristique dans l'état de croyance initial: $EU(\pi_1,\bel^0)\ge ... \ge EU(\pi_m,\bel^0)$.
+
+\begin{algorithm}[htb]\caption{Rollout pour \decpomdps \label{alg:drollout}}
+\algrenewcommand\alglinenumber{\tiny}
+   \begin{algorithmic}[1]
+   \Require{Un ensemble d'heuristiques $\Pi = \la \pi_1,\ldots,\pi_m\ra$, l'état de croyance de l'agent $i$: $\bel_i^0$, un horizon $T$.}
+   \Ensure{Une action que l'agent $i$ doit exécuter dans l'état de croyance $\bel_i^0$.}
+    \vspace{5pt}
+    \Function{dRollout}{$\Pi$,$\bel_i^0$,$T$}
+     \State{$\ba_{-i} \gets \pi_1(\bel_i^0)$}
+        \ForAll{$a\in\Act$, $\bo\in\JObs$}
+            \State{$\ba \gets \la a,\ba_{-i} \ra$\label{alg:drollout:assumption1}}
+            \State{$\{\bel_i^1\}_{\ba_{-i},\bo} \gets$ \textsc{Update}($\bel^0,\ba,\bo$)}
+            \ForAll{$\bel_i^1 \in \{\bel_i^1\}_{\ba_{-i},\bo}$}
+                \State{$\Upsilon \gets$ \textsc{smce}($\Pi, \bel_i^1, T$)}
+            \EndFor
+        \EndFor
+        \State{$a_i^\star \gets \arg\max\limits_{a\in\Act} \sum\limits_{\bo \in \JObs} \Pr(\bo|\bel_i^0,\la a,\ba_{-i}\ra) \max\limits_{\pi \in \Pi} \Upsilon[\pi]$\label{alg:drollout:depth1}}
+    \State{\Return{$a_i^\star$}\label{alg:drollout:retroll}}
+    \EndFunction
+   \end{algorithmic}
+\end{algorithm}
+
+L'algorithme~\ref{alg:drollout} décrit le pseudo-code de l'algorithme de Rollout décentralisé. L'algorithme est construit de telle sorte que chaque agent calcule tout d'abord l'état de croyance joint en faisant l'hypothèse que les autres agents suivent l'heuristique la plus prolifique, i.e. la politique $\pi_1$ (ligne \ref{alg:drollout:assumption1}). L'ensemble des états de croyance possible $\{\bel_i^1\}_{\ba_{-i},\bo}$ est ainsi calculé sur la base que tous les autres agents vont suivre l'heuristique $\pi_1$ et vont recevoir une observation jointe dépendante de l'état de croyance courant $\bel^0$. L'ensemble des heuristiques $\Pi = \la \pi_1, \ldots, \pi_m\ra$ est alors évalué sur chacun de ces états de croyance $\{\bel_i^1\}_{\ba_{-i},\bo}$ à partir des méthodes Monte-Carlo séquentielles présentées à la sous-section précédente et dont le pseudo-code est donné par l'algorithme~\ref{alg:smce}.
+
+\begin{algorithm}[htb]\caption{Estimation Monte-Carlo séquentielle de chaque $\pi \in \Pi$ \label{alg:smce}}
+\algrenewcommand\alglinenumber{\tiny}
+   \begin{algorithmic}[1]
+   \Require{Un ensemble d'heuristiques $\Pi = \la \pi_1,\ldots,\pi_m\ra$, un état de croyance $\bel_i^1$, un horizon $T$.}
+   \Ensure{Une valeur espérée pour chaque heuristique fournie pour l'état de croyance considéré $\Upsilon = \la EU(\pi_1,\bel_i^1),\ldots,EU(\pi_m,\bel_i^1)\ra$.}
+\vspace{5pt}
+    \Function{smce}{$\Pi$,$\bel_i^1$,$T$} \label{alg:smce:mce}
+    \ForAll{$\pi_k\in\Pi$}
+        \For{$t=1$ \textbf{jusqu'à} $T-1$}
+            \State{$\phi_{-i}^{\pi_k} \sim \la \pi_k, \mathcal{U}(\{\pi_j(\bel_i^1)\})\ra$\label{alg:smce:anyPol}}\hfill\Comment{Définit l'heuristique jointe stochastique}
+            \State{$\bel_i^{t+1} \gets$ \textsc{Step}($\bel_i^t,\phi_{-i}^{\pi_k}$)\label{alg:smce:update}}\hfill\Comment{Calcule l'état de croyance suivant par \textsc{sisr}}
+        \EndFor
+        \State{$V_{\pi_k}(\bel_i^{T}) \gets \Rew(\bel_i^{T}, \phi_{-i}^{\pi_k}(\bel_i^T))$}\hfill\Comment{Évalue $\pi_k(\bel_i^{1})$}
+        \For{$t=T-1$ \textbf{jusqu'à} $1$}
+            \State{$V_{\pi_k}(\bel_i^{t}) \gets \Rew(\bel_i^{t}, \phi_{-i}^{\pi_k}(\bel_i^t)) + V_{\pi_k}(\bel_i^{t+1})$}
+        \EndFor
+        \State{$\Upsilon \gets \Upsilon \cup V_{\pi_k}(\bel_i^{1})$}
+    \EndFor
+    \State{\Return{$\Upsilon$}} \label{alg:smce:mceret}
+    \EndFunction
+\vspace{5pt}
+   \Function{Step}{Un état de croyance $\bel_i^t$, Une politique stochastique $\phi_{-i}^{\pi_k}$}
+    \State{\textsc{SamplePF}($\phi_{-i}^{\pi_k}(\bel_i^t)$)}\hfill\Comment{Étape 1.}\label{alg:smce:pf1}
+    \State{$\omega(\bo) \gets$ \textsc{getObservationLikelyhood}()}\hfill\Comment{Depuis le modèle}\label{alg:smce:obs}
+    \State{\textsc{ImportanceSamplePF}($\omega(\bo)$)}\hfill\Comment{Étape 2.}\label{alg:smce:pf2}
+    \State{$\bel_i^{t+1} \gets$ \textsc{ResamplePF}($\bel^t$)}\hfill\Comment{Étape 3.}\label{alg:smce:pf3}
+    \State{\Return{$\bel^{t+1}$}} \label{alg:smce:initret}
+   \EndFunction
+   \end{algorithmic}
+\end{algorithm}
+
+L'algorithme~\ref{alg:smce} retourne une évaluation de chacune des actions possible dans l'état de croyance courant selon chacune des heuristiques $\pi_k$. Ainsi, en choisissant l'action ayant la plus haute valeur espérée en $\bel^0$ selon l'estimation faite dans tous les $\bel^1$ possibles, l'algorithme garantit une amélioration de la meilleure des heuristiques pour l'état de croyance considéré dépendamment de la qualité de l'estimation réalisée.
+
+Il convient ici de remarquer que l'algorithme~\ref{alg:smce} se doit d'être implanté prudemment pour effectivement garantir cette amélioration. Il faut pour cela s'assurer que les estimations faites des politiques sous-optimales restent des bornes inférieures de l'exécution réelle de toutes les mixtures possibles de ces heuristiques. Ainsi, chaque agent doit estimer chacune de ces politiques comme s'il n'allait connaître dans le futur que sa propre séquence d'actions et d'observations. Le filtre à particule est donc mis à jour sur cette hypothèse et en supposant que les autres agents choisiront éventuellement n'importe laquelle des heuristiques de l'ensemble $\Pi$ (ligne \ref{alg:smce:anyPol}). La récompense accumulée moyenne est ainsi garantie d'être estimée inférieurement au mieux par rapport à ce qui sera obtenu en réalité. L'étape 1 d'échantillonnage du filtre à particule (ligne~\ref{alg:smce:pf1}) est donc réalisée en utilisant la politique jointe stochastique $\phi_{-i}^{\pi_k}$ qui suppose que l'agent $i$ suit l'heuristique $\pi_k \in \Pi$ et que les autres agents suivent n'importe laquelle des politiques de $\Pi$ selon une distribution uniforme:
+\begin{equation}\label{eq:phiothers}
+\phi_{-i}^{\pi_k}(\bel) =
+\begin{cases} \pi_k(\bel) & \text{pour l'agent $i$}\\
+\mathcal{U}(\{\pi_j(\bel):\pi_j\in\Pi\}) &\text{pour les autres agents.}
+\end{cases}
+\end{equation}
+Où $\mathcal{U}(\{\pi_j(\bel):\pi_j\in\Pi\})$ dénote d'une croyance \emph{a priori} uniforme sur la politique suivi dans l'état de croyance $\bel$.
+
+Notons également que la qualité de l'approximation produite par l'algorithme décentralisé de Rollout dépend du nombre de particules utilisées dans l'estimation de la valeur des politiques futures, comme retranscrit par l'algorithme~\ref{alg:smce}. Ainsi, il a été montré dans la section~\ref{sect:smce} que si le rééchantillonnage est effectué correctement, alors l'erreur dans l'estimation de l'état de croyance devient inférieure à $\varepsilon$ avec probabilité $1-\delta$ selon l'équation~\eqref{eq:pfkld}. Il doit donc être possible de quantifier l'erreur faite sur l'estimation lorsque ce nombre de particules et suffisant. Nous laissons toutefois la preuve de cette conjecture pour de travaux futurs pour le moment.
+
+\begin{algorithm}[htb]\caption{Simulation du Rollout pour \decpomdps \label{alg:simRollout}}
+\algrenewcommand\alglinenumber{\tiny}
+   \begin{algorithmic}[1]
+   \Require{Un ensemble d'heuristiques $\Pi$, un état de croyance joint $\bel^0$, un horizon mobile $T$, un horizon de test $\mathds{T}$.}
+   \Ensure{$r$ la récompense totale accumulée.}
+    \vspace{5pt}
+    \Function{SimulateRollout}{$\Pi$,$\bel^0$,$T$}
+     \State{$r \gets 0$; $s \gets $ \textsc{SampleFrom}($\bel^0$); $\ba \gets \la\ra$}
+    \ForAll{$i \in \alpha$}
+     \State{$\bel_i \gets \bel^0$}
+    \EndFor
+    \For{$t = 0$ \textbf{jusqu'à} $\mathds{T}$}
+        \ForAll{$i \in \alpha$}
+            \State{$a_i \gets$ \textsc{dRollout}($\Pi,\bel_i,T$)\label{alg:simRollout:agent}}\hfill\Comment{Action de l'agent $i$}
+            \ForAll{$j \in \alpha, i \neq j$}
+                \State{$a_j \gets$ \textsc{dRollout}($\Pi,\bel_i,T$)}
+                \State{$\ba_{-i} \xleftarrow{\cup} a_j$\label{alg:simRollout:otheragents}}\hfill\Comment{Croyances de l'agent $i$ sur les actions des autres agents.}
+            \EndFor
+            \State{$\bel_i \gets$ \textsc{SingleUpdate}($\bel_i,\ba,o_i$)\label{alg:simRollout:supdate}}\hfill\Comment{Mise à jour de l'état de croyance de l'agent $i$ (cf. section~\ref{sect:dRollout:update}).}
+            \State{$\ba \xleftarrow{\cup} a_i$}
+        \EndFor
+    \State{$r \gets r + \Rew(s,\ba)$}
+    \State{$s \gets $ \textsc{SampleFrom}($\Tra(s'|\ba,s)$)}\hfill\Comment{Simulation de l'évolution de l'état.}
+    \EndFor
+    \State{\Return{$r$}}
+    \EndFunction
+   \end{algorithmic}
+\end{algorithm}
+
+L'algorithme~\ref{alg:simRollout} fournit le pseudo-code utilisé pour la simulation du Rollout décentralisé. Cette simulation repose essentiellement sur le fait que chaque agent n'a pas accès aux observations ni aux actions des autres agents pendant l'exécution. Pour déterminer les actions des autres agents, chaque agent n'a donc pas le choix d'effectuer lui aussi des simulations sur ce que font les autres, mais en supposant que l'état de croyance initial est son propre état de croyance (ligne~\ref{alg:simRollout:otheragents}). De la même manière, il met à jour son état de croyance en faisant des hypothèses sur les observations des autres agents. Voyons maintenant différentes manières de faire cette mise à jour.
+
+\subsection{Maintenance de l'état de croyance joint au cours du temps}\label{sect:dRollout:update}
+
+Un des problèmes majeurs de l'algorithme~\ref{alg:simRollout} se trouve à la ligne~\ref{alg:simRollout:supdate}. On retrouve également ce problème dans l'algorithme~\ref{alg:smce} à la ligne~\ref{alg:smce:update}. Il concerne la mise à jour de l'état de croyance multiagent du point de vue d'un seul agent. En fait, dès la seconde étape de décision, aucun agent ne possède les mêmes croyances sur l'état joint du système et la croyance sur les politiques des autres agents devient alors très difficile à maintenir. Ceci est essentiellement dû au fait que chaque agent ne perçoit que sa propre observation de l'état joint du monde, et, à moins de se retrouver dans les conditions d'observations bijectives comme dans le chapitre précédent, les états de croyance de chacun des agents divergent rapidement à mesure que les observations s'accumulent. Ce problème, implicitement considéré dans les algorithmes hors-lignes par l'état de croyance sur les politiques des autres agents et une coordination temporelle parfaite, doit aussi être considéré pour les algorithmes en-ligne. Cela permettrait d'assurer la maintenance d'un état de croyance cohérent sur l'état de l'environnement et sur les politiques des autres agents.
+
+En conséquence de cette divergence au niveau des croyances, aucun agent ne peut désormais plus supposer que les autres agents suivent exactement le même raisonnement que lui-même puisque l'état de croyance courant est différent pour chacun. La coordination devient alors extrêmement difficile et incertaine puisque l'action jointe espérée peut se trouver à être extrêmement différente de l'action jointe réellement effectuée. Une hypothèse valide serait que, puisque les agents avaient un état de croyance commun au départ et s'étaient mis d'accord sur une heuristique à utiliser dans ce cas ci, ils continuent à penser que les agents vont continuer de se comporter de cette manière dans le futur. D'un autre côté, les agents peuvent également penser que les autres agents ont reçu une information similaire à celle reçue par l'agent sur l'état du monde et peuvent ainsi utiliser l'action jointe qu'ils ont calculée pour mettre à jour leur état de croyance.
+
+D'autres approches impliquant l'observation des actions des autres agents ou encore la communication sont envisageables et nous en discuterons dans la section~\ref{sect:comm}. Pour le reste de ce chapitre les agents feront l'hypothèse que les autres agents peuvent prendre une politique uniformément dans l'ensemble des heuristiques disponibles, mais selon leur propre état de croyance. L'option de la communication ou de l'observation des autres agents restant une option valide pour de travaux futurs. Nous avons donc retenu deux méthodes de mise à jour de leur état de croyance joint que nous avons évalué dans la section~\ref{sect:results}.
+
+L'une des façons (suggérée par~\cite{SZ.05}) de calculer la mise à jour de l'état de croyance multiagent à chaque étape est de maintenir une distribution de probabilité sur les états de croyance des autres agents selon chaque probabilité des observations jointes, et de calculer pour chacun de ces états de croyance quelle serait la politique exécutée par les autres agents. Malheureusement, à mesure que le temps passe, le nombre d'états de croyance possible croît doublement exponentiellement et une telle distribution devient rapidement impossible à représenter. Nous proposons donc deux approximations simples de cette mise à jour, selon comment sont considérées les observations des autres agents, tout en supposant que leurs actions sont choisies selon l'équation~\eqref{eq:phiothers}.
+
+Une première manière simple d'approximer cette mise à jour en n'utilisant que l'observation locale à l'agent et de ne considérer, comme l'on fait~\cite{SZ.07b} dans leur amélioration d'\mbdp, que l'observation la plus probable pour les autres agents. Ce cas correspond également à ne considérer que l'état de croyance le plus probable, parmi tous les états de croyance futurs:
+\begin{eqnarray}
+  \bo_i^\star &\gets& \la o_i, \bo_{-i}^\star \ra \notag\\
+  \mbox{où }\bo_{-i}^\star &=& \arg \max_{\bo_{-i} \in \JObs{-i}} \Obs(\la o_i,\bo_{-i}\ra|\ba,s')\bel^t_i(s') \notag\\
+  \bel_i^{t+1}(s') &=& \frac{\Obs(\bo_i^\star|\ba,s') \sum_{s\in\Sta} \Tra(s'|s,\ba) \bel_i^t(s)}{\sum_{s,s'\in\Sta}{\Obs(\bo_i^\star|\ba,s') \Tra(s'|s,\ba) \bel_i^t(s)}}\label{eq:dRollout:mlo}
+\end{eqnarray}
+Où $\bo_i^\star$ représente l'observation jointe la plus probable que l'agent $i$ présuppose étant donné son propre état de croyance sur l'état $s'$. Elle est composée de l'observation $o_i$ qu'il a réellement reçu et de l'observation la plus probable des autres agents $\bo_{-i}^\star$ selon son état de croyance.
+
+Une deuxième manière moins naïve consiste à marginaliser toutes les observations jointes possibles dans l'état de croyance local à l'agent:
+\begin{equation}\label{eq:dRollout:marg}
+\bel_i^{t+1}(s') = \sum_{\bo_{-i}\in\JObs_{-i}}\frac{\Obs(\bo|\ba,s') \sum_{s\in\Sta} \Tra(s'|s,\ba) \bel_i^t(s)}{\sum_{s,s'\in\Sta}{\Obs(\bo|\ba,s') \Tra(s'|s,\ba) \bel_i^t(s)}}, \quad \bo = \la o_i, \bo_{-i}\ra
+\end{equation}
+
+Dans ce cas-ci, chaque agent incorpore dans son état de croyance la possibilité que tous les autres agents peuvent recevoir n'importe laquelle des observations jointes, selon son propre état de croyance et selon l'observation $o_i$ qu'il a lui-même reçu. Bien que cette méthode produit des états de croyance joint possédant une entropie plus élevée, i.e. beaucoup d'incertitude sur l'état sous-jacent multiagent, nous verrons que dans la pratique cette méthode produit également de meilleurs résultats.
+
+Avant de présenter les résultats empiriques, voyons quelles seraient les possibilités de synchronisation des agents pour améliorer leurs états de croyance tout en utilisant un minimum de communication.
+
+\subsection{Vers la synchronisation via la communication}\label{sect:comm}
+
+L'approche présentée jusqu'ici ne présuppose aucune communication entre les agents. Il serait éventuellement possible de l'étendre en vue de synchroniser régulièrement l'état de croyance conjoint régulièrement. Cela changerait néanmoins beaucoup la dynamique du raisonnement effectué par chacun des agents lors de la planification puisque plutôt que de raisonner sur toutes les observations possibles des autres agents, celles-ci seraient désormais disponibles régulièrement au coût -- pas nécessairement raisonnable -- d'une communication.
+
+Dans ce sens, plusieurs approches ont été proposées dans la littérature. Elles s'articulent toutes autour de deux axes principaux qui consistent tout d'abord à calculer une politique jointe pour le \pomdp multiagent comme si tous les agents avaient accès à toutes les observations de tous les agents à chaque instant. Il resterait alors à chaque agent à calculer en parallèle un état de croyance conjoint et un état de croyance monoagent. Ceci lui permettrait de mesurer la distance existant entre sa propre croyance sur son environnement et les croyances que peuvent avoir les autres agents sur sa propre croyance, lui permettant ainsi de déterminer quand il devient nécessaire de communiquer. Pour ce faire, trois approches existent à notre connaissance.
+
+Une première de ces approches à été proposée par~\cite{RSV.05b,RSV.05} et consiste tout d'abord à trouver une politique pour le \pomdp sous-jacent au \decpomdp. Cette politique est nommée Q\pomdp par les auteurs. À partir de cette politique, les agents exécutent leurs actions et ne communiquent leur historique d'observations que lorsque c'est nécessaire. Cette nécessité est déterminée dès lors que l'action jointe effectuée par l'ensemble des agents serait différente sachant l'historique d'un des agents. Ainsi, chacun mémorise l'état de croyance conjoint depuis la dernière synchronisation ainsi qu'un autre état de croyance incorporant sa propre connaissance reçue depuis. Dès qu'il détecte une différence possible de politique, il communique les dernières observations qu'il a reçues pour que tout le monde puisse être à jour. Ce principe de communication a l'avantage d'être asynchrone dans le sens où dès qu'un agent communique, les autres agents ne sont pas forcés de communiquer s'il ne le juge pas opportun.
+
+Une autre de ces approches proposée par~\cite{WZC.09} consiste également à trouver une politique Q\pomdp en se basant sur des politiques stochastiques permettant ainsi l'utilisation de la programmation linéaire. Pour déterminer quand communiquer, \cite{WZC.09} utilisent cependant la notion d'inconsistance d'historique. Cette notion permet d'une part de fusionner des historiques dont les politiques futures sont identiques (mais en réalité il regarde juste la prochaine action à effectuer), et d'autre part, lorsque des historiques ont été fusionnés à tort, de corriger le tir en communiquant l'ensemble de l'historique des observations. L'avantage par rapport à la méthode précédente vient du fait que très peu d'historiques sont stockés (en réalité exactement $|\Act|$ si on considère juste les actions suivantes comme politiques futures). Toutefois, une telle approche présente l'inconvénient que dès qu'un agent communique, alors tous les agents doivent le faire également pour synchroniser leur état de croyance conjoint. Le deuxième inconvénient réside dans le fait que dès que la fonction d'observation est particulièrement ardue (i.e comprendre non bijective au sens du chapitre~\ref{chap:4}), l'inconsistance d'historique arrive fréquemment, obligeant les agents à communiquer fréquemment.
+
+La dernière approche tout récemment proposée par~\cite{KYYTT.10} utilise également la politique Q\pomdp calculée de la manière que l'on préfère (i.e. comprendre que l'algorithme a juste besoin d'une politique jointe fixe). Cette approche détermine alors à l'aide d'une heuristique issue des \textsc{bdi} (\emph{Beliefs, Desire, Intentions}~\citep{GPPTW.98}) des \emph{points de communication} en évaluant à quel moment un agent estime que son propre historique d'observation peut-être mal interprété par les autres agents et conduire à une politique non désirable. Du fait du nombre exponentiel d'historiques possible, ils éliminent également les historiques les moins probables en ne conservant que les $k$ plus probables et en se reposant sur le fait que dès que la synchronisation des états de croyance arrivera bien assez tôt pour que l'erreur accumulée ne soit pas trop grande.
+
+Il serait donc intéressant de considérer la combinaison d'une politique jointe et d'une politique décentralisée dans certains des cas présentés ci-avant pour en étudier les améliorations possibles empiriquement. Néanmoins, même si nous pouvons voir ces travaux comme des avenues intéressantes pour de futures recherches, l'utilisation de la communication modifie trop la dynamique du raisonnement des agents (puisqu'ils raisonnent sur une politique jointe plutôt que décentralisée) pour que nous envisagions de l'intégrer pour l'instant. Dans le reste de ce chapitre, nous supposerons donc que les agents ne disposent pas de communication pour synchroniser leur état de croyance.
+
+\section{Évaluation empirique}\label{sect:results}
+
+Selon~\cite{SZ.07}, la plupart des chercheurs du domaine des \decpomdps comparent les performances de leurs algorithmes sur le problème du tigre multiagent de~\cite{NTYPM.03}. Cependant, depuis leur amélioration de \mbdp~\citep{SZ.07b}, les mêmes auteurs ont proposé un nouvel environnement de test permettant de mieux mettre à l'épreuve les algorithmes du domaine. Nous avons donc réalisé nos expérimentations sur ces deux domaines: le problème du tigre multiagent et le problème des déménageurs.
+
+\subsection{Domaine du tigre multiagent}
+
+Dans le problème du tigre multiagent~\citep{NTYPM.03}, deux agents se trouvent face à deux portes et doivent choisir laquelle ouvrir. Une des deux portes mène à un tigre sanguinaire, l'autre à un trésor fabuleux (voir figure \ref{tigerFig}). La difficulté réside dans le fait que les agents, d'une part ne savent pas où est initialement le tigre, et d'autre part n'ont qu'une observation partielle de l'environnement.
+
+\begin{figure}[!ht]
+\centering\includegraphics[width=.35\textwidth]{tiger} \caption{Le problème du tigre multiagent.}\label{tigerFig}
+\end{figure}
+
+Il existe donc deux états du monde: $\Sta = \{s_L,s_R\}$, soit le tigre est à droite, soit à gauche. Ils ont la possibilité à chaque étape soit d'écouter, pour tenter de découvrir où se trouve le tigre, soit d'ouvrir une des deux portes ($\Act_i = \{oL,oR,Listen\}, \forall i$). Lorsqu'ils tentent d'écouter où se trouver le tigre, ils n'ont qu'une certaine probabilité\footnote{en général $\Obs(o_L|s_L) = 0.85$ et pareil à droite} d'entendre le tigre derrière la bonne porte, et le complémentaire\footnote{$\Obs(o_L|s_R)=0.15$ par conséquent} à 1 d'entendre le tigre du mauvais côté. À partir du moment où un des agents ouvre une porte, le jeu est réinitialisé. En ce qui concerne les récompenses, elles se décomposent comme suit:
+\begin{itemize}
+  \item si les deux agents ouvrent la même porte, ils reçoivent une récompense de +20 si c'est la bonne, -50 sinon;
+  \item si les deux agents ouvrent chacun une porte différente ils reçoivent -100;
+  \item si les deux agents écoutent, une pénalité de -2 est infligée;
+  \item si l'un des deux écoute alors que l'autre ouvre une porte, si celui qui ouvre se trompe, les deux agents reçoivent -101, sinon +9.
+\end{itemize}
+
+Il s'agit d'un problème d'observabilité partielle simple possédant 2 états, 3 actions et 2 observations. La figure \ref{tigerStates} montre le graphe d'état sous-jacent ainsi que les probabilités de transitions et d'observations selon l'action choisie par chaque agent. Pour pouvoir planifier de manière optimale dans ce problème, il est nécessaire pour chacun des agents de maintenir un état de croyance sur la position de tigre et sur la politique de l'autre agent en fonction des observations. Généralement, les métriques utilisées dans ce problème consistent à calculer la récompense obtenue après un horizon $T$.
+
+\begin{figure}[!ht]
+\vspace{5pt}
+\centering
+\begin{tikzpicture}[line width=.1ex, scale=.65]
+\begin{scope}[shape=circle,minimum size=.6cm,fill=white]
+\tikzstyle{every node}=[draw] %%
+\node (s1) at (0,0)  {$s_L$}; %%
+\node (s0) at (5,0)  {$s_R$}; %%
+\end{scope}
+\draw[->,-latex] (s0.south).. controls (2.5,-2) .. (s1.south) node[near end,below=4pt]{$\la \{oL,oR\},\{oL,oR\} \ra,0.5$};  %%
+\draw[->,-latex] (s1.north).. controls (2.5,2) .. (s0.north) node[near end,above=4pt]{$\la \{oL,oR\},\{oL,oR\} \ra,0.5$};  %%
+\draw[->,-latex] (s1.north).. controls (0,2) and (-2,0) .. (s1.west) node[left=6pt]{$\la Listen,Listen \ra,1$};  %%
+\draw[->,-latex] (s0.south).. controls (5,-2) and (7,0) .. (s0.east) node[right=6pt]{$\la Listen,Listen \ra,1$};  %%
+\draw[->,-latex] (s1.north).. controls (0,2) and (-2,0) .. (s1.west) node[near start,left=6pt]{$\la \{oL,oR\},\{oL,oR\} \ra,0.5$};  %%
+\draw[->,-latex] (s0.south).. controls (5,-2) and (7,0) .. (s0.east) node[near start,right=6pt]{$\la \{oL,oR\},\{oL,oR\} \ra,0.5$};  %%
+\draw[->,double,-latex] (s1.south west) .. controls (-1,-1) .. (-2,-1)  node[left=6pt]{$\la Listen \Rightarrow o_L \ra,0.85$};  %%
+\draw[->,double,-latex] (s0.north east) .. controls (6,1) .. (7,1)  node[right=6pt]{$\la Listen \Rightarrow o_R \ra,0.85$};  %%
+\end{tikzpicture}
+  \caption{Graphe d'état sous-jacent du problème du tigre.}\label{tigerStates}
+\end{figure}
+
+Concernant la difficulté de ce problème, elle réside principalement dans la présence d'actions \emph{épistémiques}. Une action est dite épistémique dès lors qu'elle ne modifie pas l'état du monde, mais agit uniquement sur l'état de croyance de l'agent effectuant l'action. Ces actions sont souvent décrites comme ``observer'', ``écouter'', ``vérifier'', etc. La difficulté du Tiger est essentiellement due à la présence de ces actions, car les heuristiques habituellement utilisées pour les \decpomdps s'avèrent inefficaces (notamment la $Q_{MDP}$).
+
+\subsection{Domaine des déménageurs}
+
+Ce problème a été introduit dans la section~\ref{sect:demenageurs} du chapitre~\ref{chap:1} mais a été proposé par~\cite{SZ.07} et décrit le comportement de deux robots déménageurs qui doivent ranger des boites dans un environnement de type grille. Il y'a 3 boites dans l'environnement, deux petites et une grande. La grande nécessite que les deux agents se coordonnent pour pouvoir la pousser. Le but est d'amener une boite (et une seule) dans la zone but (en haut de la grille, voir figure \ref{cbp3x4}). L'optimal étant bien sur d'apporter la grosse boite dans la zone but.
+
+\begin{figure}[!ht]
+\centering\includegraphics[width=.5\textwidth]{cbp3x4} \caption{Le problème du déménageur en multiagent sur une grille $3\times4$.}\label{cbp3x4}
+\end{figure}
+
+Les robots ont comme possibilité pour se déplacer d'avancer (\textsc{fwrd}), de tourner à droite (\textsc{rght}), à gauche (\textsc{left}), ou de rester sur place (\textsc{stay}). Il y'a toujours une probabilité 0.9 que l'action réussisse. Dans le cas inverse, l'action \textsc{stay} est exécutée. A chaque fois qu'un robot exécute une action, il reçoit une observation parmi les 5 suivantes : case vide, mur, autre agent, petite boite ou grande boite. La fonction de récompense stipule que dès qu'un agent se cogne contre une boite ou un mur, alors il reçoit +6, dès qu'un agent pousse une petite boite dans l'en-but, chaque agent reçoit +10 et la partie est réinitialisée. Si les deux agents poussent ensemble la grosse boite dans l'en-but, chaque agent reçoit alors +100  et la partie est aussi réinitialisée. À chaque étape de temps, un coût de -1 est infligé à chaque agent.
+
+Ce problème possède un beaucoup plus grand nombre d'états que les problèmes précédents (123 à 2 agents et dans une grille de $3\times4$). Cependant, ce problème reste limité à 4 actions et 5 observations si on considère que les actions de l'autre agent sont totalement observables. À l'image de l'autre problème, la principale mesure dans celui-ci reste la valeur espérée amassée par les agents au cours du temps.
+
+Voyons maintenant l'application de notre algorithme à ces deux problèmes et notre comparaison avec des algorithmes similaires de la littérature.
+
+\subsection{Résultats expérimentaux}
+
+Pour comparaison avec notre algorithme de Rollout décentralisé, nous avons implémenté deux approches de la littérature présentées à la section~\ref{sect:mbdp} du chapitre~\ref{chap:2}, \textsc{imbdp}~\citep{SZ.07b} (pour \emph{Improved Memory Bounded Dynamic Programming}) et \textsc{mbdp-oc}~\citep{CZ.08} (pour \emph{Memory Bounded Dynamic Programming with Observations Compressed}), avec une légère adaptation vers une version en-ligne puisque ces deux algorithmes sont initialement hors-ligne. Pour cela nous avons simplement utilisé l'algorithme~\ref{alg:simRollout} où les lignes~\ref{alg:simRollout:agent} et~\ref{alg:simRollout:otheragents} ont été remplacées par l'algorithme correspondant.
+
+Ces algorithmes dérivés de \mbdp ont toutefois besoin de paramètres prépondérants dans leur efficacité. Un premier paramètre issu de \mbdp concerne le niveau d'approximation des politiques des autres agents ($maxTree$), un autre concerne le nombre d'observations $maxObs$ prises en compte lors de l'opération de \emph{backup} (cf. section~\ref{sect:mbdp} pour plus de détails). Puisque le problème du tigre contient seulement deux observations, nous avons choisi de ne pas approximer pour ne pas trop dégrader les performances et avons choisi de laisser $maxObs=2$. Sur le problème des déménageurs nous avons fait varier $maxObs$ de 2 à 4. Pour le paramètre $maxTree$, nous l'avons fait varier de 3 à 7 sur le problème du tigre et de 2 à 5 sur le problème des déménageurs. Aller au-delà de ces intervalles les résultats des algorithmes ne s'amélioraient pas significativement en regard du temps de calcul. L'horizon de planification est également un paramètre important puisqu'il influence particulièrement la récompense accumulée moyenne (\textsc{aar} pour \emph{accumulated average reward}). Nous avons donc choisi de laisser les algorithmes planifier pour l'ensemble de l'horizon nécessaire. Les résultats reportés ci-après sont ceux ayant les paramètres les plus adaptés, i.e. apportant la meilleure récompense accumulée moyenne.
+
+\begin{table}
+\renewcommand\arraystretch{1.3}
+\resizebox{\textwidth}{!}{
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+      \hline
+      ~ & \multicolumn{4}{c|}{online \textsc{imbdp}} & \multicolumn{4}{c|}{online \textsc{mbdp-oc}} & \multicolumn{4}{c|}{Rollout} \\
+      \cline{2-13}
+      $T$ & \multicolumn{2}{c|}{\textsc{atps} (ms)} & \multicolumn{2}{c|}{\textsc{aar}} & \multicolumn{2}{c|}{\textsc{atps} (ms)} & \multicolumn{2}{c|}{\textsc{aar}} & \multicolumn{2}{c|}{\textsc{atps} (ms)} & \multicolumn{2}{c|}{\textsc{aar}} \\
+      \cline{2-13}
+      ~ & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. \\
+      \hline
+        5 & 39.32 & 38.87 & -65.45 & -14.96 & 40.024 & 39.48 & -41.18 & -11.9 & 138.292 & 146.8 & -50.55 & -12.4\\
+        10 & 129.96 & 129.4 & -152.42 & -99.08 & 129.08 & 129.46 & -143.07 & -117.66 & 836.18 & 856.04 & -96.24 & -46.95\\
+        15 & 224.17 & 227.14 & -218.9 & -214.23 & 220.07 & 216.37 & -248.69 & -193.15 & 1717.94 & 1713.25 & -193.67 & -76.36\\
+      \hline
+    \end{tabular}
+    }
+  \caption[Résultats pour \textsc{imbdp} en-ligne,\textsc{mbdp-oc} en-ligne et dRollout dans le problème du Tigre.]{\textsc{imbdp} en-ligne,\textsc{mbdp-oc} en-ligne et dRollout dans le problème du Tigre. $maxTree = 6$ et $maxObs = 2$. \textsc{atps} est le temps moyen par étape (\emph{average time per step}) et \textsc{aar} et la récompense accumulée moyenne (\emph{average accumulated reward}).}\label{resTabTig}
+\end{table}
+
+Pour les heuristiques $\Pi$ utilisées dans l'algorithme du Rollout décentralisé, nous avons choisi la \textsc{Qmdp} et \mbdp pour le problème du Tigre mais seulement le \textsc{Qmdp} dans le problème des déménageurs pour des raisons de limites de temps dans le calcul des valeurs de chaque action jointe, mais surtout parce que le \textsc{Qmdp} est une heuristique extrêmement efficace dans tous les domaines de type grille.
+
+Pour évaluer l'algorithme de Rollout décentralisé, nous avons donc tout d'abord comparé sa récompense accumulée moyenne (\textsc{aar}) et le temps de calcul nécessaire pour qu'il l'obtienne versus la récompense accumulée moyenne et le temps de calcul des deux autres algorithmes en-ligne.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=.8\textwidth]{Mat_value}
+  \caption{online \textsc{imbdp}, online \textsc{mbdp-oc} and Rollout on the Tiger Problem: Average Accumulated Reward (\textsc{aar}) / horizon\label{resFigTig}}
+\end{figure}
+
+\begin{figure}[htb]
+\centering
+ \includegraphics[width=.8\textwidth]{Mat_time}
+  \caption{online \textsc{imbdp}, online \textsc{mbdp-oc} and Rollout on the Tiger Problem: Average Time (ms) per step / horizon\label{resFigTigT}}
+\end{figure}
+
+Deux versions de chaque algorithme sont évaluées dans les tables~\ref{resTabTig} et~\ref{resTabCoord} et dans les figures~\ref{resFigTig}, \ref{resFigTigT}, \ref{resFigCoord} et~\ref{resFigCoordT}. Les versions ``étoilées'' (\textsc{imbdp}$^\star$, \textsc{mbdp-oc}$^\star$, Rollout$^\star$) correspondent à la mise à jour de l'état de croyance joint par marginalisation des observations des autres agents (cf. équation~\eqref{eq:dRollout:marg}), alors que les versions sans étoile utilisent l'heuristique de l'observation la plus probable (cf équation~\eqref{eq:dRollout:mlo}).
+
+Les résultats rapportés sur le problème multiagent du Tigre sont des moyennes sur 100 épisodes de chacun des algorithmes. La figure~\ref{resFigTig} montre la récompense accumulée moyenne (\textsc{aar}) en fonction de l'horizon tandis que la figure~\ref{resFigTigT} montre le temps de calcul moyen respectif pour trouver la meilleure action à chaque étape. Les valeurs correspondantes sont données par la table~\ref{resTabTig}.
+
+\begin{table*}
+\renewcommand\arraystretch{1.3}
+  \centering
+\resizebox{\textwidth}{!}{
+    \begin{tabular}{|c||c||c||c||c||c||c||c||c||c||c||c||c|}
+      \hline
+      ~ & \multicolumn{4}{c||}{online \textsc{imbdp}} & \multicolumn{4}{c||}{online \textsc{mbdp-oc}} & \multicolumn{4}{c|}{Rollout} \\
+      \cline{2-13}
+      $T$ & \multicolumn{2}{c||}{\textsc{atps} (ms)} & \multicolumn{2}{c||}{\textsc{aar}} & \multicolumn{2}{c||}{\textsc{atps} (ms)} & \multicolumn{2}{c||}{\textsc{aar}} & \multicolumn{2}{c||}{\textsc{atps} (ms)} & \multicolumn{2}{c|}{\textsc{aar}} \\
+      \cline{2-13}
+      ~ & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. \\
+      \hline
+        5 & 5.33 & 4.54 & -3.6 & -6.8 & 13434.68 & 13426.68 & -3.5 & 5.3 & 304.67 & 301.93 & 13.4 & 11\\
+        10 & 4.7 & 4.62 & -48.8 & -28.8 & 30040.33 & 30360.31 & 6.6 & 18.8 & 305.125 & 303.05 & 35.2 & 32.8\\
+        15 & 4.75 & 4.59 & -59.1 & -53.4 & 58883.06 & 60925.91 & 18 & 20 & 306.18 & 305.07 & 51.6 & 51.6\\
+      \hline
+    \end{tabular}}
+  \caption[Résultats pour \textsc{imbdp} en-ligne,\textsc{mbdp-oc} en-ligne et dRollout dans le problème des déménageurs.]{\textsc{imbdp} en-ligne,\textsc{mbdp-oc} en-ligne et dRollout dans le problème des déménageurs. $maxTree = 2$ et $maxObs = 2$. \textsc{atps} est le temps moyen par étape (\emph{average time per step}) et \textsc{aar} et la récompense accumulée moyenne (\emph{average accumulated reward}).}\label{resTabCoord}
+\end{table*}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=.8\textwidth]{Coord_value}
+  \caption{online \textsc{imbdp}, online \textsc{mbdp-oc} and Rollout on the Coordinate Box Pushing Problem: Average Accumulated Reward (\textsc{aar}) / horizon\label{resFigCoord}}
+\end{figure}
+
+\begin{figure}[htb]
+\centering
+ \includegraphics[width=.8\textwidth]{Coord_time}
+  \caption{online \textsc{imbdp}, online \textsc{mbdp-oc} and Rollout on the Coordinate Box Pushing Problem: Average Time (ms) per step / horizon\label{resFigCoordT}}
+\end{figure}
+
+Pour les résultats rapportés sur le problème des déménageurs, 20 épisodes de chacun des algorithmes ont été utilisés pour la moyenne. Nous mettons également les résultats de l'heuristique \textsc{Qmdp} sous l'étiquette \textsc{mdp}$^\star$. La figure~\ref{resFigCoord} montre la récompense accumulée moyenne en fonction de l'horion alors que la figure~\ref{resFigCoordT} montre le temps moyen nécessaire par étape pour calculer la meilleure action disponible. Les valeurs sont données dans la table~\ref{resTabCoord}. Nous avons volontairement omis les résultats des algorithmes ``non-étoilés'', i.e. ceux utilisant l'observation la plus probable pour la mise à jour de l'état de croyance joint, car les temps de calcul étaient également très similaires sur ce problème. Ceci nous mène à la discussion de ces résultats et à la conclusion de ce chapitre.
+
+%\begin{table*}
+%\renewcommand\arraystretch{1.2}
+%  \centering
+%\resizebox{\textwidth}{!}{
+%    \begin{tabular}{|c||c||c||c||c||c||c|}
+%      \hline
+%      ~ & \multicolumn{2}{c||}{\textsc{maop}} & \multicolumn{4}{c|}{Rollout} \\
+%      \cline{2-9}
+%      $T$ & \textsc{atps} (ms) & \textsc{aar} & \multicolumn{2}{c||}{\textsc{atps} (ms)} & \multicolumn{2}{c|}{\textsc{aar}} \\
+%      \cline{2-9}
+%      ~ & ~ & ~ & \textsc{mlo} & \textsc{m}arg. & \textsc{mlo} & \textsc{m}arg. \\
+%      \hline
+%        5 & 27.55 &  & 304.67 & 301.93 & 13.4 & 11\\
+%        10 & 281.25 &  & 305.125 & 303.05 & 35.2 & 32.8\\
+%        15 & 325.32 & 14.5 & 306.18 & 305.07 & 51.6 & 51.6\\
+%      \hline
+%    \end{tabular}}
+%  \caption[Résultats pour \textsc{maop} et dRollout dans le problème des déménageurs.]{\textsc{maop} en-ligne et dRollout dans le problème des déménageurs. $maxTree = 2$ et $maxObs = 2$. \textsc{atps} est le temps moyen par étape (\emph{average time per step}) et \textsc{aar} et la récompense accumulée moyenne (\emph{average accumulated reward}).}\label{tab:dRollout:maop}
+%\end{table*}
+
+%Nous avons également comparé nos résultats aux travaux plus récents de~\cite{WZC.09} mais sans communication. Les résultats sont reportés dans la table~\ref{tab:dRollout:maop}. Ceci nous mène à la discussion de ces résultats et à la conclusion de ce chapitre.
+
+\section{Discussion et conclusion}
+
+Depuis l'apparition d'algorithmes approximatifs efficaces pour les problèmes de la littérature \decpomdps, le domaine complet des algorithmes en ligne pour les \decpomdps s'est à nouveau retrouvé sous les feux de la rampe. De fait, la possibilité de calculer des heuristiques efficientes de manière efficace nous a naturellement porté à proposer un algorithme de type Rollout pour les domaines de Markov décentralisés, où les recherches dans de très larges espaces et les modèles dynamiques complexes sont courants.
+
+Nous avons vu cependant qu'avec ce nouveau domaine, vient de nouveaux problèmes, et notamment le problème de la maintenance d'état de croyance joint commun pour l'ensemble des agents du système. Ce problème réduit également à néant l'hypothèse couramment utilisée dans les \decpomdps que les agents partagent la même information initiale pour planifier, permettent ainsi une coordination implicite dans le calcul de la politique sur l'horizon fixé. À mesure que les agents agissent dans l'environnement, leurs états de croyance évoluent selon leurs observations reçues, souvent très différemment, induisant des problèmes de coordination jamais rencontrés auparavant.
+
+Nous avons proposé dans ce chapitre deux manières simples de résoudre ce problème sans utilisation de la communication. Une première basée sur l'utilisation de la vraisemblance maximale des observations et une seconde basée sur la marginalisation des observations des autres agents dans la mise à jour de l'état de croyance. Nous avons alors vu que le temps de calcul étant identique, il est préférable d'utiliser la marginalisation des observations des autres agents puisqu'elle est plus efficace dans certains cas et offre des résultats similaires dans d'autres.
+
+En ce qui concerne le Rollout décentralisé, les résultats montrent que cet algorithme reste adapté aux \decpomdps dès lors que des heuristiques adaptées sont choisies. En fait, le Rollout utilise $|\Act|\times|\Omega|^n$ fois l'ensemble de toutes les heuristiques pour sélectionner la meilleure action à utiliser à la prochaine étape. Un équilibre doit donc être trouvé entre le coût de l'estimation des actions dans les états de croyance suivants et les récompenses effectivement récupérées. C'est la principale raison qui nous a poussés à abandonner l'utilisation de \textsc{imbdp} comme heuristique sur le problème des déménageurs. Cette heuristique coûte beaucoup trop cher pour le gain espéré en termes de récompenses par rapport à l'heuristique \textsc{Qmdp} basée sur le \mdp sous-jacent.
+
+Les performances de l'approche Rollout ouvrent des perspectives intéressantes pour la recherche dans le domaine des \decpomdps. En fait, de par sa capacité à garantir de meilleurs résultats que la meilleure heuristique utilisée dans toutes les situations, le Rollout décentralisé apparaît comme une avenue de recherche intéressante et peu coûteuse dans certains cas pour améliorer n'importe quelle politique sous-optimale pour les \decpomdps. Toutefois, dès que l'heuristique devient suffisamment bonne pour donner des valeurs proches de celles de la politique optimale, la contribution du Rollout devient plus modeste puisque le coût de l'évaluation de multiples heuristiques n'équilibre pas l'amélioration induite.
+
+De fait, le Rollout est donc extrêmement bien adapté à tous les domaines de type grille avec but fixé et sans actions épistémiques. Le rapport/coût qualité de l'heuristique \textsc{Qmdp} pour ce type de problème est tel qu'aucune heuristique n'est plus profitable. Dans le cas de problèmes munis d'actions épistémiques, il est également possible d'utiliser l'heuristique à base d'entropie de~\cite{MRN.05} (cf. annexe~\ref{anx:it}) qui inclut le prix de l'information dans les récompenses au travers de la réduction d'entropie des états de croyance. Il est donc possible que d'autres domaines bénéficient également de ce type d'heuristiques efficaces permettant l'emploi de Rollout plutôt que d'autres algorithmes plus coûteux.
+
+Selon notre connaissance du domaine, l'algorithme présenté dans ce chapitre est le second algorithme en-ligne pour les \decpomdps. Le premier a été présenté par~\cite{MGST.04} dans le cadre des jeux stochastiques partiellement observables. Selon~\cite{SZ.07}, leur version en-ligne de \mbdp réalisait déjà de meilleures performances que l'algorithme de~\cite{MGST.04} et c'est pourquoi nous ne présentons pas de comparatif dans ce chapitre. D'autre part, depuis la parution de notre article~\citep{BC.08}, \cite{WZC.09} ont également proposé un algorithme multiagent en-ligne, mais initialement basé sur la communication. Ils présentent toutefois des résultats extrêmement prometteurs même lorsqu'aucune communication n'est disponible. Nous n'avons pas pu nous comparer à leur algorithme puisque leur modèle d'observation et leur modèle de récompense dans le problème des déménageurs ne correspondent pas exactement au modèle que nous avons utilisé.
+
+Comme nous l'avons évoqué dans la section~\ref{sect:comm}, il serait donc intéressant de voir du côté de la communication pour les travaux futurs. Nous avons pour cela réalisé des travaux conjointement avec Jean-Samuel Marier~\citep{MBC.09,MBC.10} sur un problème de patrouille multiagent incluant la communication. Il resterait toutefois à limiter cette communication pour pouvoir comparer les algorithmes développés aux algorithmes en-ligne multiagents existants. Nous discuterons dans le chapitre suivant plus en avant les conclusions et les perspectives de recherche de cette thèse. 

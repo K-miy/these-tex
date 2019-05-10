@@ -1,0 +1,157 @@
+\begin{tikzpicture}[line width=.1ex, scale=1]
+\tikzstyle{every node}=[anchor=east,inner sep=0cm] %%
+\tikzstyle{level 1}=[sibling distance=3cm]
+%\node[font=\normalsize] (D) at (-.5,-4.5){$\Delta$};%%
+%\node[font=\normalsize] (w1) at (-.5,-13.5){$w^T$};%%
+\node[font=\normalsize] (1) at (-3,.5){};%%
+\node[font=\normalsize] (2) at (7,.5){};%%
+\node[font=\normalsize] (2b) at (7.5,.5){};%%
+\node[font=\normalsize] (3) at (12,.5){};%%
+\draw[segment aspect=0.75,snake=brace,black] (1.west)--(2.east) node[font=\normalsize,near end,above=4pt]{$\Delta$};%%
+%\draw[-,black,dashed] (2.east)--(2b.west);%%
+\draw[snake=brace,black] (2b.west)--(3.east) node[font=\normalsize,midway,above=4pt]{$w^T$};%%
+\node at (4,0) {$\delta_1^1$}
+   child {
+            node{...}
+            edge from parent
+            node[above]{$o_\textsc{l}$}
+            }
+   child {
+            node{$\delta_2^1$}
+               child {
+                        node{...}
+                        edge from parent
+                        node[above]{$o_\textsc{l}$}
+                        }
+               child {
+                        node{$\delta_1^2(o_1^1=\textsc{l})$}
+                           child {
+                                    node{...}
+                                    edge from parent
+                                    node[above]{$o_\textsc{l}$}
+                                    }
+                           child {
+                                    node{$\delta_1^2(o_1^1=\textsc{r})$}
+                                       child {
+                                                node{...}
+                                                edge from parent
+                                                node[above]{$o_\textsc{l}$}
+                                                }
+                                       child {
+                                                node{$\delta_2^2(o_2^1=\textsc{l})$}
+                                                   child {
+                                                            node{...}
+                                                            edge from parent
+                                                            node[above]{$o_\textsc{l}$}
+                                                            }
+                                                   child {
+                                                            node{$\delta_2^2(o_2^1=\textsc{r})$}
+                                                               child {
+                                                                        node{...}
+                                                                        edge from parent
+                                                                        node[above]{$o_\textsc{l}$}
+                                                                        }
+                                                               child {
+                                                                        node(o1){$o_1^1$}
+                                                                        edge from parent
+                                                                        node[right]{$\textsc{l}is$}
+                                                                        }
+                                                               child {
+                                                                        node{...}
+                                                                        edge from parent
+                                                                        node[above]{$o_\textsc{r}$}
+                                                                }
+                                                            edge from parent
+                                                            node[right]{$\textsc{l}is$}
+                                                            }
+                                                   child {
+                                                            node{...}
+                                                            edge from parent
+                                                            node[above]{$o_\textsc{r}$}
+                                                    }
+                                                edge from parent
+                                                node[right]{$\textsc{l}is$}
+                                                }
+                                       child {
+                                                node{...}
+                                                edge from parent
+                                                node[above]{$o_\textsc{r}$}
+                                        }
+                                    edge from parent
+                                    node[right]{$\textsc{l}is$}
+                                    }
+                           child {
+                                    node{...}
+                                    edge from parent
+                                    node[above]{$o_\textsc{r}$}
+                            }
+                        edge from parent
+                        node[right]{$\textsc{l}is$}
+                        }
+               child {
+                        node{...}
+                        edge from parent
+                        node[above]{$o_\textsc{r}$}
+                }
+            edge from parent
+            node[right]{$\textsc{l}is$}
+            }
+   child {
+            node{...}
+            edge from parent
+            node[above]{$o_\textsc{r}$}
+            };
+\tikzstyle{level 1}=[sibling distance=1cm]
+\node (o12) at (10,0) {$o_1^1$}
+   child {
+            node{$o_2^1$}
+               child {
+                        node{...}
+                        edge from parent
+                        node[left]{\textsc{l}}
+                }
+               child {
+                        node{$s^0$}
+                           child {
+                                    node{$s^1$}
+                                       child {
+                                                node{...}
+                                                edge from parent
+                                                node[left]{\textsc{l}}
+                                                }
+                                       child {
+                                                node{$s^2$}
+                                                   child {
+                                                            node[draw,diamond]{$r^1$}
+                                                            edge from parent
+                                                            node[left]{\textsc{l}}
+                                                            }
+                                                   child {
+                                                            node[draw,diamond]{$r^2$}
+                                                            edge from parent
+                                                            node[right]{\textsc{r}}
+                                                            }
+                                                edge from parent
+                                                node[right]{\textsc{r}}
+                                    }
+                                    edge from parent
+                                    node[left]{\textsc{l}}
+                                    }
+                           child {
+                                    node{...}
+                                    edge from parent
+                                node[right]{\textsc{r}}
+                        }
+                        edge from parent
+                        node[right]{\textsc{r}}
+                        }
+            edge from parent
+            node[left]{\textsc{l}}
+            }
+   child {
+            node{...}
+            edge from parent
+            node[right]{\textsc{r}}
+    };
+\draw[dashed] (o1.south)-- +(6,0) -- +(8,9.2) -- (o12);
+\end{tikzpicture} 

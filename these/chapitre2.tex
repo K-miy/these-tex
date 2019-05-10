@@ -1,0 +1,1408 @@
+\chapter{Bases sur les processus décisionnels de Markov}
+
+% \emph{«En essayant continuellement on finit par réussir. Donc : plus ça rate, plus on a de chance que ça marche.»}
+% \begin{flushright}Les Shadoks -- Jacques Rouxel\end{flushright}
+% \bigskip
+ \emph{«Toute connaissance dégénère en probabilité.»}
+ \begin{flushright}David Hume\end{flushright}
+ \bigskip
+
+
+\label{chap:2}
+\begin{summary}
+Ce chapitre introduit les bases théoriques des modèles probabilistes, c'est à dire le formalisme mathématique permettant la
+description de problèmes de décisions séquentielles et stochastiques appelés \emph{Processus Décisionnels de Markov} (en anglais, \emph{Markov Decision Processes} ou \mdp). Dans une première partie, les modèles fondamentaux centralisés sont présentés à la manière de \cite{S.06} avant de présenter ceux destinés aux problèmes impliquant plusieurs agents comme l'ont fait \cite{SZ.05}.
+\end{summary}
+
+\section{Modèles pour un agent}
+Les \mdps ont été introduits et popularisés à la fin des années cinquante par \cite{B.57} et \cite{H.60}. Ce formalisme se
+base sur un modèle à la fois très général et assez abstrait pour pouvoir être appliqué à des problèmes variés, mais cependant restreint de
+par ses hypothèses sur le caractère totalement observable de l'environnement et sur le contrôle disponible strictement centralisé.
+
+\subsection{Processus décisionnel de Markov (\pac{mdp})}
+Nous présentons ici rapidement le formalisme \mdp ainsi que quelques algorithmes fondamentaux permettant leur résolution. Notons qu'une
+introduction exhaustive des \mdps peut être trouvée dans le livre de \cite{P.94}.
+
+\subsubsection{Formalisme}
+\begin{definition}(\mdp)
+Un \mdp est défini par un tuple $\la \Sta, \Act, \Tra, \Rew \ra$, où:
+\begin{itemize}
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$;
+\item $\Act$ est un ensemble fini d'\emph{actions} $a \in \Act$;
+\item $\Tra(s,a,s'): \Sta \times \Act \times \Sta \mapsto [0,1]$ est la \emph{probabilité de transition} du système de l'état $s$ vers l'état $s'$ après l'exécution de l'action $a$;
+\item $\Rew(s,a): \Sta \times \Act \mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action $a$ est exécutée dans l'état $s$.
+\end{itemize}
+\end{definition}
+
+La propriété fondamentale de ce formalisme est \emph{la propriété de Markov}. Elle garantit que la probabilité de transition d'un état $s$
+vers un état $s'$ sous l'effet d'une action $a$ est indépendante du passé:
+\begin{equation*}
+\pr(s_{t+1} = s' | s_0, a_0, s_1, a_1, ..., s_t, a_t) = \pr(s_{t+1} = s' | s_t, a_t)
+\end{equation*}
+Par conséquent, l'état courant et la dernière action constituent toujours une information suffisante pour la prédiction de l'évolution du système.
+
+Une représentation graphique d'un \mdp est donnée par la figure~\ref{fig:mdp}. Les cercles représen-tent les variables non contrôlables (les états), les carrés représentent les variables de décisions (les actions) et les losanges les récompenses reçues. Un lien entre deux variables induit une table relationnelle (par exemple de probabilité) qui associe à chaque couple de valeur possible pour ces variables sa probabilité de vraisemblance. Les liens en tirets indiquent la connaissance disponible par l'agent au moment de prendre la décision (dans l'exemple de la figure~\ref{fig:mdp}, l'agent connaît l'état du système).
+
+\begin{figure}[h!tb]
+        \begin{center}
+        \begin{tikzpicture}[scale=.7]%
+        %\draw[step=1cm,color=gray,very thin] (-5,-1) grid (9,5);%%
+        \begin{scope}[shape=diamond,inner sep=.02cm,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (r1) at (-9,-3)  {$r^1$}; %%
+        \node (r2) at (-4,-3)  {$r^2$}; %%
+        \node (r3) at (1,-3)  {$r^3$}; %%
+        \node (rt) at (6,-3)  {$r^T$}; %%
+        \end{scope}%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-12,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-2,0)  {$\cs^2$}; %%
+        \node (s3) at (3,0)  {$\cs^3$}; %%
+        \node (st) at (8,0)  {$\cs^T$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm,fill=white,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-10,3)  {$\ca^1$}; %%
+        \node (a12) at (-5,3)  {$\ca^2$}; %%
+        \node (a13) at (0,3)  {$\ca^3$}; %%
+        \node (a1t) at (5,3)  {$\ca^T$}; %%
+        \end{scope}
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex,dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a11)-- +(1.5,-3) --(s1);  %%
+        \draw[->,-latex] (a12)-- +(1.5,-3) --(s2);  %%
+        \draw[->,-latex] (a13)-- +(1.5,-3) --(s3);  %%
+        \draw[->,-latex] (a1t)-- +(1.5,-3) --(st);  %%
+        \draw[->,-latex,dashed] (s0)--(a11); %%
+        \draw[->,-latex,dashed] (s1)--(a12); %%
+        \draw[->,-latex,dashed] (s2)--(a13); %%
+        \draw[->,-latex,loosely dashed,thick] (s3)--(a1t); %%
+        \draw[->,-latex,double] (s1)--+(-2,-1)--(r1);  %%
+        \draw[->,-latex,double] (a11)--+(1,-4)--(r1);  %%
+        \draw[->,-latex,double] (s2)--+(-2,-1)--(r2);  %%
+        \draw[->,-latex,double] (a12)--+(1,-4)--(r2);  %%
+        \draw[->,-latex,double] (s3)--+(-2,-1)--(r3);  %%
+        \draw[->,-latex,double] (a13)--+(1,-4)--(r3);  %%
+        \draw[->,-latex,double] (st)--+(-2,-1)--(rt);  %%
+        \draw[->,-latex,double] (a1t)--+(1,-4)--(rt);  %%
+        \end{tikzpicture}%
+        \caption{Représentation graphique d'un \mdp.\label{fig:mdp}}
+    \end{center}
+\end{figure}
+
+Exécuter un \mdp revient à observer en boucle l'état courant $s$ du système, à choisir une action $a$ à effectuer puis à observer la
+transition de l'état $s$ vers le nouvel état $s'$. On appelle politique $\pi: \Sta \times \mathds{N}\mapsto \Act$ une loi de décision qui
+détermine à chaque instant $t$ et pour chaque état $s$, l'action $a$ qu'il convient d'effectuer.
+
+Un \emph{problème de décision de Markov} est alors défini comme un \mdp muni d'un \emph{critère de performance}. Ce critère précise la façon dont on doit évaluer la quantité d'une politique pour un \mdp donné. Pour des problèmes à \emph{horizon fini} $T$, un des critères les plus utilisés est l'espérance de la somme des récompenses accumulées à partir d'un certain état initial $s_0$:
+\begin{equation*}
+\Esp\left[ \sum_{t=0}^{T-1} \Rew(s_t,a_t) \bigg| s_0\right]
+\end{equation*}
+
+Pour des problèmes à \emph{horizon infini}, utiliser le même critère pose le problème de l'accumulation non bornée des récompenses. On introduit alors en général un \emph{facteur d'escompte}~$\gamma$:
+\begin{equation*}
+\Esp\left[ \sum_{t=0}^{\infty} \gamma^t \Rew(s_t,a_t) \bigg| s_0\right]\qquad\mathrm{avec}\qquad 0\le \gamma < 1
+\end{equation*}
+
+On peut ensuite évaluer la valeur d'une politique en établissant sa \emph{fonction de valeur} $V$. C'est une fonction qui retourne pour
+chaque état la valeur du critère de performance:
+\begin{equation}\label{eq:critere-opt-fini}
+V_\pi (s) = \Esp\left[ \sum_{t=0}^{T-1} \Rew(s_t,\pi(s_t)) \bigg| s_0 \right]\qquad \mathrm{pour\;l'horizon\;fini}
+\end{equation}
+\begin{equation}\label{eq:critere-opt-infini}
+V_\pi (s) = \Esp\left[ \sum_{t=0}^{\infty} \gamma^t\Rew(s_t,\pi(s_t)) \bigg| s_0\right]\qquad \mathrm{pour\;l'horizon\;infini}
+\end{equation}
+
+Une fois le critère de performance fixé, on peut alors s'intéresser à la politique qui optimise l'évaluation de ce critère, c'est à dire à
+trouver la politique qui maximise la fonction de valeur pour un état initial donné $s_0$. La recherche de cette politique optimale $\pi^*$
+constitue l'enjeu principal du problème de décision de Markov:
+\begin{equation*}
+\pi^* = \arg\max_\pi V_\pi (s_0)
+\end{equation*}
+Ce problème a été montré comme appartenant à la classe des problèmes polynômiaux les plus difficiles (\textsc{p}-complet) par \cite{PT.87}.
+En général, pour un même \mdp, il existe plusieurs politiques optimales. Dans ce qui suit, nous allons nous limiter à des algorithmes
+permettant d'en calculer une.
+
+\subsubsection{Résolution par planification}
+
+\cite{P.94} a montré que la politique optimale pour des \mdps à horizon fini et pour le critère de performance considéré ci-dessus est
+déterministe, indépendante du passé, mais non stationnaire. Une politique optimale choisira donc toujours la même action dans la même
+configuration du système, mais cette action sera dépendante de l'instant d'exécution. Nous noterons $\pi = \{\pi_T,\pi_{T-1}, ..., \pi_1\}$
+une telle politique et $\pi_t(s) = a$ l'action à effectuer dans l'état $s$ à l'instant $t$. Établir la fonction de valeur d'une politique
+peut se faire directement en déterminant explicitement les espérances de récompense accumulée pour chaque instant $t$:
+\begin{equation*}
+V_{\pi_t} (s) = \Rew(s,\pi_t(s)) + \sum_{s'\in\Sta} \Tra(s,\pi_t(s),s') V_{\pi_{t-1}}(s')
+\end{equation*}
+Puisque le calcul de la fonction de valeur au moment $t$ nécessite la connaissance de celle au moment $t-1$, on commence par l'étape finale,
+pour ensuite retropropager les valeurs pour le calcul des espérances au moment précédent. L'algorithme \ref{evalMDP} est une des manières
+d'évaluer une politique.
+
+\begin{algorithm}[!htb]
+\caption{(\textsc{evalMDP}) Évaluation de la politique à horizon fini. \label{evalMDP}}
+\begin{algorithmic}[1]
+\Require{un \mdp $\la\Sta,\Act,\Tra,\Rew\ra$ et une politique $\pi_T$} %%
+\Ensure{La fonction de valeur $V$ pour la politique $\pi_T$} %%
+\State{$V_{\pi_0} \gets 0$, ($\forall s \in \Sta$)} %%
+\For{$t=1$ \textbf{à} $T$}%%
+    \ForAll{$s \in \Sta$} %%
+        \State{$V_{\pi_t} (s) = \Rew(s,\pi_t(s)) + \sum\limits_{s'\in\Sta} \Tra(s,\pi_t(s),s') V_{\pi_{t-1}}(s')$}%%
+    \EndFor %%
+\EndFor%%
+\end{algorithmic}
+\end{algorithm}
+
+Il est ainsi possible de déterminer une politique optimale en utilisant l'algorithme \ref{evalMDP} sur l'ensemble des politiques possible pour garder ensuite le meilleur choix. Il s'agit alors d'une recherche exhaustive dans l'espace des politiques. Cependant, \cite{B.57} a introduit une approche plus efficace pour déterminer une politique optimale. En effet, son \emph{principe d'optimalité} stipule que la politique optimale $\pi^* = \{\pi^*_T,\pi^*_{T-1}, \ldots, \pi^*_1\}$ pour l'horizon $T$ contient forcément une politique optimale pour l'horizon $T-1$, à savoir la politique $\pi^* = \{\pi^*_{T-1}, \ldots, \pi^*_1\}$. De manière plus générale, elle contient des sous-politiques optimales pour tout horizon $t \le T$. Le principe garantit donc que le calcul d'une politique optimale pour un horizon $T$ peut utiliser la solution pour l'horizon $T-1$ du même \mdp. Il suffit alors de trouver la fonction de décision optimale pour l'horizon 1, à savoir $\pi_1^*$. Trouver une politique optimale pour un horizon $T$ exige que ce calcul soit opéré $T$ fois, ce qui signifie qu'un nombre total de $T\cdot|\Act|^{|\Sta|}$ politiques doit être considéré. Comparativement aux $|\Sta|^{|\Act|^T}$ politiques possibles à évaluer initialement, cette technique consistant à réutiliser des solutions intermédiaires constitue le c\oe ur de ce qu'on appelle la \emph{Programmation Dynamique} (DP).
+
+\begin{algorithm}[!htb]
+\caption{(\textsc{dp}) Programmation Dynamique pour les \mdps. \label{DPMDP}\citep{BD.59}}
+\begin{algorithmic}[1]
+\Require{un \mdp $\la\Sta,\Act,\Tra,\Rew\ra$ et un horizon $T$} %%
+\Ensure{une politique optimale $\pi^*_T$ pour l'horizon $T$} %%
+\State{$V_{\pi_0} \gets 0$, ($\forall s \in \Sta$)} %%
+\For{$t=1$ \textbf{à} $T$}%%
+    \ForAll{$s \in \Sta$} %%
+        \State{$\pi_t (s) \gets \arg\max\limits_{a\in\Act}\left[\Rew(s,a) + \sum\limits_{s'\in\Sta} \Tra(s,a,s') V_{\pi_{t-1}}(s')\right]$}%%
+        \State{$V_{\pi_t} (s) = \Rew(s,\pi(s_t)) + \sum\limits_{s'\in\Sta} \Tra(s,\pi_t(s),s') V_{\pi_{t-1}}(s')$}%%
+    \EndFor %%
+\EndFor%%
+\end{algorithmic}
+\end{algorithm}
+
+La programmation dynamique, décrite dans l'algorithme~\ref{DPMDP}, permet en outre de calculer la politique optimale d'un \mdp à horizon infini puisque le principe peut y être étendu directement, avec la seule contrainte que le nombre de décisions soit possiblement infiniment grand. Heureusement, on peut montrer que pour le critère choisi pour l'horizon infini (avec le facteur d'escompte $\gamma$ de l'équation~\ref{eq:critere-opt-infini}), il suffit de se limiter à des politiques déterministes, markoviennes et stationnaires \citep{P.94}. Le fait que la politique optimale soit stationnaire signifie que toutes les fonctions de décisions sont identiques $\pi^*_1 = \pi^*_2 = \cdots = \pi^*_\infty = \pi^*$. Il n'existe ainsi qu'une seule fonction de valeur qui peut être trouvée itérativement.
+
+L'algorithme par itération de valeur peut être interprété comme l'application répétée d'un opérateur à la fonction de valeur. Cet opérateur
+est souvent appelé \emph{opérateur de Bellman} $H$, et est défini de la manière suivante:
+\begin{equation}
+H(V)(s) = \max\limits_{a\in\Act}\left[\Rew(s,a) + \sum\limits_{s'\in\Sta} \Tra(s,a,s') V(s')\right]\label{eq:BellOp}
+\end{equation}
+Il a été montré que l'opérateur de Bellman est une contraction par rapport à la norme $\max$ \citep{BT.96}, et que la fonction de valeur
+optimale $V^*$ est son unique point fixe:
+\begin{equation}
+V^* = H(V^*)~\mathrm{ou~encore}~V^*(s) = \max\limits_{a\in\Act}\left[\Rew(s,a) + \sum\limits_{s'\in\Sta} \Tra(s,a,s')
+V^*(s')\right]\label{eq:BellOpEq}
+\end{equation}
+Cette équation est généralement appelée l'\emph{Équation d'optimalité de Bellman}.
+
+L'algorithme~\ref{VIMDP}, appelé \emph{itération de valeur} (VI), détermine donc une approximation de cette fonction de valeur optimale $V^*$. Une politique optimale peut ensuite être déduite de la fonction de valeur par simple choix de la meilleure action:
+\begin{equation}\label{eq:BellOpPol}
+\pi^* (s) = \arg\max\limits_{a\in\Act}\left[\Rew(s,a) + \sum\limits_{s'\in\Sta} \Tra(s,a,s') V^*(s')\right]
+\end{equation}
+
+\begin{algorithm}[!htb]
+\caption{(\textsc{vi}) Itération de Valeur pour les \mdps. \label{VIMDP}\citep{RN.03}}
+\begin{algorithmic}[1]
+\Require{un \mdp $\la\Sta,\Act,\Tra,\Rew\ra$ et une borne d'erreur $\varepsilon$} %%
+\Ensure{une $\varepsilon$-approximation de la fonction de valeur optimale} %%
+\State{$n \gets 0$, $V_{\pi_0} \gets 0$, ($\forall s \in \Sta$)} %%
+\Repeat%%
+    \ForAll{$s \in \Sta$} %%
+        \State{$V^{n+1} (s) \gets \max\limits_{a\in\Act}\left[\Rew(s,a) + \gamma \sum\limits_{s'\in\Sta} \Tra(s,a,s') V^n(s')\right]$}%%
+    \EndFor %%
+    \State{$n \gets n+1$}
+\Until{$|| V^n - V^{n-1} || \le \varepsilon$}%%
+\end{algorithmic}
+\end{algorithm}
+
+Ainsi, lorsque le modèle \mdp est connu, c'est à dire lorsque les paramètres $\Tra$ et $\Rew$ sont disponibles à l'agent, celui-ci peut planifier et déterminer sa politique optimale via les équations~\eqref{eq:BellOp} à~\eqref{eq:BellOpPol}. Dans le cas où seulement $\Rew$ est connue, l'agent doit alors faire des essais/erreurs dans le but d'\emph{apprendre} le modèle de l'environnement.
+
+\subsubsection{Résolution par apprentissage}
+
+Le paragraphe précédent introduisait les techniques de planification dites \emph{hors-ligne}, où le modèle exact du \mdp, i.e. sa fonction de transition $\Tra$ et sa fonction de récompense $\Rew$, sont connus. L'exécution de la politique se faisait alors indépendamment du processus de planification, c'est à dire qu'on planifie, et une fois la planification terminée, on exécute la politique. L'apprentissage d'une politique est un processus \emph{en-ligne}, i.e. que l'agent doit en même temps apprendre à connaître l'environnement et déterminer une politique optimale pour le contrôler. La boucle de contrôle est alors la suivante. l'agent perçoit l'état courant $s$, il choisit une action $a$, le système fait la transition vers un nouvel état $s'$ et l'agent reçoit une récompense $\Rew(s,a)$ qui lui indique l'utilité locale de cette transition. Le problème est alors de déterminer une politique optimale pendant que l'exploration et l'estimation de l'environnement est encore en cours.
+
+Un des algorithmes les plus répandus d'apprentissage dans les \mdps est celui du \emph{Q-Learning}, introduit par \cite{WD.92}. Le Q-Learning est la version en-ligne de l'algorithme d'itération de la valeur. Il est fondé sur l'évaluation des couples état-action, et non directement sur la fonction de valeur. La fonction $Q(s,a)$ représente la valeur espérée lorsque l'action $a$ est exécutée dans l'état $s$ et qu'une politique optimale est suivie à partir de l'état suivant $s'$. Dès lors, la fonction $Q$ et la fonction de valeur $V$ sont liées par la relation:
+\begin{equation*}
+V (s) = \max\limits_{a\in\Act} Q(s,a)
+\end{equation*}
+
+\cite{W.89} a pu démontrer que la mise à jour \ref{QLupdate}, effectuée après chaque exécution d'une action, garantit la convergence vers la fonction $Q$ optimale, sous réserve que chaque couple état-action soit visité un nombre infini de fois et que le facteur d'apprentissage $\alpha$ vérifie certaines propriétés basiques ($0\le\alpha, \sum_t \alpha_t = \infty, \sum_t \alpha_t^2 < \infty$):
+\begin{equation}
+Q(s,a) \gets (1 - \alpha) Q(s,a) + \alpha \left[ \Rew(s,a) + \gamma \max\limits_{a'\in\Act} Q(s',a')\right] \label{QLupdate}
+\end{equation}
+L'algorithme \ref{QLMDP} décrit le fonctionnement du Q-Learning.
+
+\begin{algorithm}[!htb]
+\caption{Q-Learning pour les \mdps. \label{QLMDP}\citep{WD.92}}
+\begin{algorithmic}[1]
+\Require{un \mdp $\la\Sta,\Act,\Tra,\Rew\ra$} %%
+\Ensure{une approximation de la fonction $Q$ optimale} %%
+\State{$Q(s,a) \gets 0$, ($\forall s \in \Sta,\; \forall a \in \Act$)} %%
+\Loop%%
+    \State{Executer une action $a$} %%
+    \State{$Q(s,a) \gets (1 - \alpha) Q(s,a) + \alpha \left[ \Rew(s,a) + \gamma \max\limits_{a'\in\Act} Q(s',a')\right]$}
+\EndLoop%%
+\end{algorithmic}
+\end{algorithm}
+
+Cette approche est néanmoins limitée dès que le nombre d'états $|\Sta|$ devient trop consé-quent. En effet, il est nécessaire de maintenir une valeur $Q(s,a)$ pour chaque paire état-action, ce qui peut s'avérer très coûteux en mémoire en pratique. Dans cette situation, l'idée est d'utiliser de l'information supplémentaire \emph{a priori} sur la \emph{structure} de l'espace d'état permettant d'induire des relations entre les états et d'approximer directement la fonction $Q$ selon les différentes caractéristiques des états.
+
+\subsection{\pac{mdp} factorisé}
+La définition précédente des \mdps est basée sur une description relativement simple de l'état du système et suffit très bien lorsque le nombre d'état est petit. Cependant, dans de nombreux domaines, les états sont souvent structurés d'une manière ou d'une autre. Par exemple, si la position d'un robot est modélisée  dans l'état du système, alors une notion de proximité des états devrait pouvoir être exploitée pendant la phase de calcul de la politique. Des états proches ou similaires devraient conduire à avoir des valeurs similaires pour des actions similaires. Le formalisme original des \mdps ne permets pas de modéliser ce type de proximité ou similarité.
+
+Les \mdps \emph{factorisés} (\fmdp) constituent une description alternative pour les \mdps. Dans un \mdp factorisé, l'état n'est pas une entité atomique, mais est constitué de facteurs ou caractéristiques. Ces facteurs peuvent être donnés \emph{a priori}, ou peuvent être appris \citep{AKN.06,DSW.06,SDL.07}. La fonction de transition et la représentation de la politique exploitent également cette structure comme l'a montré \cite{BDG.00}. Revenons à l'exemple du robot; l'espace d'état de celui-ci est fondamentalement factorisé si nous utilisons les coordonnées cartésiennes par exemple. il existe deux facteurs, la coordonnée $x$ et la coordonnée $y$, qui constituent l'état $s=(x,y)$.
+
+Plus formellement:
+\begin{definition}(\mdp \emph{factorisé})
+Un \mdp est défini par un tuple $\la \Xta, \Act, \Tra, \Rew \ra$, où:
+\begin{itemize}
+\item $\Xta = \{\cx_1, \ldots, \cx_m\}$ est un ensemble fini de \emph{variables d'états} où chaque $\cx_i$ prend ses valeurs sur un domaine
+\item $\Dom_{\cx_i}$. On a donc $\Sta = \varprod_{i=1}^m \Dom_{\cx_i}$;
+\item $\Act$ est un ensemble fini d'\emph{actions} $a \in \Act$;
+\item $\Tra$ est une \emph{fonction de transition factorisée};
+\item $\Rew(s,a)$ est une\emph{ fonction de récompense factorisée}.
+\end{itemize}
+\end{definition}
+
+Dans ce contexte, un état d'un \mdp devient alors simplement une assignation des variables d'état~$\cx$. Comme il y a possiblement un nombre exponentiel d'assignations des variables, le nombre d'états du \mdp est exponentiel en le nombre de variables d'état. Les processus décisionnels de Markov représentent usuellement leur fonction de transition comme une fonction de $\Sta \times \Act \times \Sta \mapsto [0,1]$. Seulement, il est possible à la place de représenter l'influence d'une assignation de variables sur une assignation de ces mêmes variables à un temps avancé par un réseau bayésien dynamique (\textsc{dbn}) \citep{DK.89}. Ce modèle a la propriété d'identifier les dépendances conditionnelles entre les variables d'état et ainsi de définir une représentation généralement plus compacte et plus structurée. Des algorithmes permettant de calculer des politiques structurées ont également été proposées \citep{B.99}.
+
+Il convient cependant de remarquer que prendre avantage des représentations compactes est parfois difficile. Une des difficultés provient de
+la représentation compacte de politique. \cite{KP.99} ont par exemple trouvé des cas où même si le domaine peut se représenter très
+efficacement comme une fonction de variables d'état, la fonction de valeur reste tout de même très difficile à représenter. \cite{DB.97} ont
+proposé une méthode qui s'attaque à ce problème en restreignant l'espace des valeurs autorisées aux règles de décisions conjonctives sur de
+petits ensembles de variables d'état. Des travaux sur la factorisation ont également été réalisés dans les systèmes multiagents par
+\cite{G.03} qui a d'ailleurs proposé un algorithme basé sur l'élimination de variable \citep[chap. 13.3.3]{D.03} pour résoudre les problèmes
+de coordination multiagents. Nous reviendrons sur les représentations factorisées et graphiques dans les chapitres suivants pour l'expression de contraintes sur les domaines des variables d'états ou pour les relations causales qui existent au niveau des différentes fonctions du modèle.
+
+\subsection{\pac{mdp} partiellement observable (\pac{pomdp})}
+
+La politique de décision dans un \mdp est toujours basée sur l'état réel du système. Malheureusement, il existe des cas où cet état n'est pas
+accessible. Tout ce dont dispose le contrôleur lors de l'exécution est un signal ou une observation bruitée, à l'aide duquel il peut au mieux
+essayer d'inférer la vraie configuration du système. De tels systèmes doivent être alors modélisés à l'aide de Processus de Markov
+Partiellement Observables (\pomdp) \citep{CKL.94}.
+
+\subsubsection{Formalisme}
+\begin{definition}(\pomdp)
+Un \pomdp est défini par un tuple $\la \Sta, \Act, \Tra, \Rew, \Omega, \Obs \ra$, où:
+\begin{itemize}
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$;
+\item $\Act$ est un ensemble fini d'\emph{actions} $a \in \Act$;
+ \item$\Tra(s,a,s'): \Sta \times \Act \times \Sta \mapsto [0,1]$ est la \emph{probabilité de transition} du système de l'état $s$ vers l'état $s'$ après l'exécution de l'action $a$;
+\item $\Rew(s,a): \Sta \times \Act \mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action $a$ est exécutée dans l'état $s$,
+\item $\Omega$ est un ensemble fini d'observations $o \in \Omega$,
+\item $\Obs(s,a,o,s'): \Sta \times \Act \times \Omega \times\Sta \mapsto [0,1]$ est la probabilité l'observation $o$ survienne lors de la
+transition du système de l'état $s$ vers l'état $s'$ sous l'effet de l'action $a$.
+\end{itemize}
+Le processus restreint à $\la \Sta, \Act, \Tra, \Rew\ra$ est appelé \mdp sous-jacent du \pomdp.
+\end{definition}
+
+Par comparaison à la figure~\ref{fig:mdp}, l'agent n'a accès à l'état du système qu'au travers des observations. Ceci est représenté par la figure~\ref{fig:pomdp}.
+\begin{figure}[h!tb]
+        \begin{center}
+        \begin{tikzpicture}[scale=.7]%
+        %\draw[step=1cm,color=gray,very thin] (-5,-1) grid (9,5);%%
+        \begin{scope}[shape=diamond,inner sep=.02cm,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (r1) at (-9,-3)  {$r^1$}; %%
+        \node (r2) at (-4,-3)  {$r^2$}; %%
+        \node (r3) at (1,-3)  {$r^3$}; %%
+        \node (rt) at (6,-3)  {$r^T$}; %%
+        \end{scope}%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\footnotesize,minimum size=0.8cm] %%
+        \node (s0) at (-12,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-2,0)  {$\cs^2$}; %%
+        \node (s3) at (3,0)  {$\cs^3$}; %%
+        \node (st) at (8,0)  {$\cs^T$}; %%
+        \node (o0) at (-12,2)  {$\co^0$}; %%
+        \node (o1) at (-7,2)  {$\co^1$}; %%
+        \node (o2) at (-2,2)  {$\co^2$}; %%
+        \node (o3) at (3,2)  {$\co^3$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm,fill=white,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-10,3)  {$\ca^1$}; %%
+        \node (a12) at (-5,3)  {$\ca^2$}; %%
+        \node (a13) at (0,3)  {$\ca^3$}; %%
+        \node (a1t) at (5,3)  {$\ca^T$}; %%
+        \end{scope}
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (s0)--(o0);  %%
+        \draw[->,-latex] (s1)--(o1); %%
+        \draw[->,-latex] (s2)--(o2); %%
+        \draw[->,-latex] (s3)--(o3); %%
+        \draw[->,-latex,dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+        \draw[->,-latex,dashed] (o0)--(a11); %%
+        \draw[->,-latex,dashed] (o1)--(a12); %%
+        \draw[->,-latex,dashed] (o2)--(a13); %%
+        \draw[->,-latex,loosely dashed,thick] (o3)--(a1t); %%
+        \draw[->,-latex,double] (s1)--+(-2,-1)--(r1);  %%
+        \draw[->,-latex,double] (a11)--+(1,-4)--(r1);  %%
+        \draw[->,-latex,double] (s2)--+(-2,-1)--(r2);  %%
+        \draw[->,-latex,double] (a12)--+(1,-4)--(r2);  %%
+        \draw[->,-latex,double] (s3)--+(-2,-1)--(r3);  %%
+        \draw[->,-latex,double] (a13)--+(1,-4)--(r3);  %%
+        \draw[->,-latex,double] (st)--+(-2,-1)--(rt);  %%
+        \draw[->,-latex,double] (a1t)--+(1,-4)--(rt);  %%
+        \end{tikzpicture}%
+        \caption{Représentation graphique d'un \pomdp sans mémoire.\label{fig:pomdp}}
+    \end{center}
+\end{figure}
+
+A la différence de l'état courant, qui lui est une information suffisante pour le contrôle optimal d'un \mdp, l'observation courante ne
+vérifie pas nécessairement la propriété de Markov dans le cas d'un \pomdp. Ceci implique que les méthodes de résolution et les équations
+d'optimalité qui sont valables pour les états d'un \mdp ne peuvent pas être directement appliquées aux observations d'un \pomdp. Il est
+toutefois possible de se ramener à une autre description du système où la propriété de Markov est à nouveau vérifiée. On peut en effet
+constater que la probabilité de se trouver dans un état $s$ au moment $t$ de l'exécution dépend uniquement de la distribution de probabilités
+sur les états au moment précédent. Pour cela nous posons $\bel_t(s)$ la probabilité de se trouver dans l'état $s$ au moment $t$ de
+l'exécution:
+\begin{equation*}
+\bel_t(s) = \pr(s_t=s|s_0,a_0,o_0,\ldots,a_{t-1},o_{t-1})
+\end{equation*}
+Le vecteur $\bel$
+\begin{equation*}
+\bel = [\bel_t(s_1),\bel_t(s_2),\ldots,\bel_t(s_{|\Sta|})]^\top
+\end{equation*}
+est souvent appelé \emph{état de croyance} ou \emph{belief state}. Sa mise à jour après l'exécution d'une action $a$ et la perception d'une
+observation $o$ peut être dérivée de la formule de Bayes:
+\begin{equation}
+\bel_{t+1}(s') = \frac{\sum\limits_{s\in\Sta} \bel_t(s)\bigg[ \Tra(s,a_t,s') \Obs(s,a_t,o_t,s') \bigg]}{\pr(o_t|\bel, a_t)} \label{BeliefUpd}
+\end{equation}
+où $\pr(o_t|\bel, a_t)$ est le facteur de normalisation:
+\begin{equation*}
+\pr(o_t|\bel, a_t) = \sum\limits_{s\in\Sta} \sum\limits_{s'\in\Sta} \bel_t(s)\bigg[ \Tra(s,a_t,s') \Obs(s,a_t,o_t,s') \bigg]
+\end{equation*}
+
+En utilisant cette formulation de l'état de croyance, la figure~\ref{fig:pomdp} devient:
+\begin{figure}[h!tb]
+        \begin{center}
+        \begin{tikzpicture}[scale=.7]%
+        %\draw[step=1cm,color=gray,very thin] (-5,-1) grid (9,5);%%
+        \begin{scope}[shape=diamond,inner sep=.02cm,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (r1) at (-9,-3)  {$r^1$}; %%
+        \node (r2) at (-4,-3)  {$r^2$}; %%
+        \node (r3) at (1,-3)  {$r^3$}; %%
+        \node (rt) at (6,-3)  {$r^T$}; %%
+        \end{scope}%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-12,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-2,0)  {$\cs^2$}; %%
+        \node (s3) at (3,0)  {$\cs^3$}; %%
+        \node (st) at (8,0)  {$\cs^T$}; %%
+        \node (o0) at (-12,2)  {$\co^0$}; %%
+        \node (o1) at (-7,2)  {$\co^1$}; %%
+        \node (o2) at (-2,2)  {$\co^2$}; %%
+        \node (o3) at (3,2)  {$\co^3$}; %%
+        \node (b0) at (-12,4)  {$\bel^0$}; %%
+        \node (b1) at (-7,4)  {$\bel^1$}; %%
+        \node (b2) at (-2,4)  {$\bel^2$}; %%
+        \node (b3) at (3,4)  {$\bel^3$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm,fill=white,minimum size=0.8cm]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-10,3)  {$\ca_1^1$}; %%
+        \node (a12) at (-5,3)  {$\ca_1^2$}; %%
+        \node (a13) at (0,3)  {$\ca_1^3$}; %%
+        \node (a1t) at (5,3)  {$\ca_1^T$}; %%
+        \end{scope}
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (s0)--(o0);  %%
+        \draw[->,-latex] (s1)--(o1); %%
+        \draw[->,-latex] (s2)--(o2); %%
+        \draw[->,-latex] (s3)--(o3); %%
+        \draw[->,-latex] (o0)--(b0);  %%
+        \draw[->,-latex] (o1)--(b1); %%
+        \draw[->,-latex] (o2)--(b2); %%
+        \draw[->,-latex] (o3)--(b3); %%
+        \draw[->,-latex] (b0)--(b1);  %%
+        \draw[->,-latex] (b1)--(b2); %%
+        \draw[->,-latex] (b2)--(b3); %%
+        \draw[->,-latex,dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+        \draw[->,-latex,dashed] (b0)--(a11); %%
+        \draw[->,-latex,dashed] (b1)--(a12); %%
+        \draw[->,-latex,dashed] (b2)--(a13); %%
+        \draw[->,-latex,loosely dashed,thick] (b3)--(a1t); %%
+        \draw[->,-latex,double] (s1)--+(-2,-1)--(r1);  %%
+        \draw[->,-latex,double] (a11)--+(1,-4)--(r1);  %%
+        \draw[->,-latex,double] (s2)--+(-2,-1)--(r2);  %%
+        \draw[->,-latex,double] (a12)--+(1,-4)--(r2);  %%
+        \draw[->,-latex,double] (s3)--+(-2,-1)--(r3);  %%
+        \draw[->,-latex,double] (a13)--+(1,-4)--(r3);  %%
+        \draw[->,-latex,double] (st)--+(-2,-1)--(rt);  %%
+        \draw[->,-latex,double] (a1t)--+(1,-4)--(rt);  %%
+        \end{tikzpicture}%
+        \caption{Représentation graphique d'un \pomdp avec état de croyance.\label{fig:pomdp+b}}
+    \end{center}
+\end{figure}
+
+L'équation \eqref{BeliefUpd} montre au travers de la figure~\ref{fig:pomdp+b} que la distribution sur les états de croyance est une information markovienne. Il a été montré par \cite{A.65} que l'état de croyance constitue une information suffisante pour représenter le passé du système. il est donc possible de considérer un \pomdp comme un \mdp à états continus, un \emph{belief state} \mdp. L'obstacle majeur à sa résolution réside dans la continuité de son espace d'états. Un opérateur de type VI devrait donc être appliqué une infinité de fois pour établir une fonction de valeur. Il a cependant été montré par \cite{SS.73} que la fonction de valeur à l'itération~$i$ peut toujours être représentée par un ensemble fini de paramètres. En effet, si $V^i$ est une fonction de valeur convexe et linéaire par morceaux, alors la fonction $V^{i+1}$ est aussi convexe et linéaire par morceaux. On peut montrer en particulier que la fonction de valeur à horizon~1 est forcément convexe et linéaire par morceaux. Ceci garantit, avec la propriété précédente, que la fonction de valeur pour un horizon fini est toujours représentable par des moyens finis. Le théorème de \cite{SS.73} représente le fondement essentiel de la résolution de \pomdps:
+\begin{theorem}\emph{(Linéarité par morceaux et convexité de la fonction de valeur)}. Si $V^i$ représente une fonction de valeur convexe et linéaire par morceaux, alors l'opérateur de Bellman H \eqref{eq:BellOp} conserve cette propriété et la fonction de valeur $V^{i+1}=H(V^i)$ est aussi convexe
+et linéaire par morceaux.
+\end{theorem}
+
+Nous avons constaté que l'observation courante ne vérifie plus la propriété de Markov dans le cas \pomdp. A la différence du \mdp, une
+politique optimale pour un \pomdp dépend donc de manière générale de l'historique. Elle peut être représentée sous forme d'arbre de décision
+$q$, encore appelé \emph{arbre de politique} \citep{KLC.98}. Les n\oe uds de l'arbre représentent les actions à effectuer, et le parcours de
+l'arbre est choisi en fonction des observations reçues. Nous appelons $\alpha(q)$ l'action associée à la racine de l'arbre et $q(o)$ le sous-arbre associé à l'observation $o$. Un exemple est donné en figure \ref{arbrePolPOMDP}.
+
+%\begin{figure}[!htb]
+%\begin{center}
+%  % Requires \usepackage{graphicx}
+%  \includegraphics{arbrePolPOMDP}\\
+%  \caption{Exemple d'arbre de politique à horizon trois, pour un problème à deux observations $o_1$ et $o_2$, et à deux actions $a$ et $b$.}\label{arbrePolPOMDP}
+%\end{center}
+%\end{figure}
+\begin{figure}[!ht]
+\centering
+\begin{tikzpicture}[line width=.1ex, scale=.65]
+\begin{scope}[shape=circle,minimum size=.6cm,fill=white]
+\tikzstyle{every node}=[draw] %%
+\node (s3) at (0,0)  {$a$}; %%
+\node (s4) at (2,0)  {$a$}; %%
+\node (s5) at (4,0)  {$b$}; %%
+\node (s6) at (6,0)  {$a$}; %%
+\node (s1) at (1,2)  {$a$}; %%
+\node (s2) at (5,2)  {$b$}; %%
+\node (s0) at (3,4)  {$a$};
+\end{scope}
+%\draw[step=0.1cm,color=gray] (-2,-2) grid (6,6);%%
+\draw[->,-latex] (s0)--(s1) node[near end,above=2pt]{$o_1$};  %%
+\draw[->,-latex] (s0)--(s2) node[near end,above=2pt] {$o_2$}; %%
+\draw[->,-latex] (s1)--(s3) node[very near end,above=4pt] {$o_1$}; %%
+\draw[->,-latex] (s1)--(s4) node[very near end,above=4pt] {$o_2$};%%
+\draw[->,-latex] (s2)--(s5) node[very near end,above=4pt] {$o_1$}; %%
+\draw[->,-latex] (s2)--(s6) node[very near end,above=4pt] {$o_2$}; %%
+\end{tikzpicture}
+  \caption{Exemple d'arbre de politique à horizon trois, pour un problème à deux observations $o_1$ et $o_2$, et à deux actions $a$ et $b$.\label{arbrePolPOMDP}}
+\end{figure}
+
+\subsubsection{Résolution exacte des \pac{pomdp} par programmation dynamique}
+
+On peut toujours représenter une politique $q$ comme une vecteur à $\Sta$ dimensions, appelé $\avec$-vecteur $\avec = \la V_q(s_1), \ldots, V_q(s_{|\Sta|}) \ra$. Il représente la valeur de la politique à la frontière de l'état de croyance. Dès lors, toute valeur d'un état de croyance intermédiaire peut être obtenu par interpolation linéaire:
+\begin{equation*}
+V_q(\bel) = \sum_{s\in\Sta}\bel(s)V_q(s)
+\end{equation*}
+Étant donné un ensemble de politiques $Q$, la valeur optimale pour chaque état de croyance $\bel$ peut être déterminée par la maximisation sur l'ensemble des politiques:
+\begin{equation*}
+V(\bel) = \max_{q \in Q} V_q(\bel) =  \max_{q \in Q} \sum_{s\in\Sta}\bel(s)V_q(s)
+\end{equation*}
+Selon \cite{SS.73}, l'ensemble des politiques, et par extension l'ensemble des $\avec$-vecteurs, nécessaires pour représenter la politique optimale est toujours fini. Un exemple d'une fonction de valeur est donné par la figure \ref{ValFunPOMDP}. Pour chaque état de croyance $\bel$, il existe une politique optimale, et un $\avec$-vecteur optimal qui domine tous les autres. Il est donc possible d'identifier des $\avec$-vecteurs qui sont dominés sur l'ensemble de l'état de croyance et de les éliminer sans affecter la politique optimale. Formellement, un $\avec$-vecteur est dominé, si la politique $q$ associée vérifie:
+\begin{equation*}
+\forall \bel, \exists \tilde{q} \neq q~\mathrm{tel~que}~ V_q(\bel) \leq V_{\tilde{q}}(\bel)
+\end{equation*}
+Un exemple de fonction de valeur avec deux $\avec$-vecteurs utiles et un $\avec$-vecteur dominé est donné par la figure \ref{PrunePOMDP}.
+
+\begin{figure}[!ht]
+\centering
+\begin{tikzpicture}[line width=.1ex, scale=3.5]
+%\draw[step=.5mm,gray,very thin] (-0.1,-0.1) grid (1.1,1.1);
+\draw (0,0) node[anchor=north] {$s_1$};%%
+\draw[line width=.2ex] (0,0) -- (0,1) node[anchor=south] {$V$};%%
+\draw[line width=.2ex] (0,0) -- (1,0);%%
+\draw (1,0) node[anchor=north] {$s_2$};%%
+\draw[line width=.2ex] (1,0) -- (1,1);%%
+\draw (0,0.2) node[anchor=east] {$\alpha_2$};%%
+\draw[line width=.1ex] (0,0.2) -- (1,0.8);%%
+\draw (0,0.8) node[anchor=east] {$\alpha_1$};%%
+\draw[line width=.1ex] (0,0.8) -- (1,0.1);%%
+\draw (0.6,0) node[anchor=north] {$\bel$};%%
+\draw[dotted] (0.6,0) -- (0.6,0.55);%%
+\draw (0.6,0.55) node[anchor=south,above=4pt] {$V(\bel)$};%%
+\draw[line width=.2ex] (0,0.8) -- (0.46,0.48);%%
+\draw[line width=.2ex] (0.46,0.48) -- (1,0.8);%%
+\end{tikzpicture}
+  \caption{Fonction de valeur d'un \pomdp à deux états $s_1$ et $s_2$, représentée par deux vecteurs $\avec_1$ et $\avec_2$.
+   L'action associée au vecteur $\avec_2$ est l'action optimale dans l'état de croyance $\bel$.\label{ValFunPOMDP}}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\begin{tikzpicture}[line width=.1ex, scale=3.5]
+%\draw[step=.5mm,gray,very thin] (-0.1,-0.1) grid (1.1,1.1);
+\draw (0,0) node[anchor=north] {$s_1$};%%
+\draw[line width=.2ex] (0,0) -- (0,1) node[anchor=south] {$V$};%%
+\draw[line width=.2ex] (0,0) -- (1,0);%%
+\draw (1,0) node[anchor=north] {$s_2$};%%
+\draw[line width=.2ex] (1,0) -- (1,1);%%
+\draw (0,0.2) node[anchor=east] {$\alpha_2$};%%
+\draw[line width=.1ex] (0,0.2) -- (1,0.8);%%
+\draw (0,0.8) node[anchor=east] {$\alpha_1$};%%
+\draw[line width=.1ex] (0,0.8) -- (1,0.1);%%
+\draw (0,0.5) node[anchor=east] {$\alpha_3$};%%
+\draw[dashed,line width=.1ex] (0,0.5) -- (1,0.3);%%
+\end{tikzpicture}
+  \caption{Fonction de valeur d'un \pomdp à deux états $s_1$ et $s_2$, représentée par trois vecteurs $\avec_1$, $\avec_2$ et $\avec_3$.
+   Le vecteur $\avec_3$ est entièrement dominé et peut être éliminé sans affecter la politique optimale.\label{PrunePOMDP}}
+\end{figure}
+
+Nous avons vu qu'il existe une correspondance entre l'ensemble des vecteurs $\avec \in \Gamma$ qui constituent la fonction de valeur à
+l'horizon $t$, et l'ensemble des arbres de politiques $q\in Q$ de profondeur $t$. Calculer la fonction de valeur optimale par programmation
+dynamique est donc équivalent à construire l'ensemble des arbres de politiques associés. De la même manière que dans les \mdps, on procède
+incrémentalement horizon par horizon.
+
+Pour cela, supposons l'existence d'une politique optimale à l'horizon $t$, représentée par un ensemble d'$\avec$-vecteurs $\Gamma^t$, ou de
+manière équivalente par un ensemble de politiques $Q^t$. Au début de l'algorithme, cet ensemble est constitué des politiques à horizon 1,
+soit l'ensemble des actions $\Act$. Construire l'ensemble des politiques à l'horizon $(t+1)$ correspond à d'abord énumérer toutes les
+politiques possibles pour cet horizon. Pour construire un nouvel arbre de politique $q^{t+1}$, on choisit une action $a\in\Act$ qu'on place à
+la racine, puis on ajoute $|\Omega|$ politiques $q^t_i \in Q^t$ associée à chaque observation $o_i$. Il y a donc un total de
+$|\Act||Q^t|^{|\Omega|}$ politiques à générer dans ce processus que nous appelons la \emph{génération exhaustive de politiques} (Algorithme~\ref{exhaustiveGenPOMDP}):
+\begin{algorithm}[!htb]
+\caption{(\textsc{ExGen}) Génération exhaustive de politiques. \label{exhaustiveGenPOMDP}}
+\begin{algorithmic}[1]
+\Require{un ensemble de politique $Q^t$ pour l'horizon $t$} %%
+\Ensure{un ensemble de politique $Q^{t+1}$pour l'horizon $t+1$} %%
+\Function{ExGen}{$Q^t$}
+\ForAll{action $a\in\Act$}%%
+    \ForAll{selection possible de $\Omega$ politiques $q^t_i$ parmi $Q^t$ avec $1\leq i \leq |\Omega|$} %%
+        \State{Construire une politique $q^{t+1}$ telle que.}%%
+        \State{$\alpha(q^{t+1}) \gets a$}\Comment{Place $a$ comme racine}%%
+        \State{$q^{t+1}(o_i) \gets q^t_i, \;\forall o_i \in \Omega$}\Comment{Choisit un sous-arbre pour chaque observation}%%
+        \State{$Q^{t+1} \gets Q^{t+1} \bigcup \{q^{t+1}\}$}\Comment{Ajoute la politique à l'ensemble résultat}%%
+    \EndFor %%
+\EndFor%%
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+La deuxième étape consiste à éliminer les politiques complètement dominées du nouvel ensemble de politiques $Q^{t+1}$. Cette étape implique généralement de la programmation linéaire comme le montre l'algorithme~\ref{progLinDomPOMDP}. L'approche générale de programmation dynamique dans les \pomdps est donnée par l'algorithme \ref{DPPOMDP}. Il est important de noter que la construction des arbres de politiques se fait de \emph{bas en haut}, i.e. que les premières politiques à être générées sont les dernières à être exécutées. À chaque itération, un nouvel ensemble de politiques est généré, et chacun de ces arbres de politique contient les politiques de l'itération précédente comme sous-arbre. Le principal problème de cet algorithme provient de la génération exhaustive des politiques avant l'élimination des politiques dominées. Des techniques un peu plus avancées permettent l'entrelacement de la génération et de l'élimination:
+\begin{algorithm}[!htb]
+\caption{Programme linéaire pour l'identification des politiques dominées. \citep{M.82}\label{progLinDomPOMDP}}
+\begin{tabular}{lll}
+  Maximiser & $\varepsilon$ & ~ \\
+  sous contraintes & $V_{\tilde{q}}(\bel) - V_q(\bel) \geq \varepsilon $ & $\forall \tilde{q} \neq q$\\
+  avec & $\sum\limits_{s\in\Sta} \bel(s) = 1,\;\bel(s)\geq 0$, & $\forall s\in \Sta$ \\
+\end{tabular}
+\end{algorithm}
+
+\begin{algorithm}[!htb]
+\caption{Programmation Dynamique pour les \pomdps. \label{DPPOMDP} \citep{CKL.94}}
+\begin{algorithmic}[1]
+\Require{un \pomdp $\la\Sta,\Act,\Tra,\Rew,\Omega,\Obs\ra$ et un horizon $T$} %%
+\Ensure{un ensemble de politiques optimales pour l'horizon $T$} %%
+\State{$Q^1 \gets \Act$} %%
+\For{$t=2$ \textbf{to} $T$}%%
+    \ForAll{$s \in \Sta$} %%
+        \State{$Q^t \gets \textsc{ExGen}(Q^t)$}\Comment{Génération exhaustive des politiques}%%
+        \State{Éliminer chaque $q \in Q^t$ si $\forall \bel, \exists \tilde{q} \neq q$ telle que $V_q(\bel) \leq V_{\tilde{q}}(\bel) $}%%
+    \EndFor %%
+\EndFor%%
+\end{algorithmic}
+\end{algorithm}
+
+Les formalismes \mdp et \pomdp constituent les bases théoriques fondamentales de notre travail et présentent des notions telles que celle de la fonction de valeur, de politique ou d'état de croyance. Ces modèles ont été montrés comme étant des modèles très généraux et très expressifs pour quasiment tout -- ou presque -- type de problème stochastique impliquant un seul agent. Nous allons maintenant voir les différentes extensions de ces modèles au cas ou plusieurs agents évoluent dans un même environnement.
+
+\section{Modèles pour plusieurs agents}
+
+Dans cette section, nous présentons les extensions naturelles des formalismes précédents aux problèmes multiagents où la prise de décision
+est distribuée. Ceci implique que plusieurs agents évoluent \emph{en même temps dans le même environnement}. Chaque agent choisit son action
+en fonction d'une politique locale, mais l'évolution du système dépend de l'\emph{action jointe} de tous les agents. Nous allons présenter
+les différents modèles les plus utilisés à ce jour en commençant par les modèles se rapprochant le plus des \mdps et \pomdps.
+
+\subsection{\pac{mdp} multiagent (\pac{mmdp})}
+
+Le modèle multiagent le plus simple est l'extension naturelle des \mdps à l'univers multiagent et a été introduit par \cite{B.99}. Ce modèle
+fait l'hypothèse que l'état du monde est parfaitement connu à tout instant. Formellement,
+\begin{definition}(\mmdp)
+Un \mmdp est défini par un tuple $\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra, \Rew \ra$, où:
+\begin{itemize}
+\item  $\alpha$ est un ensemble fini d'\emph{agents} $i \in \alpha, 1 \leq i \leq n$;
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$;
+\item $\Act_i$ est un ensemble fini d'\emph{actions} pour l'agent $i$ $a_i \in \Act_i$;
+\item $\Tra(s,a_1,\ldots,a_n,s'): \Sta \times \Act_1 \times \cdots \times \Act_n \times \Sta \mapsto [0,1]$ est la \emph{probabilité de transition} du système de l'état $s$ vers l'état $s'$ après l'exécution de l'action jointe $\la a_1,\ldots,a_n,\ra$;
+\item $\Rew(s,a_1,\ldots,a_n): \Sta \times \Act_1 \times \cdots \times \Act_n \mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action  jointe $\la a_1,\ldots,a_n,\ra$ est exécutée dans l'état $s$.
+\end{itemize}
+\end{definition}
+Ce modèle est strictement équivalent à un \mdp \emph{joint} où $\Act = \varprod_{i\in \alpha}\Act_i$.
+
+Graphiquement, ce modèle se représente comme montré par la figure~\ref{fig:mmdp} pour le cas à deux agents. Chacun des agents connaît l'état à chaque étape de décision et influence l'état suivant. Les récompenses ont été omises pour des raisons de clarté.
+
+\begin{figure}[h!tb]
+\begin{center}
+  \input{mmdp}
+  \caption{Problème de décision de Markov multiagent (\mmdp).\label{fig:mmdp}}
+\end{center}
+\end{figure}
+
+
+La solution que l'on souhaite trouver pour un problème modélisé avec un \mmdp consiste à trouver un comportement pour chacun des agents qui
+correspond à un comportement globalement optimal. On peut ainsi définir ce que l'on appelle une politique individuelle et une politique
+jointe:
+\begin{definition}(\emph{Politique individuelle}) Une politique individuelle pour l'agent $i$, $\Pol_i$, est une association de l'état $s$
+du système à une action $a \in \Act_i$ de l'agent $i$.
+\end{definition}
+\begin{definition}(\emph{Politique Jointe}) Une politique jointe, $\JPol = \la \Pol_1,\ldots,\Pol_n\ra$, est un tuple de politiques
+locales, une pour chaque agent.
+\end{definition}
+
+Tous les algorithmes centralisés pour calculer une politique jointe optimale sont alors aussi efficaces pour ce genre de modèle que pour le \mdp joint correspondant. Cependant, Il peut arriver que pour un problème considéré, il n'existe pas une \emph{unique} solution optimale, et si l'on souhaite exécuter la politique de manière distribuée, alors peut survenir un problème de \emph{coordination} entre les agents. Par exemple, alors que chaque agent peut choisir un politique individuelle induite par une politique jointe optimale, il n'y a aucune garantie que chacun des agents choisisse la \emph{même politique jointe optimale}, et donc que l'action jointe soit optimale comme dans l'exemple donné par la  figure~\ref{Fig:coordPb}.
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[line width=.1ex, scale=.58]
+\begin{scope}[shape=circle,minimum size=.6cm,fill=white]
+\tikzstyle{every node}=[draw] %%
+\node (s3) at (0,0)  {$s_3$}; %%
+%\node (s4) at (2,0)  {$s_4$}; %%
+\node (s5) at (6,0)  {$s_4$}; %%
+\node (s6) at (9,0)  {$s_5$}; %%
+\node (s1) at (1.5,3)  {$s_1$}; %%
+\node (s2) at (7.5,3)  {$s_2$}; %%
+\node (s0) at (4.5,6)  {$s_0$};
+\end{scope}
+%\draw[step=0.1cm,color=gray] (-2,-2) grid (6,6);%%
+\draw[->,-latex] (s0)--(s1) node[near end,above=4pt,left=1pt]{$\la b,* \ra$};  %%
+\draw[->,-latex] (s3) .. controls (0,5) .. (s0) node[very near end,left=1pt]{$\la *,* \ra$};%%
+\draw[->,-latex] (s0)--(s2) node[near end,above=4pt,right=1pt] {$\la a,* \ra$}; %%
+\draw[->,-latex] (s1)--(s3) node[near end,above=6pt,right=1pt] {$\la *,* \ra$}; %%
+%\draw[->,-latex] (s1)--(s4) node[very near end,above=4pt] {$o_2$};%%
+\draw[->,-latex] (s2)--(s5) node[midway,above=4pt,left=1pt] {$\la a,b \ra$,$\la b,a \ra$}; %%
+\draw[->,-latex] (s5) .. controls (2,0) and (3,4) .. (s0.south) node[near end,right=1pt]{$\la *,* \ra$};%%
+\draw[->,-latex] (s2)--(s6) node[midway,above=4pt,right=1pt] {$\la a,a \ra$,$\la b,b \ra$}; %%
+\draw[->,-latex] (s6) .. controls (14,-1) and (12,6) .. (s0) node[very near end,right=1pt]{$\la *,* \ra$};%%
+\draw (s3) node[below=10pt] {$+5$}; %%
+\draw (s5) node[below=10pt] {$-10$}; %%
+\draw (s6) node[below=10pt] {$+10$}; %%
+\end{tikzpicture}
+  \caption{Exemple de problème de coordination dans un \mmdp à 2 agents \citep{B.99}.}\label{Fig:coordPb}
+\end{figure}
+
+\subsection{\pac{mdp} décentralisé partiellement observable (\pac{dec-pomdp})}
+
+Dans le cas où l'environnement est seulement partiellement observable, \cite{BZI.00} ont proposé en 2000 un formalisme pour le contrôle
+décentralisé de plusieurs agents. Ils ont ensuite étendu le modèle d'observation en 2002 \citep{BGIZ.02} pour arriver à la formalisation
+suivante.
+
+\begin{definition}(\decpomdp)
+Un \decpomdp est défini par un tuple \\$\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra,\{\Omega_i\}_{i\in\alpha},\Obs, \Rew, T \ra$, où:
+\begin{itemize}
+\item $\alpha$ est un ensemble fini d'\emph{agents} $i \in \alpha, 1 \leq i \leq n$;
+\item $\Sta$ est un ensemble fini d'\emph{états} $s \in \Sta$ avec un état initial $s_0$;
+\item $\Act_i$ est un ensemble fini d'\emph{actions} pour l'agent $i$ $a_i \in \Act_i$ et $\JAct = \varprod_{i\in\alpha} \Act_i$ est l'ensemble des actions jointes et où $\ba = \la a_1,\ldots,a_n\ra \in \JAct$ est une action jointe;
+\item $\Tra(s,\ba,s'): \Sta \times \JAct \times \Sta \mapsto [0,1]$ est la \emph{probabilité de transition} du système de l'état $s$ vers l'état $s'$ après l'exécution de l'action jointe $\ba$;
+\item $\Omega_i$ est un ensemble fini d'\emph{observations} pour l'agent $i$ et $\JObs = \varprod_{i\in\alpha} \Omega_i$ est l'ensemble des observations jointes et où $\bo = \la o_1,\ldots,o_n\ra \in \JObs$ est une observation jointe;
+\item $\Obs(s,\ba,\bo,s'): \Sta \times \JAct \times \JObs \times \Sta \mapsto [0,1]$ est la \emph{probabilité d'observation} d'avoir l'observation jointe $\bo$ après transition du système de l'état $s$ vers l'état $s'$ par l'exécution de l'action jointe $\ba$;
+\item $\Rew(s,\ba): \Sta \times \JAct \mapsto \mathds{R}$ est la \emph{récompense} produite par le système lorsque l'action  jointe $\ba$ est exécutée dans l'état $s$;
+\item $T$ est l'horizon de planification.
+\end{itemize}
+Le processus qui considère les actions jointes comme actions atomiques, et qui ne permet donc pas une exécution décentralisée,
+est appelé \pomdp sous-jacent au \decpomdp.
+\end{definition}
+
+L'exemple~\ref{ex:mabc} présente un problème jouet avec 4 états, 2 actions et 2 observations que l'on peut modéliser avec un \decpomdp.
+\begin{exemple}\label{ex:mabc}\emph{MultiAgent Broadcast Channel }(\textsc{mabc}): Le problème de partage de communication~\citep{HBZ.04} modélise deux agents communiquant par un canal à bande passante limitée. Chacun des agents doit envoyer un ensemble de messages à l'autre agent via ce canal, mais un seul message peut passer à la fois sur le canal ou autrement une collision se produit. Les agents ont pour but de maximiser le nombre de messages échangés. A chaque étape de temps, les agents doivent décider de communiquer ou non un message. Les deux agents reçoivent une récompense de 1 lorsqu'un message et transmis, et 0 si une collision est produite ou si aucun message n'est transmis. À la fin de chaque étape de temps, les agents reçoivent une observation parfaite sur le contenu de leur propre \emph{buffer} et une observation bruitée s'il y a eu collision ou non en cas d'envoi de message. Le défi de ce problème est que les observations sont bruitées et donc que les agents ne peuvent construire qu'une croyance sur les résultats de leurs actions.
+\end{exemple}
+
+Graphiquement, un \decpomdp se représente comme montré par la figure~\ref{fig:decpomdp} pour le cas à deux agents. Chacun des agents connaît seulement une observation de l'état à chaque étape de décision et influence l'état suivant. Les récompenses ont été omises pour des raisons de clarté. Les états de croyance de chaque agent ont été représentés pour bien marquer le fait qu'aucun des deux agents n'a accès à de l'information sur les observations ou les actions de l'autre agent.
+
+\begin{figure}[h!tb]
+\begin{center}
+  \input{decpomdp}
+  \caption{Problème de décision de Markov décentralisé partiellement observable (\decpomdp).}\label{fig:decpomdp}
+\end{center}
+\end{figure}
+
+
+Résoudre un \decpomdp revient à trouver une politique locale par agent, c'est à dire une politique jointe pour l'équipe, telle que son
+exécution distribuée, mais synchrone maximise l'espérance des récompenses accumulées par le système. On peut donc de la même manière que les
+\mmdps définir des politiques locales et jointes, mais basées maintenant sur les observations.
+
+\begin{definition}(\emph{Politique individuelle})~\citep{SZ.05} Une politique individuelle pour l'agent $i$, $\Pol_i$, est une association
+d'un historique local des observations \[\bar{o} = o_{i1}\ldots o_{it}, o_{ij}\in\Omega_i\] à une action $a \in \Act_i$ de l'agent $i$.
+\end{definition}
+\begin{definition}(\emph{Politique Jointe})~\citep{SZ.05} Une politique jointe, $\JPol = \la \Pol_1,\ldots,\Pol_n\ra$, est un tuple de politiques locales, une pour chaque agent.
+\end{definition}
+
+Selon \cite{S.06}, établir une fonction de valeur dans le cadre d'un \decpomdp nécessite la redéfinition du concept d'état de croyance. Tout d'abord, l'\emph{état de croyance multiagent} devient subjectif, et chaque agent possède une autre croyance sur le système due aux observations locales. Ensuite, l'état de croyance multiagent ne consiste plus seulement en une distribution de probabilité sur l'état sous-jacent du système, mais doit en outre prendre en compte le comportement futur des autres agents. Pour déterminer la valeur d'une politique dans un cadre multiagent, il faut donc prendre en compte le comportement futur des autres agents. Si $Q_i$ dénote l'ensemble des politiques probables de l'agent $i$, et $\boldsymbol{Q}_{-i} = \la Q_1,$ $\ldots,$ $Q_{i-1},$ $Q_{i+1},$ $\ldots,$ $Q_n\ra$ les ensembles des politiques probables de tous les autres agents, alors un état de croyance multiagent $\bel_i$ pour un agent $i$ est une distribution de probabilité sur $\Sta$ et sur $\boldsymbol{Q}_{-i}$. $\bel_i \in \mathcal{B}_i = \Delta(\Sta \times \boldsymbol{Q}_{-i})$.
+
+La définition d'un espace de croyance multiagent permet d'étendre le concept de fonction de valeur aux \decpomdps. On note $V_i$ la fonction
+de valeur locale de l'agent $i$. Si $\boldsymbol{q}_{-i}$ est la politique jointe pour tous les autres agents sauf $i$, et si
+$\la\boldsymbol{q}_{-i},q_i\ra$ dénote une politique joint complète, alors la valeur de la politique $q_i$ en l'état de croyance $\bel_i$
+peut être déterminée de la manière suivante :
+\begin{equation*}
+V_{i,q_i}(\bel_i) = \sum_{s\in\Sta}\sum_{\boldsymbol{q}_{-i}\in\boldsymbol{Q}_{-i}}\bel(s,)V(s,\la\boldsymbol{q}_{-i},q_i\ra)
+\end{equation*}
+\cite{BGIZ.02} ont montré que calculer une politique qui apporte une récompense cumulée à partir d'un état $s_0$ supérieure à $K$ dans un
+\decpomdp est \textsc{nexp}-complet en réduisant le problème à un problème de \textsc{tiling}.
+
+Notons quand même un cas particulier de \decpomdps que sont les \decmdps. Ce modèle fait l'hypothèse d'un environnement localement totalement
+observable. Voyons les simplifications induites par cette hypothèse.
+
+\subsubsection{\pac{dec-pomdp} localement observable (\pac{dec-mdp})}
+
+L'hypothèse exacte réalisée dans un \decmdp est que l'environnement est parfaitement observable, mais seulement localement. L'union de toutes
+les observations des agents à un instant donné est égale à l'état réel du système à cet instant:
+\begin{eqnarray}
+~&~&\forall \ba \in \JAct, \forall s,s' \in \Sta \; \mathrm{et} \; \forall \bo \in \JObs \; \mathrm{tel\;que\;} \Obs(s,\ba,\bo,s') >0 \notag\\
+~&~& \exists L: \JObs \mapsto \Sta \; \mathrm{tel\;que\;} L(\bo) = s' \label{hypdecmdp}
+\end{eqnarray}
+
+Hélas, on peut également montrer (et c'est même à partir de ce modèle que \cite{BGIZ.02} ont fait la réduction) que calculer une politique
+qui apporte une récompense cumulée à partir d'un état $s_0$ supérieure à $K$ dans un \decmdp est \textsc{nexp}-complet. Nous reviendrons
+également plus en détail sur ce modèle au chapitre \ref{chap:4} puisque nous étudierons plus en profondeur les effets des observations sur
+la complexité du problème.
+
+D'autres modèles multiagents de Markov existent également. Par exemple, les \pomdps interactifs (I-\pomdps)~\citep{GD.05} représentent chaque agent par un \pomdp (identique pour tous) ayant un état de croyance explicite sur les autres agents. Incidemment, chaque agent qui maintient un état de croyance complet sur les autres maintient également un état de croyance sur les croyances des autres agents et donc un état de croyance sur les croyances des autres sur ses propres croyances, ceci menant à des croyances infiniment imbriquées et non résolvables sans autre hypothèse.
+
+Un autre exemple est le problème de décision d'équipe multiagent (\mtdp) proposé par \cite{PT.02}. Ce modèle a été démontré comme complètement équivalent aux \decpomdps par \cite{SZ.05} sous certaines hypothèses. Par exemple, \mtdp a considéré le cas où les agents peuvent avoir une mémoire limitée ou bien peuvent communiquer. Ainsi, un \decpomdp est un \mtdp sans communication et avec mémoire infinie. Pour une analyse plus complète et détaillée de ces deux derniers modèles, le lecteur intéressé est invité à lire l'article de \cite{SZ.08}.
+
+Voyons rapidement les différents modèles avec communication.
+
+\subsubsection{Modèles avec communication}
+
+Les modèles multiagents incluant la communication se basent principalement sur les modèles précédent en ajoutant simplement des actions spécifiques de communication à chaque étape qui consistent à choisir le message à envoyer parmi un ensemble de messages. Plus formellement:
+\begin{definition}(\decpomdpcom)
+Un \decpomdpcom est défini par un tuple \\$\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra,\{\Omega_i\}_{i\in\alpha},\Obs,\Sigma,C_\Sigma \Rew, T \ra$, où:
+\begin{itemize}
+\item $\la \alpha, \Sta, \{\Act_i\}_{i\in\alpha}, \Tra,\{\Omega_i\}_{i\in\alpha},\Obs, T \ra$ définit un \decpomdp sans la fonction de récompense;
+\item $\Sigma$ est l'alphabet de communication. $\sigma_i \in \Sigma$ est un message atomique envoyé par l'agent $i$ et $\mathbf{\sigma} = \la \sigma_1, ..., \sigma_n\ra$ est un message joint, i.e. le tuple des messages échangés à une étape de temps. Un message particulier $\varepsilon_\sigma$ fait également partie de $\Sigma$ et représente le message \emph{null} de coût zero qui est envoyé lorsqu'un agent ne désire pas communiquer.
+\item $C_\Sigma : \Sigma \mapsto \mathds{R}$ est la fonction de coût des messages et $C_\Sigma ( \varepsilon_\sigma) = 0$.
+\item $\Rew: \Sta \times \JAct \times \mathbf{\Sigma} \mapsto \mathds{R}$ définit la fonction de récompense correspond à la récompense produite par le système lorsque l'action  jointe $\ba$ est exécutée dans l'état $s$ et que le message $\mathbf{\sigma}$ est envoyé.
+\end{itemize}
+Il est important de mentionner que pour ce modèle, les ensembles d'actions $\{\Act_i\}$ ne contiennent aucune action de communication entre les agents.
+\end{definition}
+
+La différence de ce modèle avec le modèle \mtdp-\textsc{com}~\citep{PT.02} réside dans la gestion des états de croyance. Ce dernier effectue en réalité deux mise à jour de l'état de croyance. Une première est faite lors de la réception de l'observation locale de l'agent, mais avant la communication pour décider quelle doit être le message à transmettre aux autres agents. La seconde est faite lors de la réception du message des autres agents pour incorporer l'information obtenue à sa croyance avant le choix de la prochaine action. %Néanmoins, selon \cite{SZ.08}, personne n'a utilisé cette caractéristique du modèle puisque l'utilisation a posteriori des messages est toujours suffisante.
+
+Malheureusement, les problèmes décentralisés munis de la communication restent tout aussi difficiles que les problèmes sans communication si celle-ci n'est pas gratuite ou si le contenu des messages n'est pas explicitement représenté. La table~\ref{tab:complexity} résume la complexité des modèles multiagents présentés ci-avant pour plusieurs formes de communication.
+
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{|c||c|c|c|c|}
+    \hline
+    ~ & Complètement & Localement & Partiellement & Non \\
+    ~ & Observable & Observable & Observable & Observable \\
+    \hline
+    \hline
+    Pas de Comm. & \textsc{p}-complet & \textsc{nexp}-complet & \textsc{nexp}-complet & \textsc{np}-complet \\
+    \hline
+    Comm. avec coût & \textsc{p}-complet & \textsc{nexp}-complet & \textsc{nexp}-complet & \textsc{np}-complet \\
+    \hline
+    Comm. gratuite & \textsc{p}-complet & \textsc{p}-complet & \textsc{pspace}-complet & \textsc{np}-complet \\
+    \hline
+  \end{tabular}
+  \caption{Complexité en temps des \decpomdpcoms}\label{tab:complexity}
+\end{table}
+
+Voyons maintenant comment résoudre un \decpomdp.
+
+\subsubsection{Résolution optimale de \pac{dec pomdp}s}\label{sect:dp}
+\newcommand{\mbdp}{\textsc{mbdp}\xspace}
+
+La \textsc{nexp}-complétude suggère que quelque soit l'algorithme optimal utilisé pour résoudre un problème formulé comme un \decpomdp, un temps doublement exponentiel en pire cas sera nécessaire. Cependant en dehors des travaux effectués sur les algorithmes optimaux, il existe également des algorithmes heuristiques qui, bien qu'ils n'offrent aucune garantie théorique, trouvent tout de même de ``bonnes'' politiques. Nous allons dans un premier temps s'intéresser aux algorithmes optimaux existant pour bien comprendre la difficulté de résoudre un \decpomdp. Nous verrons par la suite quelles hypothèses et quelles approximations ont été effectuées pour en arriver aux algorithmes approchés.
+
+\index{\decpomdp!Backup}
+Une politique optimale à horizon fini\footnote{Les horizons infinis étant indécidables même pour un seul agent~\cite{MHC.99}.} peut-être représentée par un arbre de décision $\Pol$, où les n\oe uds sont marqués par des actions et les arcs par des observations. Une solution d'un \decpomdp à horizon $t$ peut alors être vue comme un vecteur $\JPol^t$ d'arbres de décision de profondeur $t$ (appelés aussi arbres de politique dans la littérature), $\JPol^t = \la \Pol_1^t,...,\Pol_n^t\ra$, un pour chaque agent, où $\Pol_i^t \in\SPol_i^t$. La figure \ref{Fig:PolSimple} donne un exemple d'arbres de décisions joints pour un problème avec deux actions et deux observations à horizon 1 et 2 et montre comment le nombre de politiques possible pour chacun des agents croît de manière exponentielle.
+
+\begin{figure}[htb]
+\begin{center}
+\begin{tikzpicture}[scale=.4]%
+\begin{scope}[shape=circle,inner sep=.3mm,fill=white]%
+\tikzstyle{every node}=[draw] %%
+\node (a11) at (-17,3)  {$a_1$}; %%
+\node (a21) at (-15.5,3)  {$a_2$}; %%
+\node (a12) at (-13.5,3)  {$a_1$}; %%
+\node (a22) at (-12,3)  {$a_2$}; %%
+\node (a111) at (-8,4)  {$a_1$}; %%
+\node (a212) at (-4,4)  {$a_2$}; %%
+\node (a113) at (-10,.5)  {$a_1$}; %%
+\node (a214) at (-6,.5)  {$a_2$}; %%
+\node (a115) at (-2,.5)  {$a_1$}; %%
+\node (a216) at (-10,-3)  {$a_2$}; %%
+\node (a117) at (-6,-3)  {$a_1$}; %%
+\node (a218) at (-2,-3)  {$a_2$}; %%
+\node (a1111) at (-9,2)  {$a_1$}; %%
+\node (a2121) at (-5,2)  {$a_2$}; %%
+\node (a1131) at (-11,-1.5)  {$a_1$}; %%
+\node (a2141) at (-7,-1.5)  {$a_1$}; %%
+\node (a1151) at (-3,-1.5)  {$a_2$}; %%
+\node (a2161) at (-11,-5)  {$a_1$}; %%
+\node (a1171) at (-7,-5)  {$a_2$}; %%
+\node (a2181) at (-3,-5)  {$a_2$}; %%
+\node (a1112) at (-7,2)  {$a_1$}; %%
+\node (a2122) at (-3,2)  {$a_2$}; %%
+\node (a1132) at (-9,-1.5)  {$a_2$}; %%
+\node (a2142) at (-5,-1.5)  {$a_1$}; %%
+\node (a1152) at (-1,-1.5)  {$a_1$}; %%
+\node (a2162) at (-9,-5)  {$a_2$}; %%
+\node (a1172) at (-5,-5)  {$a_2$}; %%
+\node (a2182) at (-1,-5)  {$a_1$}; %%
+\node (a121) at (8,4)  {$a_1$}; %%
+\node (a222) at (4,4)  {$a_2$}; %%
+\node (a123) at (10,.5)  {$a_1$}; %%
+\node (a224) at (6,.5)  {$a_2$}; %%
+\node (a125) at (2,.5)  {$a_1$}; %%
+\node (a226) at (10,-3)  {$a_2$}; %%
+\node (a127) at (6,-3)  {$a_1$}; %%
+\node (a228) at (2,-3)  {$a_2$}; %%
+\node (a1211) at (9,2)  {$a_1$}; %%
+\node (a2221) at (5,2)  {$a_2$}; %%
+\node (a1231) at (11,-1.5)  {$a_2$}; %%
+\node (a2241) at (7,-1.5)  {$a_1$}; %%
+\node (a1251) at (3,-1.5)  {$a_1$}; %%
+\node (a2261) at (11,-5)  {$a_1$}; %%
+\node (a1271) at (7,-5)  {$a_1$}; %%
+\node (a2281) at (3,-5)  {$a_2$}; %%
+\node (a1212) at (7,2)  {$a_1$}; %%
+\node (a2222) at (3,2)  {$a_2$}; %%
+\node (a1232) at (9,-1.5)  {$a_1$}; %%
+\node (a2242) at (5,-1.5)  {$a_1$}; %%
+\node (a1252) at (1,-1.5)  {$a_2$}; %%
+\node (a2262) at (9,-5)  {$a_2$}; %%
+\node (a1272) at (5,-5)  {$a_2$}; %%
+\node (a2282) at (1,-5)  {$a_1$}; %%
+\end{scope}
+\draw[thick] (0,5)--(0,-5.5);
+\draw[thick] (-14.5,5)--(-14.5,-5.5);
+\node at (-6,-6.5) {Agent 1};%
+\node at (6,-6.5) {Agent 2};%
+\node at (-16.25,-6.5) {Agent 1};%
+\node at (-12.75,-6.5) {Agent 2};%
+\node at (-14.5,-7.5) {Horizon 1};%
+\node at (0,-7.5) {Horizon 2};%
+\draw (a111)--(a1111) node[midway,left]{$o_1$}; %%
+\draw (a111)--(a1112) node[midway,right]{$o_2$}; %%
+\draw (a212)--(a2121) node[midway,left]{$o_1$}; %%
+\draw (a212)--(a2122) node[midway,right]{$o_2$}; %%
+\draw (a113)--(a1131) node[midway,left]{$o_1$}; %%
+\draw (a113)--(a1132) node[midway,right]{$o_2$}; %%
+\draw (a214)--(a2141) node[midway,left]{$o_1$}; %%
+\draw (a214)--(a2142) node[midway,right]{$o_2$}; %%
+\draw (a115)--(a1151) node[midway,left]{$o_1$}; %%
+\draw (a115)--(a1152) node[midway,right]{$o_2$}; %%
+\draw (a216)--(a2161) node[midway,left]{$o_1$}; %%
+\draw (a216)--(a2162) node[midway,right]{$o_2$}; %%
+\draw (a117)--(a1171) node[midway,left]{$o_1$}; %%
+\draw (a117)--(a1172) node[midway,right]{$o_2$}; %%
+\draw (a218)--(a2181) node[midway,left]{$o_1$}; %%
+\draw (a218)--(a2182) node[midway,right]{$o_2$}; %%
+\draw (a121)--(a1211) node[midway,right]{$o_1$}; %%
+\draw (a121)--(a1212) node[midway,left]{$o_2$}; %%
+\draw (a222)--(a2221) node[midway,right]{$o_1$}; %%
+\draw (a222)--(a2222) node[midway,left]{$o_2$}; %%
+\draw (a123)--(a1231) node[midway,right]{$o_1$}; %%
+\draw (a123)--(a1232) node[midway,left]{$o_2$}; %%
+\draw (a224)--(a2241) node[midway,right]{$o_1$}; %%
+\draw (a224)--(a2242) node[midway,left]{$o_2$}; %%
+\draw (a125)--(a1251) node[midway,right]{$o_1$}; %%
+\draw (a125)--(a1252) node[midway,left]{$o_2$}; %%
+\draw (a226)--(a2261) node[midway,right]{$o_1$}; %%
+\draw (a226)--(a2262) node[midway,left]{$o_2$}; %%
+\draw (a127)--(a1271) node[midway,right]{$o_1$}; %%
+\draw (a127)--(a1272) node[midway,left]{$o_2$}; %%
+\draw (a228)--(a2281) node[midway,right]{$o_1$}; %%
+\draw (a228)--(a2282) node[midway,left]{$o_2$}; %%
+\end{tikzpicture}%
+\end{center}
+  \caption{Politiques possibles pour l'horizon 1 et 2 pour le problème \textsc{mabc}.}\label{Fig:PolSimple}
+\end{figure}
+
+Une construction incrémentale de la politique est utilisée ici. L'ensemble $\SPol_i^{t+1}$ des politiques de l'agent $i$ à l'horizon $t+1$ peut être construit à partir de l'ensemble des politiques à l'horizon $t$ en ajoutant une étape observation-décision à chaque feuille de l'arbre. Ainsi, pour chaque feuille de $\Pol_i^t \in \SPol_i^t$, $|\Omega|$ nouvelles feuilles filles sont ajoutées, et pour chacune d'entre elles, une décision est choisie.
+
+Le nombre total d'arbres de politique pour un agent est le nombre de combinaison d'assignation d'actions possible étant donné tous les historiques possibles. Pour l'horizon 1, une seule décision doit être prise donc $|\Act|$ politiques peuvent être suivies. Pour l'horizon 2, pour chaque observation possiblement obtenue après la première action, il va falloir prendre un décision. Dans ce cas, $|\Omega|$ branches sont donc ajoutées à chacune des politiques initiales, et toutes les assignations d'actions au second niveau sont alors possibles. Ceci résulte en $|\Act|^{(1+|\Omega|)}$ politiques possibles à l'horizon 2. En continuant de manière similaire, on trouve qu'il faudra encore ajouter un troisième niveau étant donné chaque séquence possible de deux observations pour se retrouver avec $|\Act|^{(1+|\Omega|+|\Omega|^2)}$ politiques possibles. Il suit de ce raisonnement, qu'en général, pour un horizon $t$, le nombre de politiques possibles est de $|\Act|^{(1+|\Omega|+\cdots+|\Omega|^{t-1})} = |\Act|^{\frac{|\Omega|^t-1}{|\Omega| -1}} \in O(|\Act|^{|\Omega|^t})$. Et de fait, l'algorithme est doublement exponentiel en l'horizon $t$. \cite{SZ.08} font tout de même remarquer que $|\Act|^{|\Omega|^{t-1}} < |\Act|^{\frac{|\Omega|^t-1}{|\Omega| -1}} <|\Act|^{|\Omega|^t}$.
+
+Malheureusement, le problème est également exponentiel en nombre d'agents, puisque le nombre de politiques jointes est le produit des ensembles de politiques de chacun des agents. Ce nombre est donc ${|\Act|^{\frac{|\Omega|^t-1}{|\Omega| -1}}}^n$. La table \ref{tab:nbPolFB} montre le nombre de politiques qu'il faudrait explorer, et ce, pour seulement 2 agents lorsqu'il y a deux actions et deux observations.
+
+\begin{table}[h!tb]
+  \centering
+\renewcommand\arraystretch{1.1}% (1.0 is for standard spacing)
+\begin{tabular}{|c|c|c|}
+  \multicolumn{1}{p{.15\textwidth}}{~}&  \multicolumn{1}{p{.375\textwidth}}{~}&   \multicolumn{1}{p{.375\textwidth}}{~}\\
+  \hline
+  Horizon & \# de politiques pour un agent & \# de politiques jointes (2 agents) \\
+  \hline
+  \hline
+  1 & 2 & 4\\
+  2 & 8 & 64\\
+  3 & 128 & 16 384\\
+  4 & 32 768 & 1 073 741 824\\
+  5 & 2 147 483 648 & 4.6$\cdot 10^{18}$\\
+  \hline
+\end{tabular}
+  \caption{Nombre de politiques jointes pour le problème \textsc{mabc} par force brute.}\label{tab:nbPolFB}
+\end{table}
+
+Deux algorithmes radicalement différents ont été développés pour rechercher la meilleure politique jointe dans cet espace incommensurable~: Un basé sur la programmation dynamique, qui élimine à chaque étape les politiques dominées, et un autre basé sur la recherche arborescente heuristique ($A^\star$). Détaillons maintenant ces deux algorithmes.
+
+\paragraph{Programmation dynamique (\textsc{dp})}~\\
+\index{Programmation Dynamique! pour \decpomdp}
+\index{\decpomdp!\textsc{dp}}
+
+Présenté par \cite{HBZ.04}, la Programmation Dynamique (\textsc{dp}) pour les \decpomdps généralise deux techniques du domaine: La programmation dynamique pour les \pomdps et l'élimination de politiques dominées.
+
+L'idée principale de la programmation dynamique est de rechercher au travers de l'ensemble des politiques de manière incrémentale, en éliminant le plus tôt possible les politiques dominées, évitant ainsi de multiplier exagérément le nombre de politiques possibles. Le problème ici, soulevé un peu plus tôt dans ce chapitre, est que la notion d'état de croyance est également étendue aux systèmes multiagents. Ainsi, à l'instar des \pomdps, l'état de croyance de l'agent $i$ à l'étape $t$ n'est plus seulement une distribution sur les états du système, mais également sur l'ensemble des politiques possibles des autres agents $\mathcal{B}^t_i$. Incidemment, puisqu'à chaque étape de temps le nombre de politiques des autres agents croît de manière doublement exponentielle, l'espace des états de croyance croît de manière similaire.
+
+De la même manière que les \pomdps, la fonction de valeur $V$ est représentée sous la forme d'un ensemble d'$\avec$-vecteurs $v_j$ de dimension $|\Sta|$. Elle est dénotée $V= \{v_1, ..., v_k\}$, où:
+\begin{equation*}
+V_i^t(\bel_i) = \max_{1\le j\le k}\sum_{s\in\Sta}\sum_{\JPol_{-i}\in\SJPol^t_{-i}}\bel_i(s,\JPol^t_{-i})v_j(s,\la\JPol^t_{-i},\Pol^t_i\ra)
+\end{equation*}
+Où chaque $v_j$ est un $\avec$-vecteur correspondant à un arbre de politique. La programmation dynamique exploite la possibilité que certains vecteurs puissent être dominés par d'autres:
+\begin{definition}(Arbre de politique faiblement dominé) Un arbre de politique $\Pol_j \in \SPol_j$ auquel correspond l'$\alpha$-vecteur $v_j\in V_i^t$ est faiblement dominé si:
+$$\forall \bel_i \in \mathcal{B}^t_i, \exists v_k \in V_i^t \setminus v_j \mbox{ tel que } \bel_i v_k \ge \bel_i v_j$$
+\end{definition}
+
+Cependant, du fait que l'élimination de la politique d'un agent peut influencer la meilleure politique d'un autre agent, l'élimination de politique doit être fait itérativement jusqu'à ce qu'aucun agent ne puisse plus éliminer aucune politique. Ainsi, la programmation dynamique pour \decpomdps entrelace la génération exhaustive des politiques à l'horizon $t+1$ sachant l'horizon $t$, et l'élimination des politiques dominées dans le nouvel ensemble des politiques possibles pour chacun des agents. Dès que l'algorithme atteint un horizon voulu $T$, une politique est alors choisie, celle qui garantie la meilleure valeur espérée étant donné l'état de croyance initial.
+
+Bien sûr, dans le pire cas, cet algorithme reste doublement exponentiel selon l'horizon voulu. Cependant, l'amélioration par rapport à un algorithme de type force brute réside dans l'élimination des politiques dominées à chaque étape, et ceci dépend du problème en particulier. Par exemple pour le problème \textsc{mabc}, les résultats reportés dans la table \ref{tab:nbPolDP} de l'élimination des politiques dominées sont significatifs. Notons que la programmation dynamique ne produit que 1\% des politiques produites par l'algorithme de force brute à l'itération 3 et 4, et que l'algorithme de force brute n'est même pas capable de se rendre à l'itération 4.
+
+\begin{table}[h!tb]
+  \centering
+\renewcommand\arraystretch{1.1}% (1.0 is for standard spacing)
+\begin{tabular}{|c|c|c|}
+  \multicolumn{1}{p{.15\textwidth}}{~}&  \multicolumn{1}{p{.375\textwidth}}{~}&   \multicolumn{1}{p{.375\textwidth}}{~}\\
+  \hline
+  Horizon & \# de politiques par force brute & \# de politiques par \textsc{dp}\\
+  \hline
+  \hline
+  1 & $(2,2)$ & $(2,2)$\\
+  2 & $(8,8)$ & $(6,6)$\\
+  3 & $(128,128)$ & $(20,20)$\\
+  4 & $(32 768,32 768)$ & $(300,300)$\\
+  \hline
+\end{tabular}
+  \caption{Nombre de politiques pour chaque agent pour le problème \textsc{mabc} par Programmation Dynamique.}\label{tab:nbPolDP}
+\end{table}
+
+Malheureusement, la programmation dynamique explose la mémoire disponible dès l'itéra-tion 4 à cause de la croissance doublement exponentielle du nombre de politiques. Même avec l'élimination des politiques dominées, le passage de l'horizon 4 à l'horizon 5 par énumération exhaustive aurait besoin de produire $2\cdot300^4$, soit plus de 16 milliards d'$\alpha$-vecteurs, avant même de tenter d'éliminer les dominés. Ceci explique clairement pourquoi l'algorithme explose les limites spatiales avant d'exploser les limites temporelles.
+
+\paragraph{Résolution avec heuristique (\textsc{maa}$^\star$)}~\\
+\index{\decpomdp!\textsc{maa}$^\star$}
+
+Une autre approche appelée \emph{multiagent} A$^\star$, proposée par \cite{SCZ.05}, est radicalement différente de la programmation dynamique vue précédemment. Elle consiste à rechercher par profondeur d'abord dans l'arbre des politiques jointes décentralisables en se concentrant, à l'aide d'heuristiques admissibles, sur les sous-politiques les plus prometteuses à la manière d'un algorithme de type A$^\star$.
+
+Si on dénote par $V(s_0,\JPol^T)$ la valeur espérée d'exécuter la politique jointe $\JPol^T$ dans l'état initial $s_0$, alors l'objectif est de trouver la politique $\JPol^{\star T} = \arg\max_{\JPol^T} V(s_0,\JPol^T)$. De la même manière que l'algorithme force brute, l'algorithme \textsc{maa}$^\star$ recherche dans l'espace des vecteurs de politiques (ou politiques jointes), où les n\oe uds de l'arbre de recherche au niveau $t$ correspondent aux solutions partielles du problème, des politiques à horizon $t$. Néanmoins, ce ne sont pas tous les n\oe uds de l'arbre qui sont complètement explorés~; à la place, une heuristique est utilisée pour évaluer les feuilles de l'arbre de recherche. Et c'est le n\oe ud ayant la plus haute estimation qui est exploré à l'étape suivante. La figure \ref{Fig:searchTreeMAA} montre une section d'une telle recherche pour le problème \textsc{mabc}.
+
+\begin{figure}[htb]
+\begin{center}
+\begin{tikzpicture}[scale=1.1]%
+\tikzstyle{level 1}=[sibling distance=2cm]
+\node[draw,circle,inner sep=-.2mm] at (0,0)
+{
+    \begin{tikzpicture}[scale=1.1,inner sep=0mm]%
+    \node at (-1,0) {$\JPol^2=$};
+    \node (q11)at (0,0) {$\la \Pol_1^2,$};
+    \node (q12) at (-.5,-1){
+        \begin{tikzpicture}[scale=0.7,inner sep=0mm]%
+            \begin{scope}[shape=circle,inner sep=.3mm,fill=white,font=\tiny]%
+            \tikzstyle{every node}=[draw] %%
+            \node (a11) at (0,0)  {$a_1$}; %%
+            \node (a21) at (-1,-1)  {$a_2$}; %%
+            \node (a22) at (1,-1)  {$a_2$}; %%
+            \end{scope}
+            \draw[->] (a11)--(a21) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a11)--(a22) node[midway,right,font=\tiny]{$o_2$}; %%
+        \end{tikzpicture}%
+    };
+    \node (q21)at (1,0){$\Pol_2^2\ra$};
+    \node (q22) at (1.5,-1){
+        \begin{tikzpicture}[scale=0.7]%
+            \begin{scope}[shape=circle,inner sep=.3mm,fill=white,font=\tiny]%
+            \tikzstyle{every node}=[draw] %%
+            \node (a11) at (0,0)  {$a_2$}; %%
+            \node (a21) at (-1,-1)  {$a_1$}; %%
+            \node (a22) at (1,-1)  {$a_2$}; %%
+            \end{scope}
+            \draw[->] (a11)--(a21) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a11)--(a22) node[midway,right,font=\tiny]{$o_2$}; %%
+        \end{tikzpicture}%
+    };
+    \draw[->] (q11.south)--(-.5,-.4);
+    \draw[->] (q21.south)--(1.5,-.4);
+    \end{tikzpicture}%
+}
+   child {
+            node at (-.7,-2) {...}
+            edge from parent
+            }
+   child {
+            node at (-.5,-2) {...}
+            edge from parent
+            }
+   child {
+            node at (2,-2) [draw,circle]{
+    \begin{tikzpicture}[scale=1.1,inner sep=-3mm]%
+    \node at (-1,0) {$\JPol^3=$};
+    \node (q11)at (0,0) {$\la \Pol_1^3,$};
+    \node (q12) at (-.7,-1.2){
+        \begin{tikzpicture}[scale=0.7,inner sep=0mm]%
+            \begin{scope}[shape=circle,inner sep=.3mm,fill=white,font=\tiny]%
+            \tikzstyle{every node}=[draw] %%
+            \node (a11) at (0,0)  {$a_1$}; %%
+            \node (a21) at (-1,-1)  {$a_2$}; %%
+            \node (a22) at (1,-1)  {$a_2$}; %%
+            \node (a211) at (-1.5,-2)  {$a_1$}; %%
+            \node (a212) at (-.5,-2)  {$a_2$}; %%
+            \node (a221) at (.5,-2)  {$a_2$}; %%
+            \node (a222) at (1.5,-2)  {$a_2$}; %%
+            \end{scope}
+            \draw[->] (a11)--(a21) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a11)--(a22) node[midway,right,font=\tiny]{$o_2$}; %%
+            \draw[->] (a21)--(a211) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a21)--(a212) node[midway,right,font=\tiny]{$o_2$}; %%
+            \draw[->] (a22)--(a221) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a22)--(a222) node[midway,right,font=\tiny]{$o_2$}; %%
+        \end{tikzpicture}%
+    };
+    \node (q21)at (1,0){$\Pol_2^3\ra$};
+    \node (q22) at (1.7,-1.2){
+        \begin{tikzpicture}[scale=0.7]%
+            \begin{scope}[shape=circle,inner sep=.3mm,fill=white,font=\tiny]%
+            \tikzstyle{every node}=[draw] %%
+            \node (a11) at (0,0)  {$a_2$}; %%
+            \node (a21) at (-1,-1)  {$a_1$}; %%
+            \node (a22) at (1,-1)  {$a_2$}; %%
+            \node (a211) at (-1.5,-2)  {$a_2$}; %%
+            \node (a212) at (-.5,-2)  {$a_1$}; %%
+            \node (a221) at (.5,-2)  {$a_1$}; %%
+            \node (a222) at (1.5,-2)  {$a_2$}; %%
+            \end{scope}
+            \draw[->] (a11)--(a21) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a11)--(a22) node[midway,right,font=\tiny]{$o_2$}; %%
+            \draw[->] (a21)--(a211) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a21)--(a212) node[midway,right,font=\tiny]{$o_2$}; %%
+            \draw[->] (a22)--(a221) node[midway,left,font=\tiny]{$o_1$}; %%
+            \draw[->] (a22)--(a222) node[midway,right,font=\tiny]{$o_2$}; %%
+        \end{tikzpicture}%
+    };
+    \draw[->] (q11.south)--(-.5,-.4);
+    \draw[->] (q21.south)--(1.5,-.4);
+    \end{tikzpicture}%
+            }
+            edge from parent
+            };
+
+\end{tikzpicture}%
+\end{center}
+  \caption{Section de la recherche par \textsc{maa}$^\star$, montrant une politique jointe à horizon 2 avec une des expansions possibles à l'horizon 3 pour le problème \textsc{mabc}.}\label{Fig:searchTreeMAA}
+\end{figure}
+
+À la manière d'A$^\star$, la fonction de valeur est décomposée en deux parties~: une évaluation exacte de la solution partielle (le vecteur des politiques jusqu'au niveau courant), et une estimée par l'heuristique de la partie restante à compléter de la politique courante appelée \emph{complétion}~:
+\begin{definition}(Complétion d'une politique jointe) Une complétion $\Phi^{T-t}$ d'une politique jointe $\JPol^t$ de profondeur $t$ est un ensemble de politiques de profondeur $T-t$ qui peuvent être ajoutées à toutes les feuilles de la politique $\JPol^t$ de telle sorte que $\{\JPol^t, \Phi^{T-t}\}$ est une politique jointe de profondeur $T$.
+\end{definition}
+
+Ainsi, on peut décomposer la valeur $V$ de toute politique de profondeur $T$ en deux parties:
+$$ V(s_0,\{\JPol^t, \Phi^{T-t}\}) = V(s_0,\JPol^t) + V(\Phi^{T-t}|s_0,\JPol^t)$$
+Évidemment, la valeur de la complétion dépend de l'état de croyance atteint après avoir exécuté la politique $\JPol^t$ dans l'état $s_0$. Plutôt que de calculer sa valeur exactement, l'algorithme l'estime à l'aide d'une heuristique donnée $H$. L'estimation de la valeur de la politique $\JPol^t$ dans l'état $s_0$ est alors donnée par~:
+$$F(s_0,\JPol^t) = V(s_0, \JPol^t) + H^{T-t}(s_0,\JPol^t)$$
+Ici, de la même manière que A$^\star$, pour que la recherche soit \emph{complète} et \emph{optimale}, la fonction $H$ doit être \emph{admissible}, c'est à dire qu'elle doit surestimer la valeur de la complétion optimale de la politique $\JPol^t$~:
+$$\forall \Phi^{T-t}: H^{T-t}(s_0,\JPol^t) \ge V^*(\Phi^{T-t}|s_0,\JPol^t)$$
+
+Le choix de l'heuristique est important aussi bien sur sa capacité à estimer un borne supérieure proche de la valeur optimale (pour pouvoir éliminer le plus possible des branches lors de la recherche), que sur la rapidité à pouvoir l'estimer. Pour décrire les différentes heuristiques proposées par \cite{SCZ.05}, les notations suivantes seront utilisées~:
+\begin{itemize}
+  \item $\Pr(s|s_0,\JPol^t)$ est la probabilité d'être dans l'état $s$ après avoir exécuté la politique $\JPol^t$ dans l'état $s_0$.
+  \item $h^t(s)$ est une estimation optimiste de la récompense espérée dans l'état $s$ de la politique optimale~: $h^t(s) \ge V^{\star t}(s)$.
+\end{itemize}
+La classe suivante d'heuristiques est alors définie~:
+$$H^{T-t}(s_0,\JPol^t) = \sum_{s\in\Sta} \Pr(s|s_0,\JPol^t) h^{T-t}(s)$$
+
+Cette classe d'heuristiques simule la situation où l'état réel du système est révélé à l'agent à l'étape $t$ après exécution de la politique $\JPol^t$. Il est possible de montrer que toute heuristique $H$ définie de cette manière est admissible si $h$ est admissible~\cite{SCZ.05}. De plus, le calcul de l'heuristique $h$ pour un état $s_0$ et une politique $\JPol^t$ doit seulement être exécuté dans chacun des états, ce qui permet une amélioration significative des temps de calcul par rapport au temps doublement exponentiel initial. Trois heuristiques sont présentées dans~\cite{SCZ.05}~:
+\begin{description}
+  \item[\mdp] La plus simple consiste à considérer que les agents peuvent observer l'état à chaque étape à partir de l'étape $t$, un \mmdp à horizon fini est ainsi défini pour les $T-t$ étapes restantes: $h^{T-t}(s)=V_{T-t}^{\mmdp}(s)$. Du fait que la résolution du \mmdp ne prend qu'un temps polynomial, cette heuristique est très rapide, mais également très loin de la valeur optimale.
+  \item[\pomdp] En considérant non plus le \mmdp, mais le \mpomdp, en faisant l'hypothèse qu'à chaque étape chaque agent aura les observations des autres agents, la borne obtenue est nettement plus serrée. Malheureusement, calculer cette heuristique est plus complexe puisqu'un \pomdp est \textsc{pspace}-complet.
+  \item[\textsc{maa}$^\star$ récursif] La borne la plus serrée consiste à supposer qu'on ne révèle l'état qu'une fois, et ce, à l'étape $t$, $h^t(s) = V^{\star t}(s)$, puis qu'on applique à nouveau l'algorithme \textsc{maa}$^\star$ avec cette nouvelle connaissance. En appliquant \textsc{maa}$^\star$ de manière récursive, $h^{T-t}(s) = \textsc{maa}^{\star T-t}(s)$, la valeur est calculé en temps seulement exponentiel puisqu'utiliser l'algorithme \textsc{maa}$^{\star T}$ consiste à utilise $|\Sta|$ fois l'algorithme \textsc{maa}$^{\star T-1}$.
+\end{description}
+
+Évidemment, il y a ici un équilibre à trouver entre l'écart de la borne à la valeur optimale et le temps nécessaire à calculer cette borne. Seulement, à cause de la croissance doublement exponentielle de l'arbre de recherche, une borne plus serrée même plus coûteuse reste la solution la plus efficace en pratique. À ce jour, \textsc{maa}$^\star$ est le seul algorithme pouvant résoudre optimalement un problème simple à 2 agents, 2 états, 3 actions et 2 observations jusqu'à l'horizon 4. \textsc{maa}$^\star$ sort des limites de temps lors du calcul de la politique à l'horizon 5. Une critique plus approfondie de cet algorithme peut-être trouvée dans~\cite[sect. 3.1.3]{SZ.08}. Pour améliorer la mise à l'échelle de ces algorithmes, \cite{SZ.07,SZ.07b,CZ.08} ont proposé des algorithmes approximatifs que nous allons détailler maintenant.
+
+\subsubsection{Résolution approchée}
+
+Dans la partie précédente, nous avons vu que la complexité des \decpomdps n'autorisait pas une résolution optimale au-delà de l'horizon 4, et ce, même pour des problèmes de très petite taille (2 états, 3 actions, 2 observations). L'idée de développer des algorithmes approximatifs est donc une avenue intéressante en pratique. Cependant, il a été montré par \cite{RGR.03} que trouver une politique basée sur l'historique et optimale à $\varepsilon$ près est \textsc{nexp}-difficile pour les \decpomdps et les \decmdps. Nous parlerons donc ici de trouver une politique approximative, mais ne sous-tendant absolument aucune garantie de performance, c'est-à-dire donnant de ``bons'' résultats en pratique.
+
+Parmi les algorithmes qui donnent ce genre de politiques, nous mous attarderons plus particulièrement sur deux algorithmes combinant astucieusement recherche arborescente (de haut en bas) et programmation dynamique (de bas en haut) et notamment le deuxième qui, avec quelques améliorations, a montré des résultats pour le moins intéressants sur des horizons bien plus grands et des problèmes moins triviaux que ceux adressés précédemment dans la littérature. Pour une revue complète de la littérature sur les algorithmes approximatifs, le lecteur intéressé est invité à lire~\cite[sect. 4.1]{SZ.08}.
+
+\paragraph{Recherche basée sur un équilibre joint des politiques (\textsc{jesp})}~\\
+\index{\textsc{jesp}}
+\index{\decpomdp!\textsc{jesp}}
+\textsc{jesp} (pour \emph{Joint Equilibrium-Based Search for Policies}), présenté par \cite{NTYPM.03}, est un algorithme qui recherche une solution localement optimale par ajustements successifs des politiques de chacun des agents.
+
+Le principe de cet algorithme repose sur l'amélioration itérative des politiques des agents. La politique d'un agent est optimisée tandis que celles des autres agents sont fixées. Chacun des agents améliore ainsi sa politique jusqu'à ce que l'ensemble des agents converge vers l'équilibre de Nash. Une idée majeure ici consiste à optimiser les politiques seulement sur l'ensemble des états de croyance accessibles à partir d'un état de croyance initial donné $\bel^0$. Puisque le nombre d'états de croyance augmente ``seulement'' de manière exponentielle, un gain substantiel est apporté ici. Pour passer à un horizon supérieur, \textsc{jesp} se base sur la génération exhaustive comme présentée à la section \ref{sect:dp}.
+
+Dans sa version la plus efficace, \textsc{dp-jesp}, l'algorithme obtient des résultats singulièrement meilleurs que les approches optimales puisqu'il obtient de bons résultats pour le problème du tigre multiagent jusqu'à l'horizon 7 (cf. les résultats présentés table \ref{tab:appAlgo} à la section suivante). Cependant, cet algorithme supporte mal la mise à l'échelle en particulier du à la génération exhaustive des politiques et le nombre exponentiel de politiques à générer au contraire de l'algorithme que nous allons voir maintenant.
+
+\paragraph{Programmation dynamique à mémoire limitée (\mbdp)}~\\
+\label{sect:mbdp}
+\index{Programmation Dynamique!à mémoire limitée}
+\index{\decpomdp!\mbdp}
+Comme nous l'avons vu dans la section \ref{sect:dp} et dans la sous-section précédente, le problème majeur de la programmation dynamique est l'explosion de l'utilisation de la mémoire due au nombre exponentiel de politiques possibles. Cependant, une analyse plus fine du processus d'élimination des politiques dominées révèle que la plupart des politiques non dominées sont inutiles étant donné un certain état de croyance initial. En effet, puisqu'après un certain nombre d'étapes, seulement un nombre restreint d'états de croyance sont accessibles, la plupart des politiques non dominées le sont sur ce sous-ensemble d'états de croyance.
+
+L'idée principale de cet algorithme consiste donc à n'effectuer le processus de génération exhaustive des politiques jointes en utilisant que les meilleures politiques dans les états de croyance accessibles. Un portefeuille d'heuristiques est utilisé pour sélectionner un ensemble restreint d'états de croyance \emph{accessibles} tandis que la programmation dynamique n'est effectuée que pour les meilleures politiques dans ces états de croyance fixés. L'algorithme se décompose donc principalement en deux phases : une phase \emph{forward} et une phase \emph{backward}:
+
+\subparagraph{\emph{Forward}~: selection d'états de croyance:}
+Même si l'état de croyance joint n'est pas accessible durant l'exécution de la politique décentralisée, rien n'empêche de l'utiliser pour l'évaluation des politiques calculées à l'aide d'un algorithme de programmation dynamique par exemple. Évidemment, la séquence des états de croyance obtenue lors de l'exécution de la politique optimale n'est pas connue lors de la recherche de cette politique. Il existe cependant de nombreuses heuristiques possibles pour la sélection d'états de croyance~: depuis une recherche complètement aléatoire, jusqu'à l'utilisation de la politique du \mmdp sous-jacent. Il est même possible, une fois l'algorithme exécuté une première fois, de l'appeler \emph{récursivement}, en utilisant la politique retournée la première fois pour sélectionner de nouveaux états de croyance. On sélectionne ensuite pour chacun des états de croyance sélectionnés la meilleure politique.
+
+\subparagraph{\emph{Backward}~: \textsc{dp}:}
+Néanmoins, pour éviter l'explosion exponentielle lors de la génération exhaustive des politiques, seulement on nombre restreint d'états de croyance sont sélectionnés ($maxTree$) de telle sorte que la mémoire utilisée à chaque itération reste constante et égale à $|\Act|maxTree^{|\Omega|}$. Ainsi, après sélection par heuristique de $maxTree$ états de croyance, les meilleures politiques sont sélectionnées pour chacun d'entre eux puis une itération de programmation dynamique est effectuée par la génération exhaustive des $|\Act|maxTree^{|\Omega|}$ combinaisons possibles de politiques. Finalement, après la $T$-ième génération, la meilleure politique pour l'état de croyance initial est choisie et retournée.
+
+\subparagraph{Améliorations par l'énumération partielle des observations (\textsc{imbdp}):}
+Bien que l'algorithme \mbdp soit de complexité linéaire en temps et en espace par rapport à l'horizon, il reste exponentiel selon le nombre d'observations. Cela reste une limitation sévère lorsque l'on cherche à résoudre des problèmes autres que des problèmes jouets. Par exemple, même pour un problème à 2 actions, 5 observations, le nombre de paires de politiques avec un $maxTree$ de 5 serait de 39 062 500 !
+
+Par conséquent, \cite{SZ.07b} ont observé que ce ne sont pas toutes les observations qui sont importantes dans tous les états de croyance et à toutes les étapes. Il est possible par exemple d'avoir une observation à un instant donné et de ne plus jamais l'avoir par la suite.
+
+Dans cet ordre d'idée la, ils ont donc proposé d'améliorer \mbdp en ne conservant que les $maxObs$ observations les plus probables lors de la génération exhaustive des politiques. Ainsi, après avoir identifié les meilleures politiques pour un ensemble donné d'états de croyance, la génération des politiques à l'horizon s'effectue de la manière suivante~: Tout d'abord, les observations jointes sont triées selon leur probabilité pour l'état de croyance $\bel^{t-1}$ le plus probable et l'action $\ba$ dictée par l'heuristique~:
+$$ \Pr(\bo) = \sum_{s\in\Sta}\bel^{t-1}(s) \Obs(\bo|\ba,s)$$
+
+Puis, un rang est attribué à chacune des observations pour chacun des agents et les $maxObs$ premières observations sont mémorisées. Une génération \emph{partielle} est alors faite basée sur ces $maxObs$ observations. Cela résulte aboutit, comme représenté dans la figure \ref{Fig:partBack}, à un ensemble de politiques incomplètes qui sont alors complétées par simple recherche locale.
+
+\begin{figure}[htb]
+\begin{center}
+\begin{tikzpicture}[scale=.7]%
+\begin{scope}[shape=circle,inner sep=.3mm,fill=white]%
+\tikzstyle{every node}=[draw] %%
+\node (a1) at (-17,1.5)  {$a_1$}; %%
+\node (a11) at (-18,0)  {$a_1$}; %%
+\node (a12) at (-17,0)  {$a_2$}; %%
+\node (a13) at (-16,0)  {$a_1$}; %%
+\node (a2) at (-17,-3)  {$a_2$}; %%
+\node (a21) at (-18,-4.5)  {$a_2$}; %%
+\node (a22) at (-17,-4.5)  {$a_1$}; %%
+\node (a23) at (-16,-4.5)  {$a_2$}; %%
+\end{scope}
+\begin{scope}[xshift=-1cm,shape=circle,inner sep=.3mm,fill=white]%
+\tikzstyle{every node}=[draw] %%
+\node (1) at (-11,1.5)  {$a_1$}; %%
+\node (11) at (-12,0)  {$\Pol^2_1$}; %%
+\node (12) at (-11,0)  {$\Pol^2_1$}; %%
+\node (13) at (-10,0)  {$?$}; %%
+\node (2) at (-8,1.5)  {$a_1$}; %%
+\node (21) at (-9,0)  {$\Pol^2_1$}; %%
+\node (22) at (-8,0)  {$\Pol'^2_1$}; %%
+\node (23) at (-7,0)  {$?$}; %%
+\node (3) at (-5,1.5)  {$a_1$}; %%
+\node (31) at (-6,0)  {$\Pol'^2_1$}; %%
+\node (32) at (-5,0)  {$\Pol^2_1$}; %%
+\node (33) at (-4,0)  {$?$}; %%
+\node (4) at (-2,1.5)  {$a_1$}; %%
+\node (41) at (-3,0)  {$\Pol'^2_1$}; %%
+\node (42) at (-2,0)  {$\Pol'^2_1$}; %%
+\node (43) at (-1,0)  {$?$}; %%
+\node (5) at (-11,-3)  {$a_2$}; %%
+\node (51) at (-12,-4.5)  {$\Pol^2_1$}; %%
+\node (52) at (-11,-4.5)  {$\Pol^2_1$}; %%
+\node (53) at (-10,-4.5)  {$?$}; %%
+\node (6) at (-8,-3)  {$a_2$}; %%
+\node (61) at (-9,-4.5)  {$\Pol^2_1$}; %%
+\node (62) at (-8,-4.5)  {$\Pol'^2_1$}; %%
+\node (63) at (-7,-4.5)  {$?$}; %%
+\node (7) at (-5,-3)  {$a_2$}; %%
+\node (71) at (-6,-4.5)  {$\Pol'^2_1$}; %%
+\node (72) at (-5,-4.5)  {$\Pol^2_1$}; %%
+\node (73) at (-4,-4.5)  {$?$}; %%
+\node (8) at (-2,-3)  {$a_2$}; %%
+\node (81) at (-3,-4.5)  {$\Pol'^2_1$}; %%
+\node (82) at (-2,-4.5)  {$\Pol'^2_1$}; %%
+\node (83) at (-1,-4.5)  {$?$}; %%
+\end{scope}
+\node at (-17,-6.5) {Horizon $2$};%
+\node at (-17,-1) {$\Pol^2_1$};%
+\node at (-17,-5.5) {$\Pol'^2_1$};%
+\begin{scope}[xshift=-1cm]%
+\node at (-6.5,-6.5) {Horizon $3$};%
+\node at (-14,-2) {$maxObs = \{o_1,o_2\}$};%
+\draw[-latex,double,line width=2pt] (-15,-1.5)--(-13,-1.5) node{};
+\draw[thick,dashed] (-14,2)--(-14,-5.5);
+\end{scope}
+\draw (a1)--(a11) node[midway]{$o_1$}; %%
+\draw (a1)--(a12) node[midway]{$o_2$}; %%
+\draw (a1)--(a13) node[midway]{$o_3$}; %%
+\draw (a2)--(a21) node[midway]{$o_1$}; %%
+\draw (a2)--(a22) node[midway]{$o_2$}; %%
+\draw (a2)--(a23) node[midway]{$o_3$}; %%
+
+\draw (1)--(11) node[midway]{$o_1$}; %%
+\draw (1)--(12) node[midway]{$o_2$}; %%
+\draw (1)--(13) node[midway]{$o_3$}; %%
+\draw (2)--(21) node[midway]{$o_1$}; %%
+\draw (2)--(22) node[midway]{$o_2$}; %%
+\draw (2)--(23) node[midway]{$o_3$}; %%
+\draw (3)--(31) node[midway]{$o_1$}; %%
+\draw (3)--(32) node[midway]{$o_2$}; %%
+\draw (3)--(33) node[midway]{$o_3$}; %%
+\draw (4)--(41) node[midway]{$o_1$}; %%
+\draw (4)--(42) node[midway]{$o_2$}; %%
+\draw (4)--(43) node[midway]{$o_3$}; %%
+\draw (5)--(51) node[midway]{$o_1$}; %%
+\draw (5)--(52) node[midway]{$o_2$}; %%
+\draw (5)--(53) node[midway]{$o_3$}; %%
+\draw (6)--(61) node[midway]{$o_1$}; %%
+\draw (6)--(62) node[midway]{$o_2$}; %%
+\draw (6)--(63) node[midway]{$o_3$}; %%
+\draw (7)--(71) node[midway]{$o_1$}; %%
+\draw (7)--(72) node[midway]{$o_2$}; %%
+\draw (7)--(73) node[midway]{$o_3$}; %%
+\draw (8)--(81) node[midway]{$o_1$}; %%
+\draw (8)--(82) node[midway]{$o_2$}; %%
+\draw (8)--(83) node[midway]{$o_3$}; %%
+
+\end{tikzpicture}%
+\end{center}
+  \caption{Génération partielle pour l'horizon $t$ sachant $t-1$ pour un problème à 2 actions et 3 observations avec $maxTree=2$ et $maxObs=2$ avant remplissage par recherche locale.}\label{Fig:partBack}
+\end{figure}
+
+\subparagraph{Amélioration utilisant la compression des observations (\textsc{mbdp-oc}):}
+Une dernière amélioration a été portée à l'algorithme \mbdp en se basant sur la génération partielle des politiques, mais sans sacrifier arbitrairement les observations les moins probables. Cette amélio-ration, basée sur la compression des observations selon leur valeur permet de limiter tout autant le nombre d'observations à $maxObs$ pendant la génération des politiques, mais le fait de manière à garantir la valeur perdue dans cette compression.
+
+Ainsi, la où l'amélioration de \mbdp (\textsc{imbdp}) coupait simplement les observations les moins probables en leur assignant une politique trouvée par recherche locale, \textsc{mbdp-oc} regroupe les observations de telles sortes que l'application de la même politique garantisse la perte de valeur minimale et ce jusqu'à atteindre un nombre de groupe égal à $maxObs$. La figure \ref{Fig:partBackOC} montre la différence avec \textsc{imbdp} pour le même problème à la même itération.
+
+
+\begin{figure}[htb]
+\begin{center}
+\begin{tikzpicture}[scale=.7]%
+\begin{scope}[shape=circle,inner sep=.3mm,fill=white]%
+\tikzstyle{every node}=[draw] %%
+\node (a1) at (-17,1.5)  {$a_1$}; %%
+\node (a11) at (-18,0)  {$a_1$}; %%
+\node (a12) at (-17,0)  {$a_2$}; %%
+\node (a2) at (-17,-1.5)  {$a_2$}; %%
+\node (a21) at (-18,-3)  {$a_2$}; %%
+\node (a22) at (-17,-3)  {$a_1$}; %%
+\end{scope}
+\begin{scope}[xshift=-1.7cm,shape=circle,inner sep=.3mm,fill=white]%
+\tikzstyle{every node}=[draw] %%
+\node (1) at (-11,1.5)  {$a_1$}; %%
+%\node (11) at (-12,0)  {$\Pol^2_1$}; %%
+\node (12) at (-11,0)  {$\Pol^2_1$}; %%
+\node (13) at (-10,0)  {$\Pol^2_1$}; %%
+\node (2) at (-8,1.5)  {$a_1$}; %%
+%\node (21) at (-9,0)  {$\Pol^2_1$}; %%
+\node (22) at (-8,0)  {$\Pol'^2_1$}; %%
+\node (23) at (-7,0)  {$\Pol^2_1$}; %%
+\node (3) at (-5,1.5)  {$a_1$}; %%
+%\node (31) at (-6,0)  {$\Pol'^2_1$}; %%
+\node (32) at (-5,0)  {$\Pol^2_1$}; %%
+\node (33) at (-4,0)  {$\Pol'^2_1$}; %%
+\node (4) at (-2,1.5)  {$a_1$}; %%
+%\node (41) at (-3,0)  {$\Pol'^2_1$}; %%
+\node (42) at (-2,0)  {$\Pol'^2_1$}; %%
+\node (43) at (-1,0)  {$\Pol'^2_1$}; %%
+\node (5) at (-11,-1.5)  {$a_2$}; %%
+%\node (51) at (-12,-3)  {$\Pol^2_1$}; %%
+\node (52) at (-11,-3)  {$\Pol^2_1$}; %%
+\node (53) at (-10,-3)  {$\Pol^2_1$}; %%
+\node (6) at (-8,-1.5)  {$a_2$}; %%
+%\node (61) at (-9,-3)  {$\Pol^2_1$}; %%
+\node (62) at (-8,-3)  {$\Pol'^2_1$}; %%
+\node (63) at (-7,-3)  {$\Pol^2_1$}; %%
+\node (7) at (-5,-1.5)  {$a_2$}; %%
+%\node (71) at (-6,-3)  {$\Pol'^2_1$}; %%
+\node (72) at (-5,-3)  {$\Pol^2_1$}; %%
+\node (73) at (-4,-3)  {$\Pol'^2_1$}; %%
+\node (8) at (-2,-1.5)  {$a_2$}; %%
+%\node (81) at (-3,-3)  {$\Pol'^2_1$}; %%
+\node (82) at (-2,-3)  {$\Pol'^2_1$}; %%
+\node (83) at (-1,-3)  {$\Pol'^2_1$}; %%
+\end{scope}
+\begin{scope}[xshift=-1.7cm]%
+\node at (-6.5,-4.7) {Horizon $3$};%
+\node at (-6.5,-4.2) {$maxObs = \{\{o_1,o_2\},o_3\}$};%
+\end{scope}
+\node at (-17,-4.7) {Horizon $2$};%
+\node at (-16,-.5) {$\Pol^2_1$};%
+\node at (-16,-3.5) {$\Pol'^2_1$};%
+\node at (-17,-4.2) {$maxObs = \{o_1,\{o_2,o_3\}\}$};%
+\draw[-latex,double,line width=2pt] (-15.5,-1.5)--(-13.5,-1.5) node{};
+\draw[thick,dashed] (-14.5,2)--(-14.5,-5);
+\draw (a1)--(a11) node[midway]{$o_1$}; %%
+\draw (a1)--(a12) node[midway]{$o_2$}; %%
+\draw (a1) .. controls +(1,-.7) .. (a12) node[midway]{$o_3$}; %%
+\draw (a2)--(a21) node[midway]{$o_1$}; %%
+\draw (a2)--(a22) node[midway]{$o_2$}; %%
+\draw (a2) .. controls +(1,-.7) .. (a22) node[midway]{$o_3$}; %%
+
+\draw (1) .. controls +(-1,-.7) .. (12) node[midway]{$o_1$}; %%
+\draw (1)--(12) node[midway]{$o_2$}; %%
+\draw (1)--(13) node[midway]{$o_3$}; %%
+\draw (2) .. controls +(-1,-.7) .. (22) node[midway]{$o_1$}; %%
+\draw (2)--(22) node[midway]{$o_2$}; %%
+\draw (2)--(23) node[midway]{$o_3$}; %%
+\draw (3) .. controls +(-1,-.7) .. (32) node[midway]{$o_1$}; %%
+\draw (3)--(32) node[midway]{$o_2$}; %%
+\draw (3)--(33) node[midway]{$o_3$}; %%
+\draw (4) .. controls +(-1,-.7) .. (42) node[midway]{$o_1$}; %%
+\draw (4)--(42) node[midway]{$o_2$}; %%
+\draw (4)--(43) node[midway]{$o_3$}; %%
+\draw (5) .. controls +(-1,-.7) .. (52) node[midway]{$o_1$}; %%
+\draw (5)--(52) node[midway]{$o_2$}; %%
+\draw (5)--(53) node[midway]{$o_3$}; %%
+\draw (6) .. controls +(-1,-.7) .. (62) node[midway]{$o_1$}; %%
+\draw (6)--(62) node[midway]{$o_2$}; %%
+\draw (6)--(63) node[midway]{$o_3$}; %%
+\draw (7) .. controls +(-1,-.7) .. (72) node[midway]{$o_1$}; %%
+\draw (7)--(72) node[midway]{$o_2$}; %%
+\draw (7)--(73) node[midway]{$o_3$}; %%
+\draw (8) .. controls +(-1,-.7) .. (82) node[midway]{$o_1$}; %%
+\draw (8)--(82) node[midway]{$o_2$}; %%
+\draw (8)--(83) node[midway]{$o_3$}; %%
+
+\end{tikzpicture}%
+\end{center}
+  \caption{Génération partielle avec compression des observations pour l'horizon $t$ sachant $t-1$ pour un problème à 2 actions et 3 observations avec $maxTree=2$ et $maxObs=2$.}\label{Fig:partBackOC}
+\end{figure}
+
+\subsubsection{Résultats}
+
+La table \ref{tab:appAlgo} résume les différents résultats des algorithmes présentés dans cette section pour trois problèmes du domaine. Le problème du Tigre possède 2 états, 3 actions et 2 observations, le problème de partage du canal de communication (\textsc{mabc}) a pour sa part 4 états, 2 actions et 2 observations et le problème de déménagement (\textsc{cbp}) consiste en un problème plus complexe de 123 états, 4 actions et 5 observations.
+
+\begin{table}[h!tb]
+  \centering
+\renewcommand\arraystretch{1.1}% (1.0 is for standard spacing)
+\begin{tabular}{|c||c|c|c|c||c|c|c||c|c|}
+  \hline
+  Horizon & \textsc{dp} & \textsc{maa}$^\star$ & \textsc{jesp} & \mbdp & \textsc{dp} & Random & \mbdp & \textsc{imbdp} & \textsc{mbdp-oc}\\
+  \hline
+  ~ & \multicolumn{4}{c|}{Tiger} & \multicolumn{3}{c|}{\textsc{mabc}} & \multicolumn{2}{c|}{\textsc{cbp}}\\
+  \hline
+  \hline
+    $2$ & $-4$ & $-4$ & $-4$ & $-4$ & $2$ & $1$ & $2$ & $4.7$ & (\textsc{na})\\
+    $3$ & $5.19$ & $5.19$ & $5.19$ & $5.19$ & $2.99$ & $1.49$ & $2.99$ & $5.3$ & (\textsc{na})\\
+    $4$ & - & $4.80$ & $3.99$ & $4.80$ & $3.89$ & $1.99$ & $3.89$ & $52.4$ & (\textsc{na})\\
+    $5$ & - & - & $2.93$ & $5.38$ & - & $2.47$ & $4.79$ & $56.77$ & $72.3$\\
+    $6$ & - & - & $2.39$ & $9.91$ & - & $2.96$ & $5.69$ & $59.89$ & (\textsc{na})\\
+%    7 & - & - & - & $9.67$ & - & $3.45$ & $6.59$ & $64.52$ & (\textsc{na})\\
+%    8 & - & - & - & $9.42$ & - & $3.93$ & $7.49$ & $66.5$ & (\textsc{na})\\
+    $9$  & - & - & - & $12.57$ & - & $4.41$ & $8.39$ & $68.93$ & (\textsc{na})\\
+    $10$ & - & - & - & $13.49$ & - & $4.9$ & $9.29$ & $71.33$ & $103.9$\\
+    $20$  & - & - & - & (\textsc{na}) & - & (\textsc{na}) & (\textsc{na}) & $96$ & $149.8$\\
+    $50$  & - & - & - & (\textsc{na}) & - & (\textsc{na}) & (\textsc{na}) & $80.8$ & $278.7$\\
+    $100$  & - & - & - & $93.24$ & - & $48.39$ & $90.29$ & $72.8$ & $503.8$\\
+  \hline
+\end{tabular}
+  \caption[Résultats de valeur espérée pour les différents problèmes et algorithmes multiagents.]{Résultats de valeur espérée pour les différents problèmes et algorithmes. Les ``-'' représentent le fait que l'algorithme a dépassé le temps ou la mémoire allouée. Les ``(\textsc{na})'' représentent les données non disponibles dans la littérature.}\label{tab:appAlgo}
+\end{table}
+
+Ces résultats montrent la progression des algorithmes depuis le milieu des années 2000. On remarquera que la résolution optimale restera très probablement bloquée à ce niveau de résolution à moins d'une évolution majeure des technologies (avec un ordinateur quantique par exemple) étant donné la complexité doublement exponentielle. Néanmoins, des avancées restent encore possibles dans le domaines des approximations ou des sous-classes de \decpomdps.
+
+\section{Discussion}
+
+Nous avons présenté dans ce chapitre un aperçu général des modèles de Markov monoagents et multiagents complètement ou partiellement observables. Nous avons ensuite décrit des algorithmes optimaux pour les modèles généraux et des algorithmes non optimaux et leurs différentes évolutions jusqu'au plus récent. Nous n'avons pas présenté d'algorithmes pour les sous-classes particulières de \decpomdps, mais le lecteur intéressé peut se référer à \cite{GZ.04} pour ces différents algorithmes et leurs caractéristiques.
+
+Pour finir, il convient de préciser que les \decpomdps permettent de modéliser un grande partie des problèmes réels, mais souffrent notamment de plusieurs limitations~:
+\begin{description}
+  \item[Malédictions dimensionnelles:] Les \decpomdps, comme les \pomdps ou les \mdps, représentent l'état de manière extensive et raisonne souvent sur chacun des états du monde. Ce point, souvent critiqué, peut mener, dans le cas où l'état dépend d'un grand nombre de variables, à des espaces d'états exponentiellement grands et donc à une difficulté inhérente à la représentation. Différents modèles factorisés sont apparus pour pallier à ce problème, comme~\cite{BDG.00,GKP.01,KM.03,PVS.06,OSWV.08}, pour ne citer qu'eux. Des problèmes similaires surviennent également lorsqu'on se retrouve avec un grand nombre d'actions ou un grand nombre d'observations.
+  \item[Représentation temporelle:] Dès lors que l'on s'intéresse à des problèmes reliés au temps, la représentation par des modèles de Markov devient extrêmement complexe. En effet, une des hypothèses stipule que les agents agissent de manière synchrone et que le temps est discrétisable, ce qui est souvent, mais pas nécessairement le cas. Relâcher cette hypothèse conduit à utiliser des modèles dits semi-markoviens qui incluent le temps et la durée dans le modèle~\citep{GZ.08}.
+  \item[Communication:] %Nous avons passé sous silence dans ce chapitre les modèles incluant la communication tel celui proposé par \cite{GAZ.04} pour une simple raison de clarté. Néanmoins, l
+      Les modèles généraux incluant la communication demeurent aussi complexes que ceux ne l'incluant pas. Ce résultat contre-intuitif s'explique notamment par le fait que le modèle proposé par~\cite{GAZ.04} ne fait aucune supposition sur le contenu informatif des messages. Il reste donc de nombreux travaux de modélisation des messages et de la communication à explorer avant de pouvoir effectivement utiliser ces modèles sur des applications réelles.
+  \item[Interactions:] On retrouve dans les travaux de \cite{GKP.01,GKPb.01}, de nombreux exemples d'interactions plus simples que l'interaction complète des agents les uns envers les autres. Les modèles de Markov multiagents peinent encore à représenter ces interactions locales et à les exploiter comme le fait~\cite{OSWV.08} pour affiner la recherche d'une politique jointe efficace.
+\end{description}
+
+En bref, les \decpomdps offrent un framework extrêmement puissant permettant de modéliser beaucoup de problèmes actuels. Cependant, leur complexité inhérente les rend, en pratique, difficiles à utiliser. De nombreux travaux restent à mener pour déterminer les caractéristiques qui rendraient un \decpomdp à la fois simple et expressif.
+
+\section{Conclusion}
+
+Nous avons présenté dans ce chapitre les différents modèles sur lesquels se basent nos recherches et les notations que nous utiliserons dans
+les chapitres suivants.
+
+Nous avons présenté dans un premier temps le modèle de décision de Markov pour un agent dans un environnement complètement observable puis celui où l'observabilité de l'état peut être altérée. Les principales méthodes de résolution dans ces modèles ont également été présentées dans le but de faciliter la compréhension des algorithmes des chapitres suivants.
+
+Nous avons ensuite étendu les modèles aux cas où plusieurs agents interagissent dans un environnement complètement observable puis à celui dans lequel les agents ne perçoivent plus complètement l'état et doivent se coordonner à partir d'observations décentralisées. Nous avons finalement discuté les capacités et les limitations de ces modèles.
+
+Parmi les limitations présentées dans la discussion précédente, deux points ont plus précisé-ment attiré notre attention. Premièrement, concernant la malédiction de la dimensionalité, nous nous sommes intéressés dans le chapitre suivant au problème de l'augmentation du nombre d'actions possibles et à comment trouver des solutions lorsque ces actions sont contraintes et peuvent mener à des situations non désirables.
+Deuxièmement, nous nous sommes intéressé à un problème à la communication entre agents. Plus particulièrement, dès les agents communiquent et ont accès à une représentation bruitée de l'état complet du système, nous avons étudié dans le chapitre~\ref{chap:4} la difficulté réelle de ce problème.
+
+Voyons donc maintenant comment utiliser les contraintes issues de situations non désirables pour tenter d'améliorer la performance d'algorithmes dans un modèle décisionnel de Markov.

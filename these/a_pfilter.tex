@@ -1,0 +1,62 @@
+\chapter{Filtres à particules appliqués aux \pac{pomdp}s}
+\label{anx:pf}
+
+\begin{summary}
+Dans cette annexe nous présentons un peu plus en détail les filtres a particules et leur application aux \pomdps pour la représentation des états de croyance. Chaque étape de filtrage est présentée selon les travaux détaillés sur le sujet par~\cite{T.99}.
+\end{summary}
+
+Les simulations Monte-Carlo, bien qu'efficaces, sont surtout reconnues pour consommer beaucoup de temps de calcul. Cependant, de récents travaux ont considérablement réduit les temps de simulation. Ces techniques, appelées \emph{filtres à particules}, permettent la simulation en parallèle de plusieurs essais Monte-Carlo séquentiels tout en utilisant une taille fixe de la mémoire et tout en assurant des garanties de performance sur l'estimation de la distribution de probabilité postérieure.
+
+\cite{T.99} a appliqué la technique des filtres à particules avec succès aux \pomdps. Ceux-ci étaient utilisés comme variante à base d'échantillons des filtres de Bayes pour récursivement estimer la densité postérieure sur un état $s$ -- l'état de croyance $\bel$ -- du système dynamique~\citep{FTBD.01}:
+\[\bel^{t+1}(s') \propto \Obs(o|a,s') \int \Tra(s'|s,a) \bel^t(s)\,\mathrm{d}s\]
+Où, $o$ est l'observation reçue et $a$ l'action effectuée.
+
+\section{Représentation à base d'échantillons}
+
+La représentation usuelle d'un état de croyance sur un espace d'état discret est généralement un vecteur $\bel$ qui décrit pour chaque état $s$ la probabilité de se retrouver dans celui-ci. Lorsque l'espace d'état est trop grand, voire continu, cette représentation consomme beaucoup trop d'espace et nécessite alors d'être approximée. 
+
+Dans ce contexte, le filtre à particules représente l'état de croyance par un ensemble $S$ de $N$ particules (potentiellement pondérées). Chaque $s_{(i)}$ est un échantillon représentant un état tirée depuis la distribution originale $\bel$.
+
+Comme montré par la figure~\ref{afig:sampling}, il existe deux types populaires d'approximations à base d'échantillons: \emph{l'échantillonnage pondéré par la vraisemblance} pour lequel les points sont tirés directement de la distribution à approximer (notée $f$ dans la figure~\ref{afig:sampling}$(a)$), et \emph{l'échantillonnage par importance}, où les échantillons sont tirés depuis une autre distribution, telle que celle notée $g$ dans la figure~\ref{afig:sampling}$(b)$. Dans ce dernier cas, un facteur d'importance est associé aux échantillons $x$
+\[p(x) = \frac{f(x)}{g(x)}\]
+pour prendre en compte la différence entre la distribution échantillonnée, $g$, et la distribution approximée $f$ (dans la figure~\ref{afig:sampling}, les hauteurs des barres indiquent ce facteur d'importance). Il est possible de montrer que ces approximations convergent vers la distribution souhaitée à un taux de $1/\sqrt{N}$~\citep{T.93}.
+
+\begin{figure}[h!t]
+\centering
+\includegraphics[width=.8\textwidth]{samplinga}
+\includegraphics[width=.8\textwidth]{samplingb}
+\caption[Échantillonnage: $(a)$ pondéré sur la vraisemblance et $(b)$ pondéré par l'importance.]{Échantillonnage: $(a)$ pondéré sur la vraisemblance et $(b)$ pondéré par l'importance. En bas de chaque courbe sont représentés les échantillons qui approximent la distribution $f$. La hauteur des échantillons exprime leur \emph{facteur d'importance}~\citep{T.99}.}\label{afig:sampling}
+\end{figure}
+
+Dans le chapitre~\ref{chap:5} de cette thèse, nous avons choisi d'utiliser la représentation à base de facteur d'importance puisque c'est celui qui a été le plus étudié dans la littérature robotique~\citep{KFM.03}. L'état de croyance est donc représenté par un ensemble $S$ de $N$ particules  pondérées $\la s^{(i)}, w^{(i)}\ra$, où les $w^{(i)}$ sont des réels non négatifs, appelés \emph{facteurs d'importance}, qui somment à un. Voyons maintenant en détail fonctionnement d'un filtre particulaire.
+
+\section{Filtrage bayésien}
+
+Dans sa forme basique, le filtre à particule à échantillonnage d'importance réalise un filtrage bayésien récursif selon une procédure d'échantillonnage souvent référée par l'\emph{échantillonnage séquentiel par importance avec rééchantillonnage} (\textsc{sisr}). Cette méthode se décompose en trois étapes illustrées par la figure~\ref{afig:pffig} et que nous allons détailler par la suite: $(1)$ la prédiction, $(2)$ la correction, et $(3)$ le rééchantillonnage.
+
+\begin{figure}[h!t]
+\centering
+\input{pffig}
+\caption[Filtrage bayésien par échantillonnage d'importance.]{Filtrage bayésien par échantillonnage d'importance. L'étape $(1)$ est la \emph{prédiction}, la $(2)$ est la correction, et la $(3)$ le rééchantillonnage.}\label{afig:pffig}
+\end{figure}
+ 
+
+\subsection{Prédiction}
+
+Cette étape, utilise l'état courant $s$ et l'action \footnote{Il est également possible d'utiliser une distribution sur les actions plutôt que l'action seule.} $a$ pour échantillonner l'état suivant $s'$ selon la fonction de transition $\Tra(s'|s,a)$, qui décrit la dynamique du système selon l'interaction de l'agent.
+
+Dans notre cas de \pomdp, puisque seulement la distribution courante $\bel^t$ sur les états est disponible au travers d'une approximation, cette prédiction est faite pour chaque particule $s_i^t$ en échantillonnant la distribution de probabilité de l'état futur $s^{t+1}$ étant donné l'état $s_i^t$ représenté par la particule $i$ et l'action entreprise par l'agent $a^t$ à l'étape~$t$:
+\[ s_i^{t+1} \sim \Tra (s_i^{t+1} | a^t, s_i^t) \]
+
+\subsection{Correction}
+
+En plus de l'estimation qu'à l'agent d'où peut le conduire son action, celui reçoit également une observation lui donnant un peu plus d'information quant à l'état sous-jacent de son environnement. À l'aide de cette observation l'agent peut alors corriger sa prédiction. Cette étape pondère donc l'échantillon $s'$ par la vraisemblance de l'observation $w' = \Obs(o|s,a,s')$. Cette vraisemblance est extraite de la fonction d'observation de l'agent (e.g. du modèle de ses capteurs et de l'environnement).
+
+Encore une fois, dans le cas du \pomdp, le facteur d'importance $w_i^{t+1}$ de la particule prédite $s_i^{t+1}$ est calculé directement à partir de la vraisemblance d'obtenir l'observation réellement perçue $o^t$, sachant que l'état précédent était $s_i^t$ et que l'action effectuée est $a^t$ à l'étape~$t$:
+\[w_i^{t+1} = \Obs (o^t | s_i^t, a^t, s_i^{t+1})\]
+
+\subsection{Rééchantillonnage}
+
+Une fois la correction effectuée, il faut maintenant prendre en compte cette correction pour permettre à nouveau de faire une prédiction à partir de cette nouvelle distribution. Il est donc nécessaire de représenter la nouvelle distribution avec des échantillons ayant tous un facteur d'importance identique.
+
+Pour cela, l'algorithme effectue $N$ tirages selon la distribution discrète définie par la pondération $w^{(i)}$ appliquée à l'étape précédente puis remplace l'ancien ensemble de particules par le nouveau. Le nouvel état de croyance est alors représenté par un nouvel ensemble de particules, certaines ayant un grand facteur d'importance étant représentées plusieurs fois (comme illustré à l'étape $(3)$ de la figure~\ref{afig:pffig}).  Cela permet de renforcer la croyance selon la pondération de l'étape précédente tout en gardant un nombre fixe d'échantillons, garantissant ainsi l'espace utilisé par la représentation. 

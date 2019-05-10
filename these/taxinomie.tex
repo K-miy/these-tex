@@ -1,0 +1,51 @@
+\begin{tikzpicture}[line width=.1ex, scale=1.2]
+\tikzstyle{every node}=[font=\footnotesize] %%
+\tikzstyle{level 1}=[sibling distance=3cm]
+\tikzstyle{level 2}=[sibling distance=1.5cm]
+\node (plan) at (7,0) {Planification}
+   child {
+            node (class) {Classique}
+            child {
+                node[above] (strips) {Espace d'états}
+                edge from parent[-latex]
+            }
+            child {
+                node[below=2pt] (epp) {Espace des Plans Partiels}
+                edge from parent[-latex]
+            }
+            child {
+                node[above] (gp) {Graphplan}
+                edge from parent[-latex]
+            }
+            edge from parent[-latex]
+        }
+    child {
+            node {Hiérarchique}
+            edge from parent[-latex]
+        }
+    child {
+            node (prob) {Probabiliste}
+            child {
+                node[above] {Aveugle}
+                edge from parent[-latex]
+            }
+            child {
+                node {Conditionnelle}
+                edge from parent[-latex]
+            }
+            child {
+                node[draw,thick,below=7pt] {Markov}
+                edge from parent[-latex]
+            }
+            child {
+                node {Avec Replanification}
+                edge from parent[-latex]
+            }
+            child {
+                node[above] {Continue}
+                edge from parent[-latex]
+            }
+            edge from parent[-latex]
+        };
+\node at (strips.south) {\textsc{strips}};
+\end{tikzpicture}

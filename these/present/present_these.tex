@@ -1,0 +1,2412 @@
+%\RequirePackage{atbegshi}
+\documentclass[compress,10pt]{beamer}
+%\documentclass[compress,10pt,slidetop,handout]{beamer}
+
+\usepackage{DamasStyle}
+\usepackage{tikz}
+\usepackage{dsfont}
+\usepackage{xspace}
+\usepackage{graphicx}
+\usepackage{colortbl}
+\usepackage{subfigure}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{appendixnumberbeamer}
+
+%Pour écrire les accents directement sans se faire ch*** en français
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{multibib}
+\newcites{pri}{Articles en tant que premier auteur}
+\newcites{sec}{Articles en tant que second auteur}
+
+\input{../macros}
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{shapes.geometric}
+\usepgflibrary{shapes}
+\usepgflibrary{snakes}
+\usetikzlibrary{snakes}
+
+%Commande necessaires (ou pas) pour cette présentation
+% des petites couleurs
+\colorlet{orange}{red!30!yellow!5!white}%%
+\colorlet{mauve}{blue!30!red!5!white}%%
+\colorlet{bleu}{blue!20}%%
+\colorlet{vert}{green!20}%%
+\colorlet{brouge}{red!70!blue}
+\newcommand\red[1]{\textcolor[rgb]{1,0,0}{#1}}
+\newcommand\brouge[1]{\textcolor{brouge}{#1}}
+\newcommand\mauve[1]{\textcolor{mauve}{#1}}
+\newcommand\bleu[1]{\textcolor{bleu}{#1}}
+\newcommand\verte[1]{\textcolor{vert}{#1}}
+\newcommand\orange[1]{\textcolor{orange}{#1}}
+
+\title[]{~\\ Contraintes et observabilité \\ dans les systèmes de Markov décentralisés\\ ~}
+\author[Camille Besse]{Camille Besse}
+\institute{Département d'Informatique et de Génie Logiciel\\
+  \texttt{http://damas.ift.ulaval.ca}}
+\date{Septembre 2010}
+
+%\bibliographystyle{plain}
+\bibliographystylepri{plain}
+\bibliographystylesec{plain}
+
+\newenvironment{mybox}[1]{
+\begin{tikzpicture}
+\node[draw=#1, fill=#1!5,very thick, rectangle, rounded corners, inner sep=10pt, inner ysep=20pt,text width=.95\textwidth,text justified] (box)\bgroup}
+{\egroup;
+\end{tikzpicture}}
+
+\begin{document}
+%Page de Titre avec remise automatique des symboles de navigation a la fin
+\SlideTitre
+%Definition de l'affichage du plan à chaque section avec la section courante et ses sous sections mises en avant
+%\AtBeginSection[]{\frame<handout:0>{\frametitle{Outline}
+%    \tableofcontents[current,currentsubsection,hidesubsections]
+%    \tableofcontents[current,currentsubsection]
+%    \tableofcontents[current]
+%}}
+%--------------------------------------------------------------------------
+%Slide Plan
+%\frame { \frametitle{Plan} \tableofcontents[section=1,hidesubsections] }
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Intro]{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Prologue}
+
+\begin{block}{Cette présentation ...}
+\begin{itemize}
+\visible<2->{\item ne s'adresse \emph{pas} à un public averti}
+\visible<3->{\item contient seulement \red{8.5\%} de formules mathématiques}
+\visible<4->{\item est composée à \red{82.4\%} d'images et exemples}
+\visible<5->{\item se veut compréhensible par tous et toutes}
+\visible<6->{\ifleche Donc si vous avez des questions ... }
+\end{itemize}
+\visible<7->{
+\begin{center}
+\red{{\Large N'hésitez pas et posez les !!!}}
+\end{center}}
+\end{block}
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection{IA et Planification}
+%--------------------------------------------------------------------------
+\begin{frame}
+
+ \frametitle{Exemple introductif}
+
+%Ici un exemple introductif de l’IA, de la planification, de l’incertain, du partiellement observable, du multiagent.
+
+\only<1-7>{
+\begin{block}{Imaginons une ferme automatisée ...}
+\begin{itemize}
+\visible<2->{\item Où travaille un robot ... }
+\visible<3->{\item devant réaliser plusieurs tâches journalières:}
+\visible<4->{\begin{itemize}
+    \item Nourrir les poules
+    \item Traire les vaches
+    \item Arroser le potager
+    \item (etc ...)
+    \end{itemize}}
+\visible<5->{\item Ce robot n'est malheureusement pas parfait}
+\visible<6->{\begin{itemize}
+    \ifleche Les tâches qu'il réalise peuvent parfois prendre plus de temps
+    \ifleche Il a en plus des chances d'échouer (ou de mal réaliser ces tâches)
+    \end{itemize}}
+\visible<7->{\item Comment modéliser ce problème de \emph{planification} ?}
+\end{itemize}
+\end{block}
+}
+
+\only<8-14>{
+\begin{center}
+\only<8-10>{\includegraphics[width=.7\paperwidth]{ferme}}
+\only<11-12>{\includegraphics[width=.7\paperwidth]{ferme2}}
+\only<13-14>{\includegraphics[width=.7\paperwidth]{ferme3}}
+\only<16-17>{\includegraphics[width=.7\paperwidth]{ferme}}
+    \begin{tikzpicture}[scale=.5,overlay]%
+%        \draw[step=1cm,color=gray,very thin] (-20,0) grid (0,15);%%
+\only<8>{
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node[double] (s0) at (-10,6)  {$\cs^{t}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node (sc) at (-1,4)  {$0$}; %%
+        \node (sv) at (-14,11)  {$0$}; %%
+        \node (sp) at (-19,5)  {$0$}; %%
+        \end{scope}
+        \draw[double] (s0)--(sc);  %%
+        \draw[double] (s0)--(sv); %%
+        \draw[double] (s0)--(sp);  %%
+        }
+\only<9>{
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\small,thick] %%
+        \node (a1) at (-7,6)  {$\ca^t$}; %%
+        \node[dashed] (a11) at (1,4)  {$a_{poules}$}; %%
+        \node[dashed] (a12) at (-12,11)  {$a_{vaches}$}; %%
+        \node[dashed] (a13) at (-17,5)  {$a_{potager}$}; %%
+        \end{scope}
+        \draw[dashed] (a1)--(a11);  %%
+        \draw[dashed] (a1)--(a12); %%
+        \draw[dashed] (a1)--(a13);  %%
+        }
+\only<10>{
+        \begin{scope}[shape=diamond,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node (r0) at (-10,8)  {$r^{t}$}; %%
+        \node[dashed] (r1) at (-1,6)  {$r_{poules}$}; %%
+        \node[dashed] (r2) at (-14,13)  {$r_{vaches}$}; %%
+        \node[dashed] (r3) at (-19,7)  {$r_{potager}$}; %%
+        \end{scope}%
+        \draw[dashed] (r0)--(r1);  %%
+        \draw[dashed] (r0)--(r2); %%
+        \draw[dashed] (r0)--(r3);  %%
+        }
+\only<11>{
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node[double] (s0) at (-10,6)  {$\cs^{t}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node (sc) at (-1,4)  {$0$}; %%
+        \node (sv) at (-14,11)  {$0$}; %%
+        \node (sp) at (-19,5)  {$0$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\small,thick] %%
+        \node (a1) at (-7,6)  {$a_{potager}$}; %%
+        \end{scope}
+        }
+\only<12>{
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node[double] (s0) at (-10,6)  {$\cs^{t+1}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node (sc) at (-1,4)  {$0$}; %%
+        \node (sv) at (-14,11)  {$0$}; %%
+        \node (sp) at (-19,5)  {$1$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\small,thick] %%
+        \node (a1) at (-7,6)  {$a_{potager}$}; %%
+        \end{scope}
+        \begin{scope}[shape=diamond,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node (r0) at (-10,8)  {$r_{potager}$}; %%
+        \end{scope}%
+        }
+\only<13>{
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node[double] (s0) at (-10,6)  {$\cs^{t+1}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node (sc) at (-1,4)  {$0$}; %%
+        \node (sv) at (-14,11)  {$0$}; %%
+        \node (sp) at (-19,5)  {$1$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\small,thick] %%
+        \node (a1) at (-7,6)  {$a_{vaches}$}; %%
+        \end{scope}
+        }
+\only<14>{
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node[double] (s0) at (-10,6)  {$\cs^{t+2}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node (sc) at (-1,4)  {$0$}; %%
+        \node (sv) at (-14,11)  {$0$}; %%
+        \node (sp) at (-19,5)  {$1$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\small,thick] %%
+        \node (a1) at (-7,6)  {$a_{vaches}$}; %%
+        \end{scope}
+        \begin{scope}[shape=diamond,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node (r0) at (-10,8)  {0}; %%
+        \end{scope}%
+        }
+    \end{tikzpicture}
+\end{center}
+
+}
+
+\only<15>{
+\framesubtitle{Représentation graphique d'un Processus décisionnel de Markov}
+    \begin{center}
+        \begin{tikzpicture}[scale=.5]%
+        \begin{scope}[shape=diamond,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (r1) at (-9,-3)  {$r^{t-1}$}; %%
+        \node (r2) at (-4,-3)  {$r^{t}$}; %%
+        \node (r3) at (1,-3)  {$r^{t+1}$}; %%
+        \node (rt) at (6,-3)  {$r^T$}; %%
+        \end{scope}%
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-12,0)  {$\cs^{t-2}$}; %%
+        \node (s1) at (-7,0)  {$\cs^{t-1}$}; %%
+        \node (s2) at (-2,0)  {$\cs^t$}; %%
+        \node (s3) at (3,0)  {$\cs^{t+1}$}; %%
+        \node (st) at (8,0)  {$\cs^T$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-10,3)  {$\ca^{t-1}$}; %%
+        \node (a12) at (-5,3)  {$\ca^t$}; %%
+        \node (a13) at (0,3)  {$\ca^{t+1}$}; %%
+        \node (a1t) at (5,3)  {$\ca^T$}; %%
+        \end{scope}
+        \draw[->,-latex] (s0)--(s1) node[near start,below]{$\Tra$};  %%
+        \draw[->,-latex] (s1)--(s2) node[near start,below]{$\Tra$}; %%
+        \draw[->,-latex] (s2)--(s3) node[near start,below]{$\Tra$}; %%
+        \draw[->,-latex,dotted,thick] (s3)--(st) node[near start,below]{$\Tra$}; %%
+        \draw[->,-latex] (a11)-- +(1.5,-3) --(s1);  %%
+        \draw[->,-latex] (a12)-- +(1.5,-3) --(s2);  %%
+        \draw[->,-latex] (a13)-- +(1.5,-3) --(s3);  %%
+        \draw[->,-latex] (a1t)-- +(1.5,-3) --(st);  %%
+        \draw[->,-latex,dashed] (s0)--(a11)node[near start,above]{$\Obs$}; %%
+        \draw[->,-latex,dashed] (s1)--(a12)node[near start,above]{$\Obs$}; %%
+        \draw[->,-latex,dashed] (s2)--(a13)node[near start,above]{$\Obs$}; %%
+        \draw[->,-latex,loosely dashed,thick] (s3)--(a1t)node[near start,above]{$\Obs$}; %%
+        \draw[->,-latex,double] (s1)--+(-2,-1)--(r1) node[very near end,right]{$\Rew$};  %%
+        \draw[->,-latex,double] (a11)--+(1,-4)--(r1);  %%
+        \draw[->,-latex,double] (s2)--+(-2,-1)--(r2) node[very near end,right]{$\Rew$};  %%
+        \draw[->,-latex,double] (a12)--+(1,-4)--(r2);  %%
+        \draw[->,-latex,double] (s3)--+(-2,-1)--(r3) node[very near end,right]{$\Rew$};  %%
+        \draw[->,-latex,double] (a13)--+(1,-4)--(r3);  %%
+        \draw[->,-latex,double] (st)--+(-2,-1)--(rt) node[very near end,right]{$\Rew$};  %%
+        \draw[->,-latex,double] (a1t)--+(1,-4)--(rt);  %%
+        \end{tikzpicture}%
+    \end{center}
+}
+\only<16-17>{
+\framesubtitle{Et en partiellement observable ?}
+\begin{center}
+\only<16>{\includegraphics[width=.7\paperwidth]{ferme_b}}
+\only<17>{\includegraphics[width=.7\paperwidth]{ferme2_b}}
+    \begin{tikzpicture}[scale=.5,overlay]%
+\only<16>{
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node (s0) at (-10,6)  {$\cs^{t}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node[double] (sc) at (-1,4)  {$0$}; %%
+        \node[double] (sv) at (-14,11)  {$?$}; %%
+        \node[double] (sp) at (-19,5)  {$?$}; %%
+        \end{scope}
+        \draw[double] (s0)--(sc);  %%
+        \draw[double] (s0)--(sv); %%
+        \draw[double] (s0)--(sp);  %%
+        }
+\only<17>{
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node (s0) at (-10,6)  {$\cs^{t+1}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node[double] (sc) at (-1,4)  {$?$}; %%
+        \node[double] (sv) at (-14,11)  {$?$}; %%
+        \node[double] (sp) at (-19,5)  {$1$}; %%
+        \end{scope}
+        \draw[double] (s0)--(sc);  %%
+        \draw[double] (s0)--(sv); %%
+        \draw[double] (s0)--(sp);  %%
+        }
+    \end{tikzpicture}
+\end{center}
+}
+
+\only<18>{
+\framesubtitle{Représentation graphique en partiellement observable}
+        \begin{center}
+        \begin{tikzpicture}[scale=.5]%
+        \begin{scope}[shape=diamond,inner sep=.01cm,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (r1) at (-9,-3)  {$r^1$}; %%
+        \node (r2) at (-4,-3)  {$r^2$}; %%
+        \node (r3) at (1,-3)  {$r^3$}; %%
+        \node (rt) at (6,-3)  {$r^T$}; %%
+        \end{scope}%
+        \begin{scope}[shape=circle,inner sep=.01cm,fill=white]
+        \tikzstyle{every node}=[draw,font=\footnotesize,minimum size=0.6cm] %%
+        \node (s0) at (-12,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-2,0)  {$\cs^2$}; %%
+        \node (s3) at (3,0)  {$\cs^3$}; %%
+        \node (st) at (8,0)  {$\cs^T$}; %%
+        \node (o0) at (-12,2)  {$\co^0$}; %%
+        \node (o1) at (-7,2)  {$\co^1$}; %%
+        \node (o2) at (-2,2)  {$\co^2$}; %%
+        \node (o3) at (3,2)  {$\co^3$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-10,3)  {$\ca^1$}; %%
+        \node (a12) at (-5,3)  {$\ca^2$}; %%
+        \node (a13) at (0,3)  {$\ca^3$}; %%
+        \node (a1t) at (5,3)  {$\ca^T$}; %%
+        \end{scope}
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (s0)--(o0);  %%
+        \draw[->,-latex] (s1)--(o1); %%
+        \draw[->,-latex] (s2)--(o2); %%
+        \draw[->,-latex] (s3)--(o3); %%
+        \draw[->,-latex,dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+        \draw[->,-latex,dashed] (o0)--(a11); %%
+        \draw[->,-latex,dashed] (o1)--(a12); %%
+        \draw[->,-latex,dashed] (o2)--(a13); %%
+        \draw[->,-latex,loosely dashed,thick] (o3)--(a1t); %%
+        \draw[->,-latex,double] (s1)--+(-2,-1)--(r1);  %%
+        \draw[->,-latex,double] (a11)--+(1,-4)--(r1);  %%
+        \draw[->,-latex,double] (s2)--+(-2,-1)--(r2);  %%
+        \draw[->,-latex,double] (a12)--+(1,-4)--(r2);  %%
+        \draw[->,-latex,double] (s3)--+(-2,-1)--(r3);  %%
+        \draw[->,-latex,double] (a13)--+(1,-4)--(r3);  %%
+        \draw[->,-latex,double] (st)--+(-2,-1)--(rt);  %%
+        \draw[->,-latex,double] (a1t)--+(1,-4)--(rt);  %%
+        \end{tikzpicture}%
+    \end{center}
+}
+
+\only<19>{
+\framesubtitle{Et en multiagent ?}
+\begin{center}
+\only<19>{\includegraphics[width=.7\paperwidth]{ferme_2}}
+    \begin{tikzpicture}[scale=.5,overlay]%
+        \begin{scope}[shape=circle,inner sep=.02cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize,thick] %%
+        \node (s0) at (-10,6)  {$\cs^{t}$}; %%
+%        \node[dashed] (sr) at (-5,7)  {\emph{position}}; %%
+        \node[double] (sc) at (-1,4)  {$?$}; %%
+        \node[double] (sv) at (-14,12)  {$?$}; %%
+        \node[double] (sp) at (-19,5)  {$?$}; %%
+        \end{scope}
+        \draw[double] (s0)--(sc);  %%
+        \draw[double] (s0)--(sv); %%
+        \draw[double] (s0)--(sp);  %%
+        \begin{scope}[shape=rectangle,inner sep=.05cm, minimum size=1cm]
+        \tikzstyle{every node}=[draw,font=\small,thick] %%
+        \node (a1) at (-16,9)  {$\ca_1^t$}; %%
+        \node (a2) at (-2,7)  {$\ca_2^t$}; %%
+        \end{scope}
+    \end{tikzpicture}
+\end{center}
+}
+\only<20>{
+\framesubtitle{Représentation graphique en multiagent}
+\begin{center}
+    \begin{tikzpicture}[scale=.6]%
+        \filldraw[rounded corners,ultra thick,bleu] (-13,4) rectangle (4,1);%%
+        \filldraw[rounded corners,ultra thick,vert] (-13,-4) rectangle (4,-1);%%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-10,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-4,0)  {$\cs^2$}; %%
+        \node (s3) at (-1,0)  {$\cs^3$}; %%
+        \node (st) at (4,0)  {$\cs^T$}; %%
+        \node (o10) at (-10,2)  {$\co_1^0$}; %%
+        \node (o20) at (-10,-2)  {$\co_2^0$}; %%
+        \node (o11) at (-7,2)  {$\co_1^1$}; %%
+        \node (o21) at (-7,-2)  {$\co_2^1$}; %%
+        \node (o12) at (-4,2)  {$\co_1^2$}; %%
+        \node (o22) at (-4,-2)  {$\co_2^2$}; %%
+        \node (o13) at (-1,2)  {$\co_1^3$}; %%
+        \node (o23) at (-1,-2)  {$\co_2^3$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-8.5,3)  {$\ca_1^1$}; %%
+        \node (a21) at (-8.5,-3)  {$\ca_2^1$}; %%
+        \node (a12) at (-5.5,3)  {$\ca_1^2$}; %%
+        \node (a22) at (-5.5,-3)  {$\ca_2^2$}; %%
+        \node (a13) at (-2.5,3)  {$\ca_1^3$}; %%
+        \node (a23) at (-2.5,-3)  {$\ca_2^3$}; %%
+        \node (a1t) at (2.5,3)  {$\ca_1^T$}; %%
+        \node (a2t) at (2.5,-3)  {$\ca_2^T$}; %%
+        \end{scope}
+        \node[font=\small] at (-12,2.5)  {Agent 1}; %%
+        \node[font=\small] at (-12,-2.5)  {Agent 2}; %%
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (s0)--(o10);  %%
+        \draw[->,-latex] (s0)--(o20);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (a21)--(s1); %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (a22)--(s2); %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (a23)--(s3); %%
+        \draw[->,-latex,densely dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+        \draw[->,-latex] (a2t)--(st); %%
+        \draw[->,-latex] (a11)--(o11);  %%
+        \draw[->,-latex] (a21)--(o21); %%
+        \draw[->,-latex] (s1)--(o11);  %%
+        \draw[->,-latex] (s1)--(o21); %%
+        \draw[->,-latex] (a12)--(o12);  %%
+        \draw[->,-latex] (a22)--(o22); %%
+        \draw[->,-latex] (s2)--(o12);  %%
+        \draw[->,-latex] (s2)--(o22); %%
+        \draw[->,-latex] (a13)--(o13);  %%
+        \draw[->,-latex] (a23)--(o23); %%
+        \draw[->,-latex] (s3)--(o13);  %%
+        \draw[->,-latex] (s3)--(o23); %%
+        \draw[->,-latex] (a11)--(o21);  %%
+        \draw[->,-latex] (a21)--(o11); %%
+        \draw[->,-latex] (a12)--(o22);  %%
+        \draw[->,-latex] (a22)--(o12); %%
+        \draw[->,-latex] (a13)--(o23);  %%
+        \draw[->,-latex] (a23)--(o13); %%
+        \draw[->,-latex] (o10)--(a11); %%
+        \draw[->,-latex] (o20)--(a21);  %%
+        \draw[->,-latex] (o11)--(a12); %%
+        \draw[->,-latex] (o21)--(a22);  %%
+        \draw[->,-latex] (o12)--(a13); %%
+        \draw[->,-latex] (o22)--(a23);  %%
+        \draw[->,-latex,loosely dashed,thick] (o13)--(a1t); %%
+        \draw[->,-latex,loosely dashed,thick] (o23)--(a2t);  %%
+    \end{tikzpicture}%
+\end{center}
+}
+\end{frame}
+
+
+%--------------------------------------------------------------------------
+\subsection{Plan}
+%--------------------------------------------------------------------------
+\begin{frame}
+
+ \frametitle{Contributions et plan de la présentation}
+
+\centering
+\begin{tikzpicture}[scale=.7]%
+%%MODELES
+\only<1->{\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (.8,0) rectangle (10.2,10.2);}%%
+\only<2->{\filldraw[rounded corners,ultra thick,bleu,draw=blue!70!green,dashed] (3.5,1) rectangle (9.9,3.8);}%%
+\only<6->{\filldraw[rounded corners,ultra thick,vert,draw=green!70!blue] (1.1,4.1) rectangle (9.9,9.9);}%%
+\only<8->{\filldraw[rounded corners,ultra thick,mauve,draw=blue!70!red] (3.5,5) rectangle (9.8,9.8);}%%
+\only<9->{\filldraw[rounded corners,ultra thick,fill=blue!30!green!5!white,draw=blue!50!green] (6,6) rectangle (9.7,9.7);}%%
+\only<7->{\filldraw[rounded corners,ultra thick,fill=orange,draw=red!70!green,dashed] (1.2,8.8) rectangle (9.6,9.6);}%%
+%%TEXTE MODELES
+\only<1->{\node[font=\small] at (5.5,.5)  {Processus Décisionnel de Markov};} %%
+\only<2->{\node[font=\footnotesize] at (7,3)  {Problèmes de Satisfaction};} %%
+\only<2->{\node[font=\footnotesize] at (7,2)  {de Contraintes Markoviens};} %%
+\only<6->{\node[font=\small] at (5.5,4.5)  {Partiellement Observable};} %%
+\only<7->{\node[font=\footnotesize] at (5.4,9.2)  {Quasi-Déterministe};} %%
+\only<8->{\node[font=\footnotesize] at (8.25,5.3)  {Multiagent};} %%
+\only<9->{\node[font=\footnotesize] at (8.25,6.3)  {Décentralisé};} %%
+%%ALGOS+BORNES
+\only<4->{\node[fill=yellow!20,draw,circle, font=\scriptsize] at (3,3) {\textsc{r-frtdp}};}%%
+\only<10->{\node[fill=yellow!20,draw,circle, font=\scriptsize] at (6,6) {dRollout};}%%
+\only<5->{\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (2.5,2.5)  {+ Bornes};} %%
+\only<7->{\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (8.3,9.2)  {+ Bornes PAC};} %%
+%%PROBLEMES
+\only<3->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=0pt] at (3.1,1.4)  {\textsc{nereus}};} %%
+\only<11->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-3pt] at (4.75,8.2)  {Patrouille};} %%
+%\only<10->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=0pt] at (4.75,7)  {\textsc{mars}};} %%
+\only<10->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-5pt] at (7.95,7.8)  {Déménageurs};} %%
+%%GRILLE
+%\draw[step=1cm,color=gray,very thin] (0,0) grid (10,10);%%
+%%LEGENDE
+\only<1->{\filldraw[rounded corners,thick,fill=gray!1,draw] (11,4.5) rectangle (15,10);}%%
+\only<1->{\node[font=\footnotesize] at (13,9.5)  {Légende};} %%
+\only<1->{\filldraw[rounded corners,ultra thick,fill=gray!15,draw] (11.2,8.1) rectangle (14.8,8.9);}%%
+\only<1->{\node[font=\footnotesize] at (13,8.5)  {Modèle Existant};} %%
+\only<2->{\filldraw[rounded corners,ultra thick,fill=gray!15,draw,dashed] (11.2,7.1) rectangle (14.8,7.9);}%%
+\only<2->{\node[font=\footnotesize] at (13,7.5)  {Modèle Proposé};} %%
+\only<4->{\node[font=\footnotesize,fill=yellow!20,draw,ellipse] at (13,6.5)  {Algorithme};} %%
+\only<3->{\node[font=\footnotesize,fill=gray!1,draw,cloud, aspect=2,inner sep=-5pt] at (13,5.25)  {Problème};} %%
+\end{tikzpicture}
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Contraintes]{Contraintes et Modèles de Markov}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Plan}
+\centering
+\begin{Large}
+1$^{ere}$ Partie : Contraintes et Modèles de Markov
+\end{Large}
+\vspace{1cm}
+
+\begin{tikzpicture}[scale=.7]%
+%%MODELES
+\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (.8,0) rectangle (10.2,4.2);%%
+\filldraw[rounded corners,ultra thick,bleu,draw=blue!70!green,dashed] (3.5,1) rectangle (9.9,3.8);%%
+%%TEXTE MODELES
+\node[font=\small] at (5.5,.5)  {Processus Décisionnel de Markov}; %%
+\node[font=\footnotesize] at (7,3)  {Problèmes de Satisfaction}; %%
+\node[font=\footnotesize] at (7,2)  {de Contraintes Markoviens}; %%
+%%ALGOS+BORNES
+\node [fill=yellow!20,draw,circle, font=\scriptsize] at (3,3) {\textsc{r-frtdp}};%%
+\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (2.5,2.5)  {+ Bornes}; %%
+%%PROBLEMES
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=0pt] at (3.1,1.4)  {\textsc{nereus}}; %%
+%%GRILLE
+%\draw[step=1cm,color=gray,very thin] (0,0) grid (10,10);%%
+%%LEGENDE
+%\filldraw[rounded corners,thick,fill=gray!1,draw] (11,0) rectangle (15,5.5);%%
+%\node[font=\footnotesize] at (13,5.0)  {Légende}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw] (11.2,3.6) rectangle (14.8,4.4);%%
+%\node[font=\footnotesize] at (13,4.0)  {Modèle Existant}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw,dashed] (11.2,2.6) rectangle (14.8,3.4);%%
+%\node[font=\footnotesize] at (13,3.0)  {Modèle Proposé}; %%
+%\node[font=\footnotesize,fill=yellow!20,draw,ellipse] at (13,2.0)  {Algorithme}; %%
+%\node[font=\footnotesize,fill=gray!1,draw,cloud, aspect=2,inner sep=-5pt] at (13,0.75)  {Problème}; %%
+\end{tikzpicture}
+
+\end{frame}
+
+
+%--------------------------------------------------------------------------
+\subsection[CSPs]{Problèmes de Satisfaction de Contraintes}
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Problèmes de satisfaction de contraintes}
+
+\begin{center}
+    \begin{tikzpicture}[scale=1.4]%
+\only<1>{
+        \draw[fill=blue!10!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!10!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- cycle;
+        \draw[fill=blue!10!white] (-1,-1) -- (-.4,.6) -- (.4,.6) -- (.45,1.5) -- (.3,2) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+\only<2>{
+        \draw[fill=blue!10!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!10!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (.4,.6) -- (.45,1.5) -- (.3,2) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+\only<3>{
+        \draw[fill=green!30!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!10!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (.4,.6) -- (.45,1.5) -- (.3,2) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+\only<4>{
+        \draw[fill=green!30!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!10!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!30!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (.4,.6) -- (.45,1.5) -- (.3,2) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+\only<5>{
+        \draw[fill=green!30!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!30!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=blue!10!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!30!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (.4,.6) -- (.45,1.5) -- (.3,2) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+\only<6>{
+        \draw[fill=green!30!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!30!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=green!30!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!30!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (.4,.6) -- (.45,1.5) -- (.3,2) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+    \begin{scope}
+        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+        \node (s0) at (0,0)  {2}; %%
+        \node (s1) at (1,.8)  {4}; %%
+        \node (s2) at (1,2)  {5}; %%
+        \node (s3) at (0,2.2)  {3}; %%
+        \node (s4) at (-1,1.3)  {1}; %%
+    \end{scope}
+        \draw[black,thick] (s0)--(s1); %%
+        \draw[black,thick] (s0)--(s4); %%
+        \draw[black,thick] (s1)--(s2); %%
+        \draw[black,thick] (s1)--(s4); %%
+        \draw[black,thick] (s2)--(s3); %%
+        \draw[black,thick] (s2)--(s4); %%
+        \draw[black,thick] (s3)--(s4); %%
+    \end{tikzpicture}%
+\end{center}
+
+
+\end{frame}
+%--------------------------------------------------------------------------
+\subsection[DCSPs]{Problèmes de Satisfaction de Contraintes Dynamiques}
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Problèmes de satisfaction de contraintes dynamiques}
+
+\begin{center}
+    \begin{tikzpicture}[scale=1.4]%
+\only<1>{
+        \draw[fill=green!30!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!30!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=green!30!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!30!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (.4,.6) -- (.45,1.5) -- (.3,2) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+\only<2-3>{
+        \draw[fill=green!30!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=blue!30!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=green!30!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!30!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- (-.4,.6)-- (.4,.6) -- (.45,1.5) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+\only<4>{
+        \draw[fill=green!30!white] (-1,-1) -- (1,-1) -- (.4,.6) -- (-.4,.6) -- cycle;
+        \draw[fill=red!30!white] (1,-1) -- (.4,.6) -- (.45,1.5) -- (2,1.5) -- cycle;
+        \draw[fill=green!30!white] (.45,1.5) -- (.3,2) -- (.5,2.4) -- (2,2.6) -- (2,1.5) -- cycle;
+        \draw[fill=blue!30!white] (.3,2) -- (.5,2.4) -- (-.5,2.6) -- (-1,2) -- (-.4,1.6) -- (-.4,.6)-- (.4,.6) -- (.45,1.5) -- cycle;
+        \draw[fill=red!30!white] (-1,-1) -- (-.4,.6) -- (-.4,1.6) -- (-1,2) -- (-2,1.5) -- cycle;
+        }
+    \begin{scope}
+        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+        \node (s0) at (0,0)  {2}; %%
+        \node (s1) at (1,.8)  {4}; %%
+        \node (s2) at (1,2)  {5}; %%
+        \node (s3) at (0,2.2)  {3}; %%
+        \node (s4) at (-1,1.3)  {1}; %%
+    \end{scope}
+        \draw[black,thick] (s0)--(s1); %%
+        \draw[black,thick] (s0)--(s4); %%
+        \draw[black,thick] (s1)--(s2); %%
+        \draw[black,thick] (s2)--(s3); %%
+        \draw[black,thick] (s3)--(s4); %%
+\only<1-2>{\draw[black,thick] (s1)--(s4); %%
+        \draw[black,thick] (s2)--(s4);} %%
+\only<3->{\draw[black,thick] (s0)--(s3); %%
+        \draw[black,thick] (s1)--(s3);} %%
+    \end{tikzpicture}%
+\end{center}
+
+
+\end{frame}
+%--------------------------------------------------------------------------
+\subsection[MaCSPs]{Problèmes de Markov avec Satisfaction de Contraintes}
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Problèmes de Markov avec satisfaction de contraintes}
+
+\begin{center}
+        \begin{tikzpicture}[scale=.7]%
+            \node[draw,circle,double,inner sep=0pt] (st) at (0,0)  {
+                    \begin{tikzpicture}[scale=.7]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s0)--(s3); %%
+                        \draw[blue] (s1)--(s2); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s2)--(s3); %%
+                        \draw[blue] (s2)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                        \draw[stealth reversed-stealth,ultra thick] (0,-.3)--(0,-1.2) node[inner sep=0pt,below=-15pt]{Solutions};%%
+                    \end{tikzpicture}%
+            }; %%
+            \node[draw,circle,inner sep=0pt] (st1) at (-5,-6)  {
+                    \begin{tikzpicture}[scale=.5]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s0)--(s3); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s2)--(s3); %%
+                        \draw[blue] (s2)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                    \end{tikzpicture}%
+            }; %%
+            \node[draw,circle,inner sep=0pt] (st2) at (0,-6)  {
+                    \begin{tikzpicture}[scale=.5]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s0)--(s3); %%
+                        \draw[blue] (s1)--(s2); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                    \end{tikzpicture}%
+            }; %%
+            \node[draw,circle,inner sep=0pt] (st3) at (5,-6)  {
+                    \begin{tikzpicture}[scale=.5]%
+                    \begin{scope}
+                        \tikzstyle{every node}=[draw,circle,fill=blue!20!white,minimum size=.3cm];%%
+                        \node (s0) at (0,0)  {}; %%
+                        \node (s1) at (1,.8)  {}; %%
+                        \node (s2) at (1,2)  {}; %%
+                        \node (s3) at (0,2.2)  {}; %%
+                        \node (s4) at (-1,1.3)  {}; %%
+                    \end{scope}
+                        \draw[blue] (s0)--(s1); %%
+                        \draw[blue] (s0)--(s4); %%
+                        \draw[blue] (s1)--(s2); %%
+                        \draw[blue] (s1)--(s4); %%
+                        \draw[blue] (s2)--(s3); %%
+                        \draw[blue] (s2)--(s4); %%
+                        \draw[blue] (s3)--(s4); %%
+                    \end{tikzpicture}%
+            }; %%
+            \node[left,font=\LARGE] at (st1.north west) {$s_{t+1}$};%%
+            \node[left,font=\LARGE] at (st2.north west) {$s_{t+1}$};%%
+            \node[left,font=\LARGE] at (st3.north west) {$s_{t+1}$};%%
+            \node[below,font=\large] at (st1.south) {\textsc{csp}$_{t+1}$};%%
+            \node[below,font=\large] at (st2.south) {\textsc{csp}$_{t+1}$};%%
+            \node[below,font=\large] at (st3.south) {\textsc{csp}$_{t+1}$};%%
+            \node[left,font=\LARGE] at (st.west) {$s_t$};%%
+            \node[left,font=\large] at (st.east) {\textsc{csp}$_{t}$};%%
+            \draw[->,-latex,very thick] (st)--(st1) node[midway,above,left,font=\LARGE]{$a_0$} node[midway,below,right=8pt,font=\LARGE]{...}; %%
+            \draw[->,-latex,very thick] (st)--(st2) node[midway,left,font=\LARGE]{$a_i$} node[midway,below,right=12pt,font=\LARGE]{...}; ;%%
+            \draw[->,-latex,very thick] (st)--(st3) node[midway,above,right,font=\LARGE]{$a_\sigma$};%%
+        \end{tikzpicture}%
+\end{center}
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection{Exemple}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Exemple illustratif à la ferme}
+
+\colorlet{orange}{red!30!yellow}%%
+\only<1>{
+\begin{center}
+\includegraphics[width=.7\paperwidth]{ferme_2}
+\end{center}
+}
+
+\only<2-3>{
+\begin{center}
+Arbre de résolution d'un \textsc{mdp} classique
+\end{center}
+}
+\only<4-5>{
+\begin{center}
+Arbre de résolution d'un \textsc{m}a\textsc{csp} avec \emph{allDiff}
+\end{center}
+}
+\only<2->{
+\begin{center}
+    \begin{tikzpicture}[line width=.1ex, scale=.75]
+    \tikzstyle{every node}=[font=\tiny] %%
+    \node at (7,.5) {$\la P_{ou}, V, P_{ot}\ra$};
+\only<2-3>{
+    \tikzstyle{level 1}=[sibling distance=1.5cm]
+    \tikzstyle{level 2}=[sibling distance=1cm]
+    \node[brouge] at (7,0) {$\la 0, 0, 0\ra$}
+       child {
+                node[blue,below=1.7cm] (a1) {$\la P_{ou}, P_{ou} \ra$}
+                child {
+                    node[brouge] (ff) {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,anchor=south east] (a2) {$\la P_{ou}, V\ra$}
+                child {
+                    node[brouge] {$\la 1,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,below=1.2cm] (a3) {$\la P_{ou}, P_{ot}\ra$}
+                child {
+                    node[brouge] {$\la 1,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue] (a4) {$\la V, V\ra$}
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,below=1.7cm] (a5) {$\la V, P_{ou}\ra$}
+                child {
+                    node[brouge] {$\la 1,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+        }
+        child {
+                node[blue] (a6) {$\la V, P_{ot}\ra$}
+                child {
+                    node[brouge] {$\la 0,1,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,below=1.2cm] (a7) {$\la P_{ot}, P_{ot}\ra$}
+                child {
+                   node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,anchor=south west] (a8) {$\la P_{ot}, V\ra$}
+                child {
+                    node[brouge] {$\la 0,1,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,below=1.7cm] (a9) {$\la P_{ot},P_{ou}\ra$}
+                child {
+                    node[brouge] {$\la 1,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge](lf) {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            };
+}
+\only<4-5>{
+    \tikzstyle{level 1}=[sibling distance=2cm]
+    \tikzstyle{level 2}=[sibling distance=1cm]
+    \node[brouge] at (7,0) {$\la 0, 0, 0\ra$}
+        child {
+                node[blue,anchor=south east,above] (a2) {$\la P_{ou}, V\ra$}
+                child {
+                    node[brouge] (ff) {$\la 1,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,anchor=north east,below=1cm] (a3) {$\la P_{ou}, P_{ot}\ra$}
+                child {
+                    node[brouge] {$\la 1,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,anchor=north east,below=2.5cm] (a5) {$\la V, P_{ou}\ra$}
+                child {
+                    node[brouge] {$\la 1,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+          }
+        child {
+                node[blue,anchor=north west,below=3cm](a6) {$\la V, P_{ot}\ra$}
+                child {
+                    node[brouge] {$\la 0,1,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,anchor=north west,below=1cm] (a8) {$\la P_{ot}, V\ra$}
+                child {
+                    node[brouge] {$\la 0,1,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,1,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            }
+        child {
+                node[blue,anchor=south west,above] (a9) {$\la P_{ot},P_{ou}\ra$}
+                child {
+                    node[brouge] {$\la 1,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 0,0,1 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge] {$\la 1,0,0 \ra$}
+                    edge from parent
+                }
+                child {
+                    node[brouge](lf) {$\la 0,0,0 \ra$}
+                    edge from parent
+                }
+                edge from parent
+            };
+}
+\visible<3>{\draw[decorate,decoration={brace,mirror}] (ff.south) -- (lf.south) node[midway,below,font=\normalsize,brouge]{7 états possibles selon les probabilités};
+         \draw[decorate,decoration={brace,mirror}] (ff.south) -- (lf.south) node[midway,below=12pt,font=\normalsize,blue]{pour 9 actions jointes};}
+\visible<5>{\draw[decorate,decoration={brace,mirror}] (0,-7.5) -- (14,-7.5) node[midway,below,font=\normalsize,brouge]{7 états possibles selon les probabilités};
+         \draw[decorate,decoration={brace,mirror}] (0,-7.5) -- (14,-7.5) node[midway,below=12pt,font=\normalsize,blue]{pour seulement 6 actions jointes};}
+    \end{tikzpicture}
+\end{center}
+}
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection{Résultats}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+
+ \frametitle{Résultats théoriques}
+
+\visible<+->{
+\begin{exampleblock}{Gain dans un problème d'allocation séquentiel}
+Dans un problème d'allocation de ressources à des tâches, le gain en facteur de branchement de l'utilisation de la contrainte \emph{allDiff} qui imposent que toutes les ressources soient appliquées à des tâches différentes est égal à:
+\[ Gain = \frac{|T|^{|X|}}{C_{|T|}^{|X|}}\]
+\end{exampleblock}}
+
+\visible<+->{
+\begin{alertblock}{Complexité du modèle en pire cas}
+Trouver une politique pour un \textsc{m}a\textsc{csp}, qui obtiendrait une récompense espérée d'au moins $C$, est \#\textsc{p}.
+\end{alertblock}
+}
+
+\visible<+->{
+\begin{block}{}
+Mais cela fonctionne très bien \emph{en pratique} puisque le nombre de variables est très inférieur au nombre d'états.
+\end{block}
+}
+\end{frame}
+
+%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Résultats empiriques}
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=.75\textwidth]{../MaCSPvsMDP_time}
+    \end{center}
+\end{figure}
+\end{frame}
+
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Observabilité]{Contraintes et Observabilité dans Modèles de Markov}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Plan}
+\centering
+\begin{Large}
+2$^{eme}$ Partie : Contraintes et Observabilité dans les Modèles de Markov
+\end{Large}
+\vspace{1cm}
+
+\begin{center}
+\centering
+\begin{tikzpicture}[scale=.7]%
+%%MODELES
+\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (.8,4) rectangle (10.2,10.2);%%
+\filldraw[rounded corners,ultra thick,vert,draw=green!70!blue] (1.1,5.1) rectangle (9.9,9.9);%%
+\filldraw[rounded corners,ultra thick,mauve,draw=blue!70!red] (3.5,6) rectangle (9.8,9.8);%%
+\filldraw[rounded corners,ultra thick,fill=blue!30!green!5!white,draw=blue!50!green] (6,7) rectangle (9.7,9.7);%%
+\filldraw[rounded corners,ultra thick,fill=orange,draw=red!70!green,dashed] (1.2,8.8) rectangle (9.6,9.6);%%
+%%TEXTE MODELES
+\node[font=\small] at (5.5,4.5)  {Processus Décisionnel de Markov}; %%
+\node[font=\small] at (5.5,5.5)  {Partiellement Observable}; %%
+\node[font=\footnotesize] at (8.25,6.3)  {Multiagent}; %%
+\node[font=\footnotesize] at (8.25,7.3)  {Décentralisé}; %%
+\node[font=\footnotesize] at (5.4,9.2)  {Quasi-Déterministe}; %%
+%%ALGOS+BORNES
+\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (8.3,9.2)  {+ Bornes PAC}; %%
+%%PROBLEMES
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-2pt] at (4.75,7.8)  {Incendie}; %%
+%%GRILLE
+%\draw[step=1cm,color=gray,very thin] (0,0) grid (10,10);%%
+%%LEGENDE
+%\filldraw[rounded corners,thick,fill=gray!1,draw] (11,4.5) rectangle (15,10);%%
+%\node[font=\footnotesize] at (13,9.5)  {Légende}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw] (11.2,8.1) rectangle (14.8,8.9);%%
+%\node[font=\footnotesize] at (13,8.5)  {Modèle Existant}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw,dashed] (11.2,7.1) rectangle (14.8,7.9);%%
+%\node[font=\footnotesize] at (13,7.5)  {Modèle Proposé}; %%
+%\node[font=\footnotesize,fill=yellow!20,draw,ellipse] at (13,6.5)  {Algorithme}; %%
+%\node[font=\footnotesize,fill=gray!1,draw,cloud, aspect=2,inner sep=-5pt] at (13,5.25)  {Problème}; %%
+\end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+
+%--------------------------------------------------------------------------
+\subsection[Bases]{Bases sur l'état de croyance}
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{L'état de croyance}
+
+        \begin{center}
+        \begin{tikzpicture}[scale=.5]%
+        %\draw[step=1cm,color=gray,very thin] (-5,-1) grid (9,5);%%
+        \begin{scope}[shape=diamond,inner sep=.01cm,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (r1) at (-9,-3)  {$r^1$}; %%
+        \node (r2) at (-4,-3)  {$r^2$}; %%
+        \node (r3) at (1,-3)  {$r^3$}; %%
+        \node (rt) at (6,-3)  {$r^T$}; %%
+        \end{scope}%
+        \begin{scope}[shape=circle,inner sep=.01cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-12,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-2,0)  {$\cs^2$}; %%
+        \node (s3) at (3,0)  {$\cs^3$}; %%
+        \node (st) at (8,0)  {$\cs^T$}; %%
+        \node (o0) at (-12,2)  {$\co^0$}; %%
+        \node (o1) at (-7,2)  {$\co^1$}; %%
+        \node (o2) at (-2,2)  {$\co^2$}; %%
+        \node (o3) at (3,2)  {$\co^3$}; %%
+\visible<2->{
+        \node (b0) at (-12,4)  {$\bel^0$}; %%
+        \node (b1) at (-7,4)  {$\bel^1$}; %%
+        \node (b2) at (-2,4)  {$\bel^2$}; %%
+        \node (b3) at (3,4)  {$\bel^3$}; %%
+}
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-10,3)  {$\ca_1^1$}; %%
+        \node (a12) at (-5,3)  {$\ca_1^2$}; %%
+        \node (a13) at (0,3)  {$\ca_1^3$}; %%
+        \node (a1t) at (5,3)  {$\ca_1^T$}; %%
+        \end{scope}
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (s0)--(o0);  %%
+        \draw[->,-latex] (s1)--(o1); %%
+        \draw[->,-latex] (s2)--(o2); %%
+        \draw[->,-latex] (s3)--(o3); %%
+\visible<2->{
+        \draw[->,-latex] (o0)--(b0);  %%
+        \draw[->,-latex] (o1)--(b1); %%
+        \draw[->,-latex] (o2)--(b2); %%
+        \draw[->,-latex] (o3)--(b3); %%
+        \draw[->,-latex] (b0)--(b1);  %%
+        \draw[->,-latex] (b1)--(b2); %%
+        \draw[->,-latex] (b2)--(b3); %%
+}
+        \draw[->,-latex,dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+\visible<1>{
+        \draw[->,-latex,dashed] (o0)--(a11); %%
+        \draw[->,-latex,dashed] (o1)--(a12); %%
+        \draw[->,-latex,dashed] (o2)--(a13); %%
+        \draw[->,-latex,loosely dashed,thick] (o3)--(a1t); %%
+}
+\visible<2->{
+        \draw[->,-latex,dashed] (b0)--(a11); %%
+        \draw[->,-latex,dashed] (b1)--(a12); %%
+        \draw[->,-latex,dashed] (b2)--(a13); %%
+        \draw[->,-latex,loosely dashed,thick] (b3)--(a1t); %%
+}
+        \draw[->,-latex,double] (s1)--+(-2,-1)--(r1);  %%
+        \draw[->,-latex,double] (a11)--+(1,-4)--(r1);  %%
+        \draw[->,-latex,double] (s2)--+(-2,-1)--(r2);  %%
+        \draw[->,-latex,double] (a12)--+(1,-4)--(r2);  %%
+        \draw[->,-latex,double] (s3)--+(-2,-1)--(r3);  %%
+        \draw[->,-latex,double] (a13)--+(1,-4)--(r3);  %%
+        \draw[->,-latex,double] (st)--+(-2,-1)--(rt);  %%
+        \draw[->,-latex,double] (a1t)--+(1,-4)--(rt);  %%
+        \end{tikzpicture}%
+    \end{center}
+\end{frame}
+
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{L'état de croyance: un exemple}
+
+\begin{tabular}{p{.1\textwidth}p{.7\textwidth}}
+~ &
+\only<1>{\includegraphics[width=.7\textwidth]{belief}}
+\only<2>{\includegraphics[width=.7\textwidth]{belief2}}
+\only<3>{\includegraphics[width=.7\textwidth]{belief3}}
+\only<4>{\includegraphics[width=.7\textwidth]{belief4}}
+\only<5>{\includegraphics[width=.7\textwidth]{belief5}}\\
+$\bel(s)$ &
+\begin{tikzpicture}[scale=.5]%
+    \draw[step=1cm,color=gray!1,very thin] (0,0) grid (14,8.5);%%
+    \draw[black] (0,0) -- (14,0);
+    \draw \foreach \p in {0,...,14} {(\p,0)--(\p,.01)};
+
+\only<1>{
+\filldraw[fill=gray!20,draw] \foreach \p in {0,...,13} {(\p,0) rectangle +(1,.7)};
+}
+\only<2>{
+\filldraw[fill=gray!20,draw] \foreach \p in {0,...,13} {(\p,0) rectangle +(1,.1)};
+\filldraw[fill=gray!20,draw] (1,0) rectangle +(1,3);
+\filldraw[fill=gray!20,draw] (5,0) rectangle +(1,3);
+\filldraw[fill=gray!20,draw] (11,0) rectangle +(1,3);
+}
+\only<3>{
+\filldraw[fill=gray!20,draw] (2,0) rectangle +(1,.5);
+\filldraw[fill=gray!20,draw] (3,0) rectangle +(1,2.5);
+\filldraw[fill=gray!20,draw] (4,0) rectangle +(1,.5);
+\filldraw[fill=gray!20,draw] (6,0) rectangle +(1,.5);
+\filldraw[fill=gray!20,draw] (7,0) rectangle +(1,2.5);
+\filldraw[fill=gray!20,draw] (8,0) rectangle +(1,.5);
+\filldraw[fill=gray!20,draw] (12,0) rectangle +(1,.5);
+\filldraw[fill=gray!20,draw] (13,0) rectangle +(1,2.5);
+\filldraw[fill=gray!20,draw] (14,0) rectangle +(1,.5);
+}
+\only<4>{
+\filldraw[fill=gray!20,draw] (4,0) rectangle +(1,.75);
+\filldraw[fill=gray!20,draw] (5,0) rectangle +(1,8);
+\filldraw[fill=gray!20,draw] (6,0) rectangle +(1,.75);
+\filldraw[fill=gray!20,draw] (7,0) rectangle +(1,.5);
+}
+\only<5>{
+\filldraw[fill=gray!20,draw] (5,0) rectangle +(1,.12);
+\filldraw[fill=gray!20,draw] (6,0) rectangle +(1,.46);
+\filldraw[fill=gray!20,draw] (7,0) rectangle +(1,7);
+\filldraw[fill=gray!20,draw] (8,0) rectangle +(1,.56);
+\filldraw[fill=gray!20,draw] (9,0) rectangle +(1,.22);
+}
+\end{tikzpicture}
+\end{tabular}
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[Problème]{Problème des modèles partiellement observables}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+\frametitle{Complexité des modèles de Markov selon l'observabilité}
+
+\begin{center}
+    \begin{tikzpicture}[line width=.1ex, scale=.6,font=\small]
+        %\draw[step=0.1cm,color=gray,very thin] (-2,-2) grid (11,11);%%
+        \begin{scope}[font=\footnotesize]
+        \node[below] at (10,0) {None};  %%
+        \node[below] at (8.5,0) {Partial};  %%
+        \node[below=10pt] at (8.5,0) {\& Noisy};  %%
+        \node[below=] at (6,0) {Joint};  %%
+        \node[below=10pt] at (6,0) {\& Perfect};  %%
+        \node[below] at (3.5,0) {Complete};  %%
+        \node[below=10pt] at (3.5,0) {\& Noisy};  %%
+        \node[below] at (1,0) {Complete};  %%
+        \node[below=10pt] at (1,0) {\& Perfect};  %%
+        \end{scope}
+%        \node[align=right,anchor=east] at (0,8.5) {\textsc{nexp}};  %%
+%        \node[align=right,anchor=east] at (0,7.5) {\textsc{exp}};  %%
+%        \node[align=right,anchor=east] at (0,7) {$\Sigma^\textsc{p}_{poly} \subseteq$ \textsc{pspace}};  %%
+        \node[anchor=east] at (0,8.5) {\textsc{nexp}};  %%
+        \node[anchor=east] at (0,7.5) {\textsc{exp}};  %%
+        \node[anchor=east] at (0,7) {$\Sigma^\textsc{p}_{poly} \subseteq$ \textsc{pspace}};  %%
+        \draw[snake=brace,segment amplitude=10pt] (-.5,2.2)--(-.5,6.8) node[midway,left=10pt]{$\Sigma^\textsc{p}_{k}$};%%
+%        \node[align=right,anchor=east] at (0,2) {$\Sigma^\textsc{p}_1 =$ \textsc{np}};  %%
+%        \node[align=right,anchor=east] at (0,1) {\textsc{p}};  %%
+        \node[anchor=east] at (0,2) {$\Sigma^\textsc{p}_1 =$ \textsc{np}};  %%
+        \node[anchor=east] at (0,1) {\textsc{p}};  %%
+        \draw[thin] (0,8.5) -- (8.5,8.5); \draw[thin,dashed] (8.5,8.5) -- (10,8.5);
+        \draw[thin] (0,7) -- (8.5,7); \draw[thin,dashed] (8.5,7) -- (10,7);
+        \draw[thin] (0,2) -- (8.5,2); \draw[thin,dashed] (8.5,2) -- (10,2);
+        \draw[thin] (0,1) -- (8.5,1); \draw[thin,dashed] (8.5,1) -- (10,1);
+        \draw[thin,dashed,draw=gray] (10,0) -- (10,8.5);
+        \draw[thin,dashed,draw=gray] (8.5,0) -- (8.5,8.5);
+        \draw[thin,dashed,draw=gray] (6,0) -- (6,8.5);
+        \draw[thin,dashed,draw=gray] (3.5,0) -- (3.5,8.5);
+        \draw[thin,dashed,draw=gray] (1,0) -- (1,8.5);
+\only<6->{
+        \node at (6,4.5) {\LARGE{Gap}};%%
+        \pgfsetfillopacity{0.5}
+        \shade [right color=white,left color=blue!50!white] (0,2.1) rectangle (11,6.9);
+        \shade [right color=white,left color=red!50!white] (0,7.1) rectangle (11,10);
+        \shade [right color=white,left color=green!50!white] (0,.1) rectangle (11,1.9);
+        \pgfsetfillopacity{1.0}
+}
+\only<2->{
+        \filldraw (1,1) circle (2pt) node[anchor=250]{(\textsc{m})\textsc{mdp}$_\infty$};%%
+}
+\only<4->{
+        \filldraw (8.5,8.5) circle (2pt) node[anchor=south]{\decpomdp};%%
+}
+\only<3->{
+        \filldraw (3.5,7) circle (2pt) node[anchor=south]{(\textsc{m})\pomdp};%%
+}
+\only<5->{
+        \filldraw (10,2) circle (2pt) node[anchor=south]{\textsc{u}\mdp};%%
+        \filldraw (10,7) circle (2pt) node[anchor=south]{\textsc{umdp}$_\infty$};%%
+        \filldraw (6,8.5) circle (2pt) node[anchor=north]{\decmdp};%%
+        \filldraw (6,1) circle (2pt) node[anchor=south]{Free Com.};%%
+        \filldraw (6,1) circle (2pt) node[anchor=north]{\decmdpcom};%%
+        \filldraw (8.5,7) circle (2pt) node[anchor=340]{Free Com.};%%
+        \filldraw (8.5,7) circle (2pt) node[anchor=20]{\decpomdpcom};%%
+}
+\only<6->{
+        \filldraw[red] (3.5,4.5) circle (4.5pt) node[red,anchor=south]{???};%%
+}
+        \draw[->,-latex,line width=.5ex,red] (-.05,0) -- (11,0) node[anchor=south]{Observability};  %%
+        \draw[->,-latex,line width=.5ex,red] (0,-.05) -- (0,10) node[anchor=west]{Complexity};  %%
+    \end{tikzpicture}
+\end{center}
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[Bijection]{Modèle avec observation bijective}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Modèle avec observation bijective}
+
+\begin{block}{Observabilité bijective}
+\only<1>{
+\vspace{-12pt}
+\begin{eqnarray*}
+&&\exists o_1\in\Omega,\,\forall a\in\Act,\,\forall s\in\Sta^{o_1},\\
+&&\mbox{with }\Sta^{o_1} = \{s\in\Sta|\exists o_1\in\Omega, P(o_1|s,a)>P(o|s,a),\forall o\ne o_1\},\\
+&&\mbox{then }|\Omega|=|\Sta|\mbox{ and }|\Sta^{o_1}| = 1
+\end{eqnarray*}
+}
+
+\only<2->{
+\begin{center}
+    \begin{tikzpicture}[scale=.7]%
+        \draw[thick,color=blue!70,rounded corners=15pt] (0,0) rectangle (3,6);
+        \draw[thick,color=green!30!black,rounded corners=15pt] (8,0) rectangle (11,6);
+\only<3-7>{
+        \node[below] at (5.5,0) {$\nu = 3, \theta = 0.8$};
+        }
+        \node[below] at (1.5,0) {États};
+        \node[below] at (9.5,0) {Observations};
+        \filldraw (1,1) circle (2pt) node[above] (s1) {$s_1$};%%
+        \filldraw (1.7,2) circle (2pt) node[above] (s2) {$s_2$};%%
+        \filldraw (1.1,3) circle (2pt) node[above] (s3) {$s_3$};%%
+        \filldraw (.6,4) circle (2pt) node[above] (s4) {$s_4$};%%
+        \filldraw (2.1,5) circle (2pt) node[above] (s5) {$s_5$};%%
+        \filldraw (9.7,1) circle (2pt) node[above] (o1) {$o_1$};%%
+        \filldraw (10.1,2) circle (2pt) node[above] (o2) {$o_2$};%%
+        \filldraw (9,3) circle (2pt) node[above] (o3) {$o_3$};%%
+        \filldraw (9.1,4) circle (2pt) node[above] (o4) {$o_4$};%%
+        \filldraw (8.6,5) circle (2pt) node[above] (o5) {$o_5$};%%
+\only<3>{
+        \draw[dashed] (s1.south) -- (o1.south) node[midway,below,font=\footnotesize] {$P(o_1|s_1) = 0.8$};
+        \draw[dashed] (s1.south) -- (o2.south) node[midway,font=\footnotesize] {$P(o_2|s_1) = 0.1$};
+        \draw[dashed] (s1.south) -- (o3.south) node[midway,above,font=\footnotesize] {$P(o_3|s_1) = 0.1$};
+        }
+\only<4>{
+        \draw[dashed] (s2.south) -- (o1.south) node[midway,below,font=\footnotesize] {$P(o_1|s_2) = 0.1$};
+        \draw[dashed] (s2.south) -- (o2.south) node[midway,font=\footnotesize] {$P(o_2|s_2) = 0.8$};
+        \draw[dashed] (s2.south) -- (o3.south) node[midway,above,font=\footnotesize] {$P(o_3|s_2) = 0.1$};
+        }
+\only<5>{
+        \draw[dashed] (s3.south) -- (o2.south) node[midway,below,font=\footnotesize] {$P(o_2|s_3) = 0.1$};
+        \draw[dashed] (s3.south) -- (o3.south) node[midway,font=\footnotesize] {$P(o_3|s_3) = 0.8$};
+        \draw[dashed] (s3.south) -- (o4.south) node[midway,above,font=\footnotesize] {$P(o_4|s_3) = 0.1$};
+        }
+\only<6>{
+        \draw[dashed] (s4.south) -- (o3.south) node[midway,below,font=\footnotesize] {$P(o_3|s_4) = 0.1$};
+        \draw[dashed] (s4.south) -- (o4.south) node[midway,font=\footnotesize] {$P(o_4|s_4) = 0.8$};
+        \draw[dashed] (s4.south) -- (o5.south) node[midway,above,font=\footnotesize] {$P(o_5|s_4) = 0.1$};
+        }
+\only<7>{
+        \draw[dashed] (s5.south) -- (o3.south) node[midway,below,font=\footnotesize] {$P(o_3|s_5) = 0.1$};
+        \draw[dashed] (s5.south) -- (o4.south) node[midway,font=\footnotesize] {$P(o_4|s_5) = 0.1$};
+        \draw[dashed] (s5.south) -- (o5.south) node[midway,above,font=\footnotesize] {$P(o_5|s_5) = 0.8$};
+        }
+    \end{tikzpicture}
+\end{center}
+}
+\end{block}
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[Théorie]{Résultats théoriques obtenus}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Résultats théoriques obtenus}
+
+\only<1-4>{
+\visible<1->{
+\begin{alertblock}{Convergence de l'état de croyance en probabilité}
+\only<1>{
+Sous l'hypothèse d'observation bijective, l'état de croyance $\bel^k$ est tel que $\bel^k(s) \ge 1-\varepsilon$ ssi
+\begin{equation}\label{eq:boundN2}
+    n \ge  \frac{1}{2\ln \frac{\nu \theta}{(1-\theta)}} \ln \left[\frac{1-\varepsilon}{\varepsilon} \left(1+\nu^{1-\frac{k}{2}}\right)\right] + \frac{k}{2}
+\end{equation}
+}
+\only<2>{
+\begin{center}
+        \includegraphics[width=.6\textwidth]{../proba}
+\end{center}
+}
+\only<3->{
+\begin{center}
+        \includegraphics[width=.4\textwidth]{../proba}
+\end{center}
+}
+\end{alertblock}
+}
+\visible<3->{
+\begin{alertblock}{Réduction de la complexité en pire cas pour les \only<3>{\pomdps}\only<4>{\decpomdps}}
+Étant donné un \only<3>{\pomdp}\only<4>{\decpomdp} à horizon infini avec actions déterministes et respectant l'hypothèse d'observabilité bijective, trouver une politique qui permette d'obtenir une récompense escomptée espérée donnée avec une forte probabilité est \only<3>{$\Sigma_{2k-1}^{\rm P}$}\only<4>{\textsc{pspace}}.
+\end{alertblock}
+}}
+\only<5>{
+\begin{center}
+    \begin{tikzpicture}[line width=.1ex, scale=.6,font=\small]
+        %\draw[step=0.1cm,color=gray,very thin] (-2,-2) grid (11,11);%%
+        \begin{scope}[font=\footnotesize]
+        \node[below] at (10,0) {None};  %%
+        \node[below] at (8.5,0) {Partial};  %%
+        \node[below=10pt] at (8.5,0) {\& Noisy};  %%
+        \node[below=] at (6,0) {Joint};  %%
+        \node[below=10pt] at (6,0) {\& Perfect};  %%
+        \node[below] at (3.5,0) {Complete};  %%
+        \node[below=10pt] at (3.5,0) {\& Noisy};  %%
+        \node[below] at (1,0) {Complete};  %%
+        \node[below=10pt] at (1,0) {\& Perfect};  %%
+        \end{scope}
+        \node[anchor=east] at (0,8.5) {\textsc{nexp}};  %%
+        \node[anchor=east] at (0,7.5) {\textsc{exp}};  %%
+        \node[anchor=east] at (0,7) {$\Sigma^\textsc{p}_{poly} \subseteq$ \textsc{pspace}};  %%
+        \draw[snake=brace,segment amplitude=10pt] (-.5,2.2)--(-.5,6.8) node[midway,left=10pt]{$\Sigma^\textsc{p}_{k}$};%%
+        \node[anchor=east] at (0,2) {$\Sigma^\textsc{p}_1 =$ \textsc{np}};  %%
+        \node[anchor=east] at (0,1) {\textsc{p}};  %%
+        \node at (6,4.5) {\LARGE{Gap}};%%
+        \draw[thin] (0,8.5) -- (8.5,8.5); \draw[thin,dashed] (8.5,8.5) -- (10,8.5);
+        \draw[thin] (0,7) -- (8.5,7); \draw[thin,dashed] (8.5,7) -- (10,7);
+        \draw[thin] (0,2) -- (8.5,2); \draw[thin,dashed] (8.5,2) -- (10,2);
+        \draw[thin] (0,1) -- (8.5,1); \draw[thin,dashed] (8.5,1) -- (10,1);
+        \draw[thin,dashed,draw=gray] (10,0) -- (10,8.5);
+        \draw[thin,dashed,draw=gray] (8.5,0) -- (8.5,8.5);
+        \draw[thin,dashed,draw=gray] (6,0) -- (6,8.5);
+        \draw[thin,dashed,draw=gray] (3.5,0) -- (3.5,8.5);
+        \draw[thin,dashed,draw=gray] (1,0) -- (1,8.5);
+        \pgfsetfillopacity{0.5}
+        \shade [right color=white,left color=blue!50!white] (0,2.1) rectangle (11,6.9);
+        \shade [right color=white,left color=red!50!white] (0,7.1) rectangle (11,10);
+        \shade [right color=white,left color=green!50!white] (0,.1) rectangle (11,1.9);
+        \pgfsetfillopacity{1.0}
+        \draw[->,-latex,line width=.5ex,red] (-.05,0) -- (11,0) node[anchor=south]{Observability};  %%
+        \draw[->,-latex,line width=.5ex,red] (0,-.05) -- (0,10) node[anchor=west]{Complexity};  %%
+        \filldraw (1,1) circle (2pt) node[anchor=250]{(\textsc{m})\textsc{mdp}$_\infty$};%%
+        \filldraw (3.5,7) circle (2pt) node[anchor=south]{(\textsc{m})\pomdp};%%
+        \filldraw (8.5,8.5) circle (2pt) node[anchor=south]{\decpomdp};%%
+        \filldraw[red] (3.5,4.5) circle (4.5pt) node[red,anchor=north]{\qdetpomdp};%%
+        \filldraw[red] (3.5,7) circle (4.5pt) node[red,anchor=north]{\qdetdecpomdp};%%
+    \end{tikzpicture}
+\end{center}
+}
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[Pratique]{Résultats empiriques obtenus}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Résultats empiriques obtenus}
+    \frametitle{avec actions stochastiques}
+
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=.75\textwidth]{../92}
+    \end{center}
+\end{figure}
+
+\end{frame}
+
+
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Décentralisé]{Observabilité dans les modèles de Markov décentralisés}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Plan}
+\centering
+\begin{Large}
+3$^{eme}$ Partie : Observabilité dans les modèles de Markov décentralisés
+\end{Large}
+\vspace{1cm}
+
+\begin{center}
+\begin{tikzpicture}[scale=.7]%
+%%MODELES
+\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (.8,3) rectangle (10.2,9.2);%%
+\filldraw[rounded corners,ultra thick,vert,draw=green!70!blue] (1.1,4.1) rectangle (9.9,8.9);%%
+\filldraw[rounded corners,ultra thick,mauve,draw=blue!70!red] (3.5,5) rectangle (9.8,8.8);%%
+\filldraw[rounded corners,ultra thick,fill=blue!30!green!5!white,draw=blue!50!green] (6,6) rectangle (9.7,8.7);%%
+%%TEXTE MODELES
+\node[font=\small] at (5.5,3.5)  {Processus Décisionnel de Markov}; %%
+\node[font=\small] at (5.5,4.5)  {Partiellement Observable}; %%
+\node[font=\footnotesize] at (8.25,5.3)  {Multiagent}; %%
+\node[font=\footnotesize] at (8.25,6.3)  {Décentralisé}; %%
+%%ALGOS+BORNES
+\node [fill=yellow!20,draw,circle, font=\scriptsize] at (6,6) {dRollout};%%
+%%PROBLEMES
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-3pt] at (4.75,7.8)  {Patrouille}; %%
+%\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-2pt] at (4.75,7.8)  {Incendie}; %%
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-5pt] at (7.95,7.8)  {Déménageurs}; %%
+%%GRILLE
+%\draw[step=1cm,color=gray,very thin] (0,0) grid (10,10);%%
+%%LEGENDE
+%\filldraw[rounded corners,thick,fill=gray!1,draw] (11,4.5) rectangle (15,10);%%
+%\node[font=\footnotesize] at (13,9.5)  {Légende}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw] (11.2,8.1) rectangle (14.8,8.9);%%
+%\node[font=\footnotesize] at (13,8.5)  {Modèle Existant}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw,dashed] (11.2,7.1) rectangle (14.8,7.9);%%
+%\node[font=\footnotesize] at (13,7.5)  {Modèle Proposé}; %%
+%\node[font=\footnotesize,fill=yellow!20,draw,ellipse] at (13,6.5)  {Algorithme}; %%
+%\node[font=\footnotesize,fill=gray!1,draw,cloud, aspect=2,inner sep=-5pt] at (13,5.25)  {Problème}; %%
+\end{tikzpicture}
+\end{center}
+\end{frame}
+%--------------------------------------------------------------------------
+\subsection[DecPOMDPs]{Bases sur les POMDPs décentralisés}
+%--------------------------------------------------------------------------
+\begin{frame}
+\frametitle{Bases sur les POMDPs décentralisés}
+
+\begin{center}
+\only<1>{
+    \begin{tikzpicture}[scale=.6]%
+        \filldraw[rounded corners,ultra thick,bleu] (-13,4) rectangle (4,1);%%
+        \filldraw[rounded corners,ultra thick,vert] (-13,-4) rectangle (4,-1);%%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\footnotesize] %%
+        \node (s0) at (-10,0)  {$\cs^0$}; %%
+        \node (s1) at (-7,0)  {$\cs^1$}; %%
+        \node (s2) at (-4,0)  {$\cs^2$}; %%
+        \node (s3) at (-1,0)  {$\cs^3$}; %%
+        \node (st) at (4,0)  {$\cs^T$}; %%
+        \node (o10) at (-10,2)  {$\co_1^0$}; %%
+        \node (o20) at (-10,-2)  {$\co_2^0$}; %%
+        \node (o11) at (-7,2)  {$\co_1^1$}; %%
+        \node (o21) at (-7,-2)  {$\co_2^1$}; %%
+        \node (o12) at (-4,2)  {$\co_1^2$}; %%
+        \node (o22) at (-4,-2)  {$\co_2^2$}; %%
+        \node (o13) at (-1,2)  {$\co_1^3$}; %%
+        \node (o23) at (-1,-2)  {$\co_2^3$}; %%
+        \end{scope}
+        \begin{scope}[shape=rectangle,inner sep=.05cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\small] %%
+        \node (a11) at (-8.5,3)  {$\ca_1^1$}; %%
+        \node (a21) at (-8.5,-3)  {$\ca_2^1$}; %%
+        \node (a12) at (-5.5,3)  {$\ca_1^2$}; %%
+        \node (a22) at (-5.5,-3)  {$\ca_2^2$}; %%
+        \node (a13) at (-2.5,3)  {$\ca_1^3$}; %%
+        \node (a23) at (-2.5,-3)  {$\ca_2^3$}; %%
+        \node (a1t) at (2.5,3)  {$\ca_1^T$}; %%
+        \node (a2t) at (2.5,-3)  {$\ca_2^T$}; %%
+        \end{scope}
+        \node[font=\small] at (-12,2.5)  {Agent 1}; %%
+        \node[font=\small] at (-12,-2.5)  {Agent 2}; %%
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (s0)--(o10);  %%
+        \draw[->,-latex] (s0)--(o20);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (a21)--(s1); %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (a22)--(s2); %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (a23)--(s3); %%
+        \draw[->,-latex,densely dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+        \draw[->,-latex] (a2t)--(st); %%
+        \draw[->,-latex] (a11)--(o11);  %%
+        \draw[->,-latex] (a21)--(o21); %%
+        \draw[->,-latex] (s1)--(o11);  %%
+        \draw[->,-latex] (s1)--(o21); %%
+        \draw[->,-latex] (a12)--(o12);  %%
+        \draw[->,-latex] (a22)--(o22); %%
+        \draw[->,-latex] (s2)--(o12);  %%
+        \draw[->,-latex] (s2)--(o22); %%
+        \draw[->,-latex] (a13)--(o13);  %%
+        \draw[->,-latex] (a23)--(o23); %%
+        \draw[->,-latex] (s3)--(o13);  %%
+        \draw[->,-latex] (s3)--(o23); %%
+        \draw[->,-latex] (a11)--(o21);  %%
+        \draw[->,-latex] (a21)--(o11); %%
+        \draw[->,-latex] (a12)--(o22);  %%
+        \draw[->,-latex] (a22)--(o12); %%
+        \draw[->,-latex] (a13)--(o23);  %%
+        \draw[->,-latex] (a23)--(o13); %%
+        \draw[->,-latex] (o10)--(a11); %%
+        \draw[->,-latex] (o20)--(a21);  %%
+        \draw[->,-latex] (o11)--(a12); %%
+        \draw[->,-latex] (o21)--(a22);  %%
+        \draw[->,-latex] (o12)--(a13); %%
+        \draw[->,-latex] (o22)--(a23);  %%
+        \draw[->,-latex,loosely dashed,thick] (o13)--(a1t); %%
+        \draw[->,-latex,loosely dashed,thick] (o23)--(a2t);  %%
+    \end{tikzpicture}%
+}
+\only<2->{
+    \begin{tikzpicture}[scale=.6]%
+            \filldraw[rounded corners,ultra thick,bleu] (-13,4) rectangle (4,1);%%
+            \filldraw[rounded corners,ultra thick,vert] (-13,-4) rectangle (4,-1);%%
+            \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+            \tikzstyle{every node}=[draw,font=\footnotesize] %%
+            \node (s0) at (-10,0)  {$\cs^0$}; %%
+            \node (s1) at (-7,0)  {$\cs^1$}; %%
+            \node (s2) at (-4,0)  {$\cs^2$}; %%
+            \node (s3) at (-1,0)  {$\cs^3$}; %%
+            \node (st) at (4,0)  {$\cs^T$}; %%
+            \node (o11) at (-7,1.5)  {$\co_1^1$}; %%
+            \node (o21) at (-7,-1.5)  {$\co_2^1$}; %%
+            \node (o12) at (-4,1.5)  {$\co_1^2$}; %%
+            \node (o22) at (-4,-1.5)  {$\co_2^2$}; %%
+            \node (o13) at (-1,1.5)  {$\co_1^3$}; %%
+            \node (o23) at (-1,-1.5)  {$\co_2^3$}; %%
+\only<2-6>{
+            \node (b10) at (-10,3)  {$\bel_1^0$}; %%
+            \node (b20) at (-10,-3)  {$\bel_2^0$}; %%
+            \node (b11) at (-7,3)  {$\bel_1^1$}; %%
+            \node (b21) at (-7,-3)  {$\bel_2^1$}; %%
+            \node (b12) at (-4,3)  {$\bel_1^2$}; %%
+            \node (b22) at (-4,-3)  {$\bel_2^2$}; %%
+            \node (b13) at (-1,3)  {$\bel_1^3$}; %%
+            \node (b23) at (-1,-3)  {$\bel_2^3$}; %%
+}
+\only<3-6>{
+            \node[color=red] (b10) at (-10,3)  {$\bel_1^0$}; %%
+            \node[color=red] (b20) at (-10,-3)  {$\bel_2^0$}; %%
+}
+\only<4-6>{
+            \node[color=red] (b11) at (-7,3)  {$\bel_1^1$}; %%
+            \node[color=green!40!blue] (b21) at (-7,-3)  {$\bel_2^1$}; %%
+}
+\only<5-6>{
+            \node[color=red] (b12) at (-4,3)  {$\bel_1^2$}; %%
+            \node[color=green!40!blue] (b22) at (-4,-3)  {$\bel_2^2$}; %%
+}
+\only<6>{
+            \node[color=red] (b13) at (-1,3)  {$\bel_1^3$}; %%
+            \node[color=green!40!blue] (b23) at (-1,-3)  {$\bel_2^3$}; %%
+}
+\only<7>{
+            \node[color=red] (b10) at (-10,3)  {$\bel_1^0$}; %%
+            \node[color=red] (b20) at (-10,-3)  {$\bel_2^0$}; %%
+            \node[color=red] (b11) at (-7,3)  {$\bel_1^1$}; %%
+            \node[color=red] (b21) at (-7,-3)  {$\bel_2^1$}; %%
+            \node[color=red] (b12) at (-4,3)  {$\bel_1^2$}; %%
+            \node[color=red] (b22) at (-4,-3)  {$\bel_2^2$}; %%
+            \node[color=red] (b13) at (-1,3)  {$\bel_1^3$}; %%
+            \node[color=red] (b23) at (-1,-3)  {$\bel_2^3$}; %%
+}
+    %        \node (o1t) at (6,2)  {$\co_1^T$}; %%
+    %        \node (o2t) at (6,-2)  {$\co_2^T$}; %%
+            \end{scope}
+            \begin{scope}[shape=rectangle,inner sep=.05cm,fill=white,minimum size=0.6cm]
+            \tikzstyle{every node}=[draw,font=\small] %%
+            \node (a11) at (-8.5,2)  {$\ca_1^1$}; %%
+            \node (a21) at (-8.5,-2)  {$\ca_2^1$}; %%
+            \node (a12) at (-5.5,2)  {$\ca_1^2$}; %%
+            \node (a22) at (-5.5,-2)  {$\ca_2^2$}; %%
+            \node (a13) at (-2.5,2)  {$\ca_1^3$}; %%
+            \node (a23) at (-2.5,-2)  {$\ca_2^3$}; %%
+            \node (a1t) at (2.5,2)  {$\ca_1^T$}; %%
+            \node (a2t) at (2.5,-2)  {$\ca_2^T$}; %%
+            \end{scope}
+            \node[font=\small] at (-12,2.5)  {Agent 1}; %%
+            \node[font=\small] at (-12,-2.5)  {Agent 2}; %%
+        \draw[->,-latex] (s0)--(s1);  %%
+        \draw[->,-latex] (s0)--(b10);  %%
+        \draw[->,-latex] (s0)--(b20);  %%
+        \draw[->,-latex] (a11)--(s1);  %%
+        \draw[->,-latex] (a21)--(s1); %%
+        \draw[->,-latex] (s1)--(s2); %%
+        \draw[->,-latex] (a12)--(s2);  %%
+        \draw[->,-latex] (a22)--(s2); %%
+        \draw[->,-latex] (s2)--(s3); %%
+        \draw[->,-latex] (a13)--(s3);  %%
+        \draw[->,-latex] (a23)--(s3); %%
+        \draw[->,-latex,densely dotted,thick] (s3)--(st); %%
+        \draw[->,-latex] (a1t)--(st);  %%
+        \draw[->,-latex] (a2t)--(st); %%
+        \draw[->,-latex] (a11)--(o11);  %%
+        \draw[->,-latex] (a21)--(o21); %%
+        \draw[->,-latex] (s1)--(o11);  %%
+        \draw[->,-latex] (s1)--(o21); %%
+        \draw[->,-latex] (a12)--(o12);  %%
+        \draw[->,-latex] (a22)--(o22); %%
+        \draw[->,-latex] (s2)--(o12);  %%
+        \draw[->,-latex] (s2)--(o22); %%
+        \draw[->,-latex] (a13)--(o13);  %%
+        \draw[->,-latex] (a23)--(o23); %%
+        \draw[->,-latex] (s3)--(o13);  %%
+        \draw[->,-latex] (s3)--(o23); %%
+        \draw[->,-latex] (a11)--(o21);  %%
+        \draw[->,-latex] (a21)--(o11); %%
+        \draw[->,-latex] (a12)--(o22);  %%
+        \draw[->,-latex] (a22)--(o12); %%
+        \draw[->,-latex] (a13)--(o23);  %%
+        \draw[->,-latex] (a23)--(o13); %%
+        \draw[->,-latex] (o11)--(b11); %%
+        \draw[->,-latex] (o21)--(b21);  %%
+        \draw[->,-latex] (o12)--(b12); %%
+        \draw[->,-latex] (o22)--(b22);  %%
+        \draw[->,-latex] (o13)--(b13); %%
+        \draw[->,-latex] (o23)--(b23);  %%
+\only<7>{
+        \draw[->,-latex,red] (o21)-- +(1,2.5) --(b11); %%
+        \draw[->,-latex,red] (o11)-- +(1,-2.5) --(b21);  %%
+        \draw[->,-latex,red] (o22)-- +(1,2.5) --(b12); %%
+        \draw[->,-latex,red] (o12)-- +(1,-2.5) --(b22);  %%
+        \draw[->,-latex,red] (o23)-- +(1,2.5) --(b13); %%
+        \draw[->,-latex,red] (o13)-- +(1,-2.5) --(b23);  %%
+}
+        \draw[->,-latex] (b10)--(b11); %%
+        \draw[->,-latex] (b20)--(b21);  %%
+        \draw[->,-latex] (b11)--(b12); %%
+        \draw[->,-latex] (b21)--(b22);  %%
+        \draw[->,-latex] (b12)--(b13); %%
+        \draw[->,-latex] (b22)--(b23);  %%
+        \draw[->,-latex,dashed] (b10)--(a11); %%
+        \draw[->,-latex,dashed] (b20)--(a21);  %%
+        \draw[->,-latex,dashed] (b11)--(a12); %%
+        \draw[->,-latex,dashed] (b21)--(a22);  %%
+        \draw[->,-latex,dashed] (b12)--(a13); %%
+        \draw[->,-latex,dashed] (b22)--(a23);  %%
+        \draw[->,-latex,loosely dashed,thick] (b13)--(a1t); %%
+        \draw[->,-latex,loosely dashed,thick] (b23)--(a2t);  %%
+    \end{tikzpicture}%
+}
+\end{center}
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[Rollout]{Algorithme de Rollout décentralisé}
+%--------------------------------------------------------------------------
+\begin{frame}
+\frametitle{Algorithme de Rollout décentralisé}
+
+\begin{center}
+\only<1-6>{
+    \begin{tikzpicture}[scale=.6]%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\tiny] %%
+        \node (b10) at (0,5)  {$\bel_1^0$}; %%
+\visible<2->{
+        \node[minimum size=.1] (b11a) at (2,7)  {}; %%
+        \node (b11aa) at (4,8.5)  {$\bel_1^{1aa}$}; %%
+        \node (b11ab) at (4,7)  {$\bel_1^{1ab}$}; %%
+}
+\visible<3->{
+        \node[minimum size=.1] (b11b) at (2,5)  {}; %%
+        \node (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+}
+\only<6->{
+        \node[minimum size=.1,red] (b11b) at (2,5)  {}; %%
+        \node[red] (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node[red] (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+}
+\visible<4->{
+        \node[minimum size=.1] (b11c) at (2,3)  {}; %%
+        \node (b11ca) at (4,3)  {$\bel_1^{1ca}$}; %%
+        \node (b11cb) at (4,1.5)  {$\bel_1^{1cb}$}; %%
+}
+\visible<5->{
+        \node (b1Taa) at (15,8.5)  {$V(\bel_1^{Taa})$}; %%
+        \node (b1Tab) at (15,7)  {$V(\bel_1^{Tab})$}; %%
+        \node (b1Tba) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node (b1Tbb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+        \node (b1Tca) at (15,3)  {$V(\bel_1^{Tca})$}; %%
+        \node (b1Tcb) at (15,1.5)  {$V(\bel_1^{Tcb})$}; %%
+}
+\only<6->{
+        \node[red] (b1Tb) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node[red] (b1Tb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+}
+        \end{scope}
+\only<2->{
+        \draw[-latex] (b10)--(b11a) node[midway,above]{$a_a$}; %%
+        \draw[-latex] (b11a)--(b11aa) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11a)--(b11ab) node[midway,above]{$o_b$}; %%
+}
+\only<3->{
+        \draw[-latex] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+}
+\only<6->{
+        \draw[-latex,red] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex,red] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex,red] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+}
+\only<4->{
+        \draw[-latex] (b10)--(b11c) node[midway,below]{$a_c$}; %%
+        \draw[-latex] (b11c)--(b11ca) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11c)--(b11cb) node[midway,above]{$o_b$}; %%
+}
+\visible<5->{
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11aa)--(b1Taa) node[midway,above]{$H(\bel_1^{1aa})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ab)--(b1Tab) node[midway,above]{$H(\bel_1^{1ab})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above]{$H(\bel_1^{1bb})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ca)--(b1Tca) node[midway,above]{$H(\bel_1^{1ca})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11cb)--(b1Tcb) node[midway,above]{$H(\bel_1^{1cb})$}; %%
+}
+\only<6->{
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above,red]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above,red]{$H(\bel_1^{1bb})$}; %%
+}
+    \end{tikzpicture}
+}
+
+\only<7>{
+    \begin{tikzpicture}[scale=.4]%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\tiny] %%
+        \node (b10) at (0,5)  {$\bel_1^0$}; %%
+        \node[minimum size=.1] (b11a) at (2,7)  {}; %%
+        \node (b11aa) at (4,8.5)  {$\bel_1^{1aa}$}; %%
+        \node (b11ab) at (4,7)  {$\bel_1^{1ab}$}; %%
+        \node[minimum size=.1] (b11b) at (2,5)  {}; %%
+        \node (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+        \node[minimum size=.1,red] (b11b) at (2,5)  {}; %%
+        \node[red] (b11ba) at (4,5.75)  {$\bel_1^{1ba}$}; %%
+        \node[red] (b11bb) at (4,4.25)  {$\bel_1^{1bb}$}; %%
+        \node[minimum size=.1] (b11c) at (2,3)  {}; %%
+        \node (b11ca) at (4,3)  {$\bel_1^{1ca}$}; %%
+        \node (b11cb) at (4,1.5)  {$\bel_1^{1cb}$}; %%
+        \node (b1Taa) at (15,8.5)  {$V(\bel_1^{Taa})$}; %%
+        \node (b1Tab) at (15,7)  {$V(\bel_1^{Tab})$}; %%
+        \node (b1Tba) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node (b1Tbb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+        \node (b1Tca) at (15,3)  {$V(\bel_1^{Tca})$}; %%
+        \node (b1Tcb) at (15,1.5)  {$V(\bel_1^{Tcb})$}; %%
+        \node[red] (b1Tb) at (15,5.75)  {$V(\bel_1^{Tba})$}; %%
+        \node[red] (b1Tb) at (15,4.25)  {$V(\bel_1^{Tbb})$}; %%
+        \end{scope}
+        \draw[-latex] (b10)--(b11a) node[midway,above]{$a_a$}; %%
+        \draw[-latex] (b11a)--(b11aa) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11a)--(b11ab) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+        \draw[-latex,red] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex,red] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex,red] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11c) node[midway,below]{$a_c$}; %%
+        \draw[-latex] (b11c)--(b11ca) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11c)--(b11cb) node[midway,above]{$o_b$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11aa)--(b1Taa) node[midway,above]{$H(\bel_1^{1aa})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ab)--(b1Tab) node[midway,above]{$H(\bel_1^{1ab})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above]{$H(\bel_1^{1bb})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ca)--(b1Tca) node[midway,above]{$H(\bel_1^{1ca})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11cb)--(b1Tcb) node[midway,above]{$H(\bel_1^{1cb})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above,red]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above,red]{$H(\bel_1^{1bb})$}; %%
+    \end{tikzpicture}
+    \begin{tikzpicture}[scale=.4]%
+        \begin{scope}[shape=circle,inner sep=.02cm,fill=white,minimum size=0.6cm]
+        \tikzstyle{every node}=[draw,font=\tiny] %%
+        \node (b10) at (0,5)  {$\bel_2^0$}; %%
+        \node[minimum size=.1,red] (b11a) at (2,7)  {}; %%
+        \node[red] (b11aa) at (4,8.5)  {$\bel_2^{1aa}$}; %%
+        \node[red] (b11ab) at (4,7)  {$\bel_2^{1ab}$}; %%
+        \node[minimum size=.1] (b11b) at (2,5)  {}; %%
+        \node (b11ba) at (4,5.75)  {$\bel_2^{1ba}$}; %%
+        \node (b11bb) at (4,4.25)  {$\bel_2^{1bb}$}; %%
+        \node[minimum size=.1] (b11c) at (2,3)  {}; %%
+        \node (b11ca) at (4,3)  {$\bel_2^{1ca}$}; %%
+        \node (b11cb) at (4,1.5)  {$\bel_2^{1cb}$}; %%
+        \node[red] (b1Taa) at (15,8.5)  {$V(\bel_2^{Taa})$}; %%
+        \node[red] (b1Tab) at (15,7)  {$V(\bel_2^{Tab})$}; %%
+        \node (b1Tba) at (15,5.75)  {$V(\bel_2^{Tba})$}; %%
+        \node (b1Tbb) at (15,4.25)  {$V(\bel_2^{Tbb})$}; %%
+        \node (b1Tca) at (15,3)  {$V(\bel_2^{Tca})$}; %%
+        \node (b1Tcb) at (15,1.5)  {$V(\bel_2^{Tcb})$}; %%
+        \end{scope}
+        \draw[-latex,red] (b10)--(b11a) node[midway,above]{$a_a$}; %%
+        \draw[-latex,red] (b11a)--(b11aa) node[midway,above]{$o_a$}; %%
+        \draw[-latex,red] (b11a)--(b11ab) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11b) node[midway,above]{$a_b$}; %%
+        \draw[-latex] (b11b)--(b11ba) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11b)--(b11bb) node[midway,above]{$o_b$}; %%
+        \draw[-latex] (b10)--(b11c) node[midway,below]{$a_c$}; %%
+        \draw[-latex] (b11c)--(b11ca) node[midway,above]{$o_a$}; %%
+        \draw[-latex] (b11c)--(b11cb) node[midway,above]{$o_b$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11aa)--(b1Taa) node[midway,above]{$H(\bel_1^{1aa})$}; %%
+        \draw[-latex,decorate,red,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ab)--(b1Tab) node[midway,above]{$H(\bel_1^{1ab})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ba)--(b1Tba) node[midway,above]{$H(\bel_1^{1ba})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11bb)--(b1Tbb) node[midway,above]{$H(\bel_1^{1bb})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11ca)--(b1Tca) node[midway,above]{$H(\bel_1^{1ca})$}; %%
+        \draw[-latex,decorate,
+                decoration={snake,amplitude=.4mm,segment length=2mm,post length=1mm}] (b11cb)--(b1Tcb) node[midway,above]{$H(\bel_1^{1cb})$}; %%
+    \end{tikzpicture}
+}
+\end{center}
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[No Comm]{Observabilité décentralisée sans communication}
+%--------------------------------------------------------------------------
+\begin{frame}
+\frametitle{Planification en ligne avec observabilité décentralisée et sans communication}
+
+\visible<1->{
+\begin{block}{Observation la plus probable}
+\only<1-2>{
+\begin{small}
+\begin{eqnarray}
+  \bo_i^\star &\gets& \la o_i, \bo_{-i}^\star \ra \notag\\
+  \mbox{où }\bo_{-i}^\star &=& \arg \max_{\bo_{-i} \in \JObs{-i}} \Obs(\la o_i,\bo_{-i}\ra|\ba,s')\bel^t_i(s') \notag\\
+  \bel_i^{t+1}(s') &=& \frac{\Obs(\bo_i^\star|\ba,s') \sum_{s\in\Sta} \Tra(s'|s,\ba) \bel_i^t(s)}{\sum_{s,s'\in\Sta}{\Obs(\bo_i^\star|\ba,s') \Tra(s'|s,\ba) \bel_i^t(s)}}
+\end{eqnarray}
+\end{small}
+}
+\only<3-4>{
+\begin{large}
+\begin{equation}
+\vspace{-13pt}
+\bel_i^{t+1}(s') = \max_{\bo_{-i}} \bel_i^{t+1}(s')
+\end{equation}
+\end{large}}
+\end{block}}
+
+\visible<2->{
+\begin{block}{Observation espérée ($\star$)}
+\only<2-3>{
+\begin{small}
+\begin{equation}
+\bel_i^{t+1}(s') = \sum_{\bo_{-i}\in\JObs_{-i}}\frac{\Obs(\bo|\ba,s') \sum_{s\in\Sta} \Tra(s'|s,\ba) \bel_i^t(s)}{\sum_{s,s'\in\Sta}{\Obs(\bo|\ba,s') \Tra(s'|s,\ba) \bel_i^t(s)}}, \quad \bo = \la o_i, \bo_{-i}\ra
+\end{equation}
+\end{small}
+}
+\only<4>{
+\begin{large}
+\begin{equation}
+\bel_i^{t+1}(s') = \Esp_{\bo_{-i}} \bel_i^{t+1}(s')
+\end{equation}
+\end{large}}
+\end{block}}
+
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[Résultats]{Résultats expérimentaux}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Résultats expérimentaux}
+ \framesubtitle{Problème du déménageurs}
+
+\only<1>{
+\begin{figure}[!ht]
+\centering\includegraphics[width=.5\textwidth]{../cbp3x4}
+\end{figure}
+}
+
+\only<2>{
+\begin{figure}
+    \begin{center}
+    \subfigure[Value vs Horizon]{\includegraphics[width=.65\textwidth]{../Coord_value}}\\
+    \subfigure[Time (s) vs Horizon]{\includegraphics[width=.34\textwidth]{../Coord_time}}
+    \end{center}
+\end{figure}
+}
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Futur]{Travaux déjà engagés et ceux possibles}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+ \frametitle{Plan}
+\centering
+\begin{Large}
+4$^{eme}$ partie: Applications des outils développés
+\end{Large}
+\vspace{1cm}
+
+\begin{center}
+\begin{tikzpicture}[scale=.7]%
+%%MODELES
+\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (.8,4) rectangle (10.2,10.2);%%
+\filldraw[rounded corners,ultra thick,vert,draw=green!70!blue] (1.1,5.1) rectangle (9.9,9.9);%%
+\filldraw[rounded corners,ultra thick,mauve,draw=blue!70!red] (5,6) rectangle (9.8,9.8);%%
+%\filldraw[rounded corners,ultra thick,fill=blue!30!green!5!white,draw=blue!50!green] (6,7) rectangle (9.7,9.7);%%
+\filldraw[rounded corners,ultra thick,fill=orange,draw=red!70!green,dashed] (1.2,7) rectangle (9.6,9.6);%%
+%%TEXTE MODELES
+\node[font=\small] at (5.5,4.5)  {Processus Décisionnel de Markov}; %%
+\node[font=\small] at (5.5,5.5)  {Partiellement Observable}; %%
+\node[font=\footnotesize] at (8.25,6.3)  {Multiagent}; %%
+%\node[font=\footnotesize] at (8.25,7.3)  {Décentralisé}; %%
+\node[font=\footnotesize] at (5.4,9.2)  {Quasi-Déterministe}; %%
+%%ALGOS+BORNES
+\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (8.3,9.2)  {+ Bornes PAC}; %%
+%%PROBLEMES
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-2pt] at (7.5,7.8)  {Patrouille}; %%
+\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-2pt] at (2.5,7.8)  {Dirigeable}; %%
+%%GRILLE
+%\draw[step=1cm,color=gray,very thin] (0,0) grid (10,10);%%
+%%LEGENDE
+%\filldraw[rounded corners,thick,fill=gray!1,draw] (11,4.5) rectangle (15,10);%%
+%\node[font=\footnotesize] at (13,9.5)  {Légende}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw] (11.2,8.1) rectangle (14.8,8.9);%%
+%\node[font=\footnotesize] at (13,8.5)  {Modèle Existant}; %%
+%\filldraw[rounded corners,ultra thick,fill=gray!15,draw,dashed] (11.2,7.1) rectangle (14.8,7.9);%%
+%\node[font=\footnotesize] at (13,7.5)  {Modèle Proposé}; %%
+%\node[font=\footnotesize,fill=yellow!20,draw,ellipse] at (13,6.5)  {Algorithme}; %%
+%\node[font=\footnotesize,fill=gray!1,draw,cloud, aspect=2,inner sep=-5pt] at (13,5.25)  {Problème}; %%
+\end{tikzpicture}
+\end{center}
+
+
+\end{frame}
+
+%--------------------------------------------------------------------------
+\subsection[En cours]{Travaux déjà engagés}
+%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Extensions en cours}
+\framesubtitle{Groupe de patrouille autonome -- J.S. Marier}
+\only<1>{
+\begin{figure}[htb]
+\centering
+  \includegraphics[width=.5\textwidth]{../patrol}\\
+\end{figure}
+}
+
+\only<2>{
+\centering
+	\begin{tikzpicture}[-,auto]
+		\tikzstyle{vertex}=[circle,draw=black,minimum size=5mm,node distance=1.5cm]
+	
+		\node [vertex] (1) []					{0.2};
+		\node [vertex] (2) [below left of=1]	{1.0};
+		\node [vertex] (3) [right of=1]	        {1.5};
+		\node [vertex] (4) [below right of=3]	{1.0};
+		\node [vertex] (5) [below left of=4]	{0.5};
+		
+		\path	(1)	edge (2)
+					edge (3)
+				(3)	edge (2)
+					edge (4)
+				(4)	edge (5)
+				(2)	edge (5);
+	\end{tikzpicture}
+}
+
+\only<3>{
+\begin{block}{Les agents :}
+    \begin{itemize}
+    \item Sont contraints dans leurs actions par un graphe de localisations à surveiller aussi souvent que possible;
+    \item Observent avec certitude leur position et communiquent celle-ci aux autre agents;
+    \item Peuvent communiquer leur état local et leur politique locale avec une fréquence suffisamment élevée;
+    \item N'ont pas accès à l'information qu'ils surveillent.
+    \end{itemize}
+\end{block}
+}
+
+\only<4>{
+\begin{figure}
+\centering
+\subfigure[Wheel]{\resizebox{.3\textwidth}{!}{\input{../wheel-8-unit.tikz}}}
+\;
+\subfigure[Cloverleaf]{\resizebox{.3\textwidth}{!}{\input{../clover-11.tikz}}}
+\;
+\subfigure[Cuboctahedron]{\resizebox{.3\textwidth}{!}{\input{../cuboctahedron.tikz}}}
+\\
+\subfigure[Map-A]{\resizebox{.45\textwidth}{!}{\input{../mapA.tikz}}}
+\;
+\subfigure[Map-B]{\resizebox{.45\textwidth}{!}{\input{../mapB.tikz}}}
+\end{figure}
+}
+
+\only<5>{
+\begin{figure}
+\centering
+\subfigure[AAR]{\includegraphics[width=.45\textwidth]{patrouille}}~
+\subfigure[Time(s)]{\includegraphics[width=.45\textwidth]{patrouille2}}
+\end{figure}
+}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Extensions en cours}
+\framesubtitle{Apprentissage de POMDPs continus -- P. Dallaire}
+\only<1>{
+\begin{center}
+%    \begin{tikzpicture}[scale=.5]
+%        \draw[-latex,thick] (-1,0) -- (6,0) node[at start,left]{0};
+%        \draw[-latex,thick] (0,-3) -- (0,3);
+%        \filldraw[fill=blue!40!white,draw] (1.1,1) -- +(-1,.4) -- +(-1,-.4) -- cycle;
+%        \filldraw[fill=blue!40!white,draw] (.6,.4) rectangle (1.6,1);
+%        \filldraw[fill=blue!40!white,draw] (1.1,1) ellipse (.8cm and .4cm);
+%    \end{tikzpicture}
+    \includegraphics[width=.3\textwidth]{blimp}
+\end{center}
+
+\begin{block}{L'agent :}
+    \begin{itemize}
+    \item Doit maintenir une hauteur relative de zero;
+    \item Observe sa hauteur en continu additionnée d'un bruit Gaussien (en cloche);
+    \item Choisis un action monter/descendre en continu;
+    \item \emph{Ne connaît pas sa dynamique}.
+    \end{itemize}
+\end{block}
+}
+
+\only<2>{
+\centering
+    \includegraphics[width=0.8\textwidth]{../boxplot_fr}
+}
+\end{frame}
+
+%%--------------------------------------------------------------------------
+\subsection[Possibles]{Extensions possibles}
+%%--------------------------------------------------------------------------
+
+\begin{frame}
+ \frametitle{Extensions possibles}
+
+\begin{block}{}
+\begin{itemize}
+\item<+-> Extension du modèle \textsc{m}a\textsc{csp} au multiagent
+    \begin{itemize}
+        \item Représentations des interactions agents par contraintes
+    \end{itemize}
+\item<+-> Étude des modèles d'observabilité bijective avec transition stochastique
+    \begin{itemize}
+        \item et étude de l'équilibre génération / absorption d'entropie
+    \end{itemize}
+\item<+-> Extension des modèles d'observabilité bijective aux \pomdps continus
+\item<+-> Étude de la communication pour la synchronisation en ligne des états de croyance
+    \begin{itemize}
+        \item À quel moment et quoi communiquer ?
+    \end{itemize}
+\end{itemize}
+\end{block}
+\end{frame}
+
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Conc]{Conclusion}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------------------------------------------------------------------------
+\subsection{Contributions}
+%--------------------------------------------------------------------------
+\begin{frame}
+
+ \frametitle{Rappel des Contributions}
+
+\centering
+\begin{tikzpicture}[scale=.7]%
+%%MODELES
+\only<1->{\filldraw[rounded corners,ultra thick,fill=gray!20,draw] (.8,0) rectangle (10.2,10.2);}%%
+\only<2->{\filldraw[rounded corners,ultra thick,bleu,draw=blue!70!green,dashed] (3.5,1) rectangle (9.9,3.8);}%%
+\only<6->{\filldraw[rounded corners,ultra thick,vert,draw=green!70!blue] (1.1,4.1) rectangle (9.9,9.9);}%%
+\only<8->{\filldraw[rounded corners,ultra thick,mauve,draw=blue!70!red] (3.5,5) rectangle (9.8,9.8);}%%
+\only<9->{\filldraw[rounded corners,ultra thick,fill=blue!30!green!5!white,draw=blue!50!green] (6,6) rectangle (9.7,9.7);}%%
+\only<7->{\filldraw[rounded corners,ultra thick,fill=orange,draw=red!70!green,dashed] (1.2,8.8) rectangle (9.6,9.6);}%%
+%%TEXTE MODELES
+\only<1->{\node[font=\small] at (5.5,.5)  {Processus Décisionnel de Markov};} %%
+\only<2->{\node[font=\footnotesize] at (7,3)  {Problèmes de Satisfaction};} %%
+\only<2->{\node[font=\footnotesize] at (7,2)  {de Contraintes Markoviens};} %%
+\only<6->{\node[font=\small] at (5.5,4.5)  {Partiellement Observable};} %%
+\only<7->{\node[font=\footnotesize] at (5.4,9.2)  {Quasi-Déterministe};} %%
+\only<8->{\node[font=\footnotesize] at (8.25,5.3)  {Multiagent};} %%
+\only<9->{\node[font=\footnotesize] at (8.25,6.3)  {Décentralisé};} %%
+%%ALGOS+BORNES
+\only<4->{\node[fill=yellow!20,draw,circle, font=\scriptsize] at (3,3) {\textsc{r-frtdp}};}%%
+\only<10->{\node[fill=yellow!20,draw,circle, font=\scriptsize] at (6,6) {dRollout};}%%
+\only<5->{\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (2.5,2.5)  {+ Bornes};} %%
+\only<7->{\node[thick,dashed,fill=gray!1,draw,font=\tiny] at (8.3,9.2)  {+ Bornes PAC};} %%
+%%PROBLEMES
+\only<3->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=0pt] at (3.1,1.4)  {\textsc{nereus}};} %%
+\only<11->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-3pt] at (4.75,8.2)  {Patrouille};} %%
+%\only<10->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=0pt] at (4.75,7)  {\textsc{mars}};} %%
+\only<10->{\node[font=\scriptsize,fill=gray!1,draw,cloud,aspect=2,inner sep=-5pt] at (7.95,7.8)  {Déménageurs};} %%
+%%GRILLE
+%\draw[step=1cm,color=gray,very thin] (0,0) grid (10,10);%%
+%%LEGENDE
+\only<1->{\filldraw[rounded corners,thick,fill=gray!1,draw] (11,4.5) rectangle (15,10);}%%
+\only<1->{\node[font=\footnotesize] at (13,9.5)  {Légende};} %%
+\only<1->{\filldraw[rounded corners,ultra thick,fill=gray!15,draw] (11.2,8.1) rectangle (14.8,8.9);}%%
+\only<1->{\node[font=\footnotesize] at (13,8.5)  {Modèle Existant};} %%
+\only<2->{\filldraw[rounded corners,ultra thick,fill=gray!15,draw,dashed] (11.2,7.1) rectangle (14.8,7.9);}%%
+\only<2->{\node[font=\footnotesize] at (13,7.5)  {Modèle Proposé};} %%
+\only<4->{\node[font=\footnotesize,fill=yellow!20,draw,ellipse] at (13,6.5)  {Algorithme};} %%
+\only<3->{\node[font=\footnotesize,fill=gray!1,draw,cloud, aspect=2,inner sep=-5pt] at (13,5.25)  {Problème};} %%
+\end{tikzpicture}
+
+\end{frame}
+%--------------------------------------------------------------------------
+\subsection{Conclusion}
+%--------------------------------------------------------------------------
+\begin{frame}
+ \frametitle{Conclusion}
+
+\begin{block}{}
+    \begin{itemize}
+        \iplus<+-> Abandon des concepts d'intentions, engagements. On ne raisonne que sur la valeur.
+        \iplus<+-> Meilleur précision sur l'optimalité de la planification
+        \iplus<+-> Pouvoir de modélisation très large
+        \imoins<+-> Extrêmement sensible au modèle utilisé
+        \imoins<+-> Extrêmement sensible à la définition de la fonction de récompense
+        \imoins<+-> Problèmes très difficile à résoudre sans approximations
+        \imoins<+-> Multiplication de modèles spécifiques plus faciles à résoudre
+        \ifleche<+-> Prendre en compte la spécificité du problème dans la modélisation est indispensable
+    \end{itemize}
+\end{block}
+\end{frame}
+
+%--------------------------------------------------------------------------
+\AtBeginSection{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[???]{Questions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------------------------------------------------------------------------
+\frame{
+ \frametitle{Questions}
+ \begin{center}
+ \emph{Merci de votre attention}\\
+ % \emph{Thanks for your attention}\\
+ \vspace{0.5cm}
+ \begin{Huge}???\end{Huge}
+
+ \vspace{0.5cm}
+ \includegraphics[width=3cm]{wall-e}
+
+ \end{center}
+}
+%--------------------------------------------------------------------------
+
+%--------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section[Biblio]{Bibliography}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%--------------------------------------------------------------------------
+\frame{
+ \frametitle{Bibliography}
+ \framesubtitle{Articles comme premier auteur}
+    \tiny
+    \nocitepri{BPC.07,BC.07,BC.08,BC.09,BC.10,BC.10a}
+    \bibliographypri{besse}
+}
+\frame{
+ \frametitle{Bibliography}
+ \framesubtitle{Articles comme second auteur}
+    \tiny
+    \nocitesec{MBC.09,MBC.10,DBRC.09,DBC.09,DBC.10}
+    \bibliographysec{besse1}
+}
+%--------------------------------------------------------------------------
+
+%\appendix
+
+
+
+\end{document}
